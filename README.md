@@ -15,3 +15,12 @@
 * Settings module
 * Feedback module
 * JTAG module & test on mc56f8035
+
+##  Cargo packages in cargo.toml
+
+```
+[dependencies]
+rusb = "0.9.1"
+byteorder = {version = "1", features = ["i128"]}
+packed_struct = "0.10.0"
+```
