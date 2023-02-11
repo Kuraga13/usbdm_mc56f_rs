@@ -21,7 +21,7 @@ pub fn match_vid<T: rusb::UsbContext>(device:&rusb::Device<T>) -> bool
         false
     }
 }
-pub fn find_usbdm() -> Result<rusb::Device<rusb::GlobalContext>, Error>
+pub async fn find_usbdm_as() -> Result<rusb::Device<rusb::GlobalContext>, Error>
 
 {
     rusb::DeviceList::new()
@@ -32,7 +32,18 @@ pub fn find_usbdm() -> Result<rusb::Device<rusb::GlobalContext>, Error>
     .ok_or(Error::Usb(rusb::Error::NotFound))
     
 }
-  
+
+pub  fn find_usbdm() -> Result<rusb::Device<rusb::GlobalContext>, Error>
+
+{
+    rusb::DeviceList::new()
+    .unwrap()
+    .iter()
+    .filter(match_vid)
+    .next()
+    .ok_or(Error::Usb(rusb::Error::NotFound))
+    
+}
 
 
 
@@ -47,6 +58,9 @@ pub struct UsbInterface<T: UsbContext>
     serial_number: String,
 
 }
+
+
+
 
 impl <T: rusb::UsbContext> UsbInterface<T>
 {
