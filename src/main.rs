@@ -8,51 +8,21 @@ mod errors;
 mod usb_interface;
 mod enums;
 mod feedback;
+mod app;
 use crate::errors::{Error};
 use crate::enums::{BDMCommands,Vdd,Vpp };
 use crate::usb_interface::{UsbInterface, find_usbdm, find_usbdm_as, Capabilities};
 use crate::feedback::{FeedBack};
-use iced::alignment;
-use iced::executor;
-use iced::widget::{button, checkbox, container, text, Column};
-use iced::window;
-
-use iced::{
-    Alignment, Application, Command, Element, Length, Settings, Subscription,
-    Theme,
-};
-
-use iced_native::Event;
+use crate::app::{run};
 //#[allow(non_camel_case_types)]
 //pub type Error = USBDMerror;
 
 
-#[derive(Debug, Default)]
-struct UsbdmApp  {
-    last: Vec<iced_native::Event>,
-    enabled: bool,
-  
-
-}
-
-
-#[derive(Debug, Clone)]
-enum Message {
-    
-    EventOccurred(iced_native::Event),
-    Toggled(bool),
-    Exit,
-    Connect,
-    FindUsbdmEnum(Result<rusb::Device<rusb::GlobalContext>, Error>),
-}
-
-
 
 pub fn main() -> iced::Result {
-    UsbdmApp::run(Settings {
-        exit_on_close_request: false,
-        ..Settings::default()
-    })
+    
+         run()
+    
 }
 
 async fn test_main() {
@@ -172,119 +142,6 @@ fn print_usbdm_programmer(&self) -> Result<(), Error>
 
 
 
-
-impl Application for UsbdmApp {
-    type Message = Message;
-    type Theme = Theme;
-    type Executor = executor::Default;
-    type Flags = ();
-
-    fn new(_flags: ()) -> (UsbdmApp, Command<Message>) {
-        (UsbdmApp::default(), Command::none())
-        
-    }
-
-    fn title(&self) -> String {
-        String::from("UsbdmApp - Iced")
-    }
-
-    fn update(&mut self, message: Message) -> Command<Message> {
-        match message {
-            Message::EventOccurred(event) if self.enabled => {
-                self.last.push(event);
-
-                if self.last.len() > 5 {
-                    let _ = self.last.remove(0);
-                }
-
-                Command::none()
-            }
-            Message::EventOccurred(event) => {
-                if let Event::Window(window::Event::CloseRequested) = event {
-                    window::close()
-                } else {
-                    Command::none()
-                }
-            }
-            Message::Toggled(enabled) => {
-                self.enabled = enabled;
-
-                Command::none()
-            }
-            Message::Exit => window::close(),
-
-            Message::Connect => 
-            {    
-            Command::perform(find_usbdm_as(),  Message::FindUsbdmEnum)
-                
-            } 
-
-            Message::FindUsbdmEnum(Ok(_handle)) => 
-            {
-                UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured");;
-                window::minimize(true)
-            } 
-
-
-            Message::FindUsbdmEnum(Err(_)) => window::maximize(true),
-            
-        }
-    }
-
-    fn subscription(&self) -> Subscription<Message> {
-        iced_native::subscription::events().map(Message::EventOccurred)
-    }
-
-    fn view(&self) -> Element<Message> {
-        let events = Column::with_children(
-            self.last
-                .iter()
-                .map(|event| text(format!("{event:?}")).size(40))
-                .map(Element::from)
-                .collect(),
-        );
-
-        let toggle = checkbox(
-            "Listen to runtime events",
-            self.enabled,
-            Message::Toggled,
-        );
-
-        let exit = button(
-            text("Exit")
-                .width(Length::Fill)
-                .horizontal_alignment(alignment::Horizontal::Center),
-        )
-        .width(Length::Units(100))
-        .padding(10)
-        .on_press(Message::Exit);
-
-
-        let find_usbdm_button = button(
-            text("Connect")
-                .width(Length::Fill)
-                .horizontal_alignment(alignment::Horizontal::Left),
-        )
-        .width(Length::Units(100))
-        .padding(20)
-        .on_press(Message::Connect);
-
-        let content = Column::new()
-            .align_items(Alignment::Center)
-            .spacing(20)
-            .push(events)
-            .push(toggle)
-            .push(exit)
-            .push(find_usbdm_button);
-
-        container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x()
-            .center_y()
-            .into()
-    }
-}
 
 
 
