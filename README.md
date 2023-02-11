@@ -23,4 +23,6 @@
 rusb = "0.9.1"
 byteorder = {version = "1", features = ["i128"]}
 packed_struct = "0.10.0"
+iced = { version = "0.7", features = ["debug"] }
+iced_native = "0.8.0"
 ```
