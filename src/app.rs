@@ -77,15 +77,15 @@ impl Application for UsbdmApp {
             {
                 UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured");
                 *self = UsbdmApp::Connected;
-                window::minimize(true)
+                Command::none()
             } 
 
 
             Message::FindUsbdmEnum(Err(_)) =>
             {
               // *self = UsbdmApp::Errored(error);
-            *self = UsbdmApp::Errored;
-                window::maximize(true)
+               *self = UsbdmApp::Errored;
+               Command::none()
             } 
             
         }
@@ -120,7 +120,7 @@ impl Application for UsbdmApp {
 
 
         let conn_error = text("Not Connected".to_string());
-
+        let conn_ok = text("Succes connect Usbdm".to_string());
 
         let content = match self {
 
@@ -129,16 +129,18 @@ impl Application for UsbdmApp {
             Column::new()
             .align_items(Alignment::Center)
             .spacing(20)
-           // .push(events)
-           // .push(toggle)
             .push(exit)
             .push(find_usbdm_button)
         }
 
         UsbdmApp::Connected => {
         
-            column![text("Succes connect Usbdm").size(40),]
-            .width(Length::Shrink)
+            Column::new()
+            .align_items(Alignment::Center)
+            .spacing(20)
+            .push(exit)
+            .push(find_usbdm_button)
+            .push(conn_ok)
         }
 
         UsbdmApp::Errored => {
@@ -146,8 +148,6 @@ impl Application for UsbdmApp {
             Column::new()
             .align_items(Alignment::Center)
             .spacing(20)
-           // .push(events)
-           // .push(toggle)
             .push(exit)
             .push(find_usbdm_button)
             .push(conn_error)
