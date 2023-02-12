@@ -1,7 +1,9 @@
+#![allow(unused)]
+
 //use rusb::{UsbContext, Error};
-use rusb::{UsbContext};
-use std::time::Duration;
-use packed_struct::prelude::*;
+//use rusb::{UsbContext};
+//use std::time::Duration;
+//use packed_struct::prelude::*;
 
 
 mod errors;
@@ -10,7 +12,7 @@ mod enums;
 mod feedback;
 mod app;
 use crate::errors::{Error};
-use crate::enums::{BDMCommands,Vdd,Vpp };
+use crate::enums::{bdm_commands,vdd,vpp};
 use crate::usb_interface::{UsbInterface, find_usbdm, find_usbdm_as, Capabilities};
 use crate::feedback::{FeedBack};
 use crate::app::{run};
@@ -29,7 +31,7 @@ async fn test_main() {
 
     let usb_device =  find_usbdm().expect("Usbdm not found!");
     let mut usb_interface = UsbInterface::new(usb_device).expect("Usbdm found but, cant' be configured");
-    usb_interface.print_UsbInterface();    
+    usb_interface.print_usb_interface();    
   //  let version = usb_interface
     //.get_bdm_version().expect("Error on get bdm ver");
 
@@ -39,10 +41,10 @@ async fn test_main() {
    //usb_interface.set_vdd(Vdd::BDM_TARGET_VDD_ENABLE);
     let mut programmer = UsbdmProgrammer::new(usb_interface);
     programmer.refresh_feedback();
-    programmer.set_vdd(Vdd::BDM_TARGET_VDD_5V);
+    programmer.set_vdd(vdd::BDM_TARGET_VDD_5V);
     programmer.refresh_feedback();
     programmer.print_usbdm_programmer().unwrap();
-    programmer.set_vdd(Vdd::BDM_TARGET_VDD_OFF);
+    programmer.set_vdd(vdd::BDM_TARGET_VDD_OFF);
     //programmer.set_vdd(Vdd::BDM_TARGET_VDD_DISABLE);
     //programmer.set_vdd(Vdd::BDM_TARGET_VDD_DISABLE);
     programmer.refresh_feedback();

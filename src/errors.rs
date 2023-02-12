@@ -290,7 +290,7 @@ fn test_error(return_code : u8) -> Result< String, USBDM_ErrorCode>
     let status = USBDM_ErrorCode::from(return_code);
     match return_code
     {
-    BDM_RC_OK => Ok(status.to_string()),
+    0 => Ok(status.to_string()),
     x => Err(status),
     //x => panic!("Unexpected invalid token {:?}", x),
     }

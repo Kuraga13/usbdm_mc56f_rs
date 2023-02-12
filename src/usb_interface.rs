@@ -1,8 +1,8 @@
-use rusb::{UsbContext};
+//use rusb::{UsbContext};
 use std::time::Duration;
 use std::sync::{Arc, RwLock};
 use crate::errors::{Error, USBDM_ErrorCode};
-use crate::enums::{BDMCommands,Vdd};
+use crate::enums::{bdm_commands};
 use crate::feedback::{FeedBack};
 use packed_struct::prelude::*;
 
@@ -97,8 +97,8 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
 }
 
 
-/// `print_UsbInterface` - print USBDM model, serial number, EP
-pub fn print_UsbInterface(&self)  {
+/// print USBDM model, serial number, EP
+pub fn print_usb_interface(&self)  {
 
     println!("Model: {}",&self.model);
     println!("Serial Number: {}",&self.serial_number);
@@ -182,7 +182,7 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
     let request_type = request_type| &self.read_ep;
 
 
-    let request      = BDMCommands::CMD_USBDM_GET_VER; // command
+    let request      = bdm_commands::CMD_USBDM_GET_VER; // command
     let value        = 100;
     let index        = 0;
     let timeout      = Duration::from_millis(2500);
@@ -218,7 +218,7 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
       
         let mut usb_buf = [0; 2];
         usb_buf[0] = 2;  // lenght
-        usb_buf[1] = BDMCommands::CMD_USBDM_GET_BDM_STATUS;
+        usb_buf[1] = bdm_commands::CMD_USBDM_GET_BDM_STATUS;
         let command = "CMD_USBDM_GET_BDM_STATUS".to_string();
   
         let bit = 0x80;
@@ -244,7 +244,7 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
         let command = "CMD_USBDM_SET_VDD".to_string();
   
         usb_buf[0] = 4;
-        usb_buf[1] = BDMCommands::CMD_USBDM_SET_VDD;
+        usb_buf[1] = bdm_commands::CMD_USBDM_SET_VDD;
         usb_buf[2] = power;  
         usb_buf[3] = power;  
   
@@ -265,7 +265,7 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
         let command = "CMD_USBDM_SET_VDD".to_string();
   
         usb_buf[0] = 3;
-        usb_buf[1] = BDMCommands::CMD_USBDM_SET_VPP;
+        usb_buf[1] = bdm_commands::CMD_USBDM_SET_VPP;
         usb_buf[2] = power;  
     
   
