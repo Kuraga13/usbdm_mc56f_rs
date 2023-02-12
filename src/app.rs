@@ -116,7 +116,7 @@ impl Application for  UsbdmApp
 
             Message::FindUsbdmEnum(Ok(_handle)) => 
             {
-                UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured");
+                self.usb_device = Some(UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured"));
                 self.status  = UsbdmAppStatus::Connected;
                 Command::none()
             } 
