@@ -26,6 +26,7 @@ pub struct Programmer {
 impl Drop for Programmer{
 
     fn drop(&mut self) {
+        self.set_vdd_off();
         drop(&mut self.usb_device);
         println!("Programmer dropped");
     }
@@ -48,14 +49,28 @@ pub fn new(mut device : UsbInterface) -> Self {
     
     }
 
-
-
+pub fn set_vdd_off(&self) -> Result<(), Error>
+{
+            
+  self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_OFF)?;
+  Ok(())
+            
+            
+}
+pub fn set_vdd_3_3v(&self) -> Result<(), Error>
+{
+        
+  self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_3V3)?;
+  Ok(())
+        
+        
+}
 
 pub fn set_vdd_5v(&self) -> Result<(), Error>
 {
     
-        self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_5V)?;
-        Ok(())
+    self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_5V)?;
+    Ok(())
     
     
 }

@@ -1,7 +1,7 @@
 use iced::alignment;
 use iced::executor;
 use iced::widget::Row;
-use iced::widget::{button, checkbox, container, text, Column, column};
+use iced::widget::{button, checkbox, container, text, Column, column, pick_list};
 use iced::window;
 
 use iced::{
@@ -14,6 +14,39 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::programmer::{Programmer};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PowerSwitchGui {
+    Off,
+    _3_3v,
+    _5_0v,
+
+}
+
+impl PowerSwitchGui {
+    const ALL: [PowerSwitchGui; 3] = [
+        PowerSwitchGui::Off,
+        PowerSwitchGui::_3_3v,
+        PowerSwitchGui::_5_0v,
+
+    ];
+}
+
+impl std::fmt::Display for PowerSwitchGui {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                PowerSwitchGui::Off => "Off",
+                PowerSwitchGui::_3_3v => "3.3v",
+                PowerSwitchGui::_5_0v => "5.0v",
+            }
+        )
+    }
+}
+
+
+
 #[derive(Debug, Clone)]
 enum Message {
     
@@ -24,6 +57,7 @@ enum Message {
     Disconnect,
     FindUsbdmEnum(Result<rusb::Device<rusb::GlobalContext>, Error>),
     SetPower,
+    PowerSelect(PowerSwitchGui),
 }
 
 #[derive(Debug, Clone)]
@@ -41,7 +75,7 @@ struct UsbdmApp
 
   programmer   : Option<Programmer>,
   status       : UsbdmAppStatus,
-    
+  selected_power: Option<PowerSwitchGui>,
     
 }
 
@@ -61,6 +95,7 @@ impl Application for  UsbdmApp
         {
         programmer : None,
         status : UsbdmAppStatus::Start, 
+        selected_power : None,
 
         },
         Command::none()
@@ -116,14 +151,31 @@ impl Application for  UsbdmApp
 
             Message::SetPower => 
             {    
-                match &self.programmer
-                {   
-                Some(programmer) =>{ programmer.set_vdd_5v(); Command::none()}
-                    
-                None => Command::none()
-                } 
+
+             match &self.selected_power
+             {   
+             
+             Some(selected_power) => match selected_power
+             {
+                PowerSwitchGui::Off => { &self.programmer.as_ref().expect("Not Programmer").set_vdd_off(); Command::none()}
+                PowerSwitchGui::_3_3v => { &self.programmer.as_ref().expect("Not Programmer").set_vdd_3_3v(); Command::none()}
+                PowerSwitchGui::_5_0v => { &self.programmer.as_ref().expect("Not Programmer").set_vdd_5v();  Command::none()}
+                
+             } 
+                       
+             None => Command::none()          
             
-            } 
+             }
+            }   
+
+
+            Message::PowerSelect(power_select) => 
+            {
+
+                self.selected_power = Some(power_select);
+                Command::none()
+
+            }
 
             Message::FindUsbdmEnum(Ok(_handle)) => 
             {
@@ -150,7 +202,13 @@ impl Application for  UsbdmApp
     }
 
     fn view(&self) -> Element<Message> {
-      
+        
+        let pick_list = pick_list(
+            &PowerSwitchGui::ALL[..],
+            self.selected_power,
+            Message::PowerSelect,
+        )
+        .placeholder("Power:");
 
 
         let exit = button(
@@ -185,7 +243,7 @@ impl Application for  UsbdmApp
 
               
         let set_power = button(
-            text("Power On")
+            text("Set Power")
                 .width(Length::Fill)
                 .horizontal_alignment(alignment::Horizontal::Right),
         )
@@ -217,6 +275,7 @@ impl Application for  UsbdmApp
             .push(set_power)
             .push(disconnect_usbdm_button)
             .push(conn_ok)
+            .push(pick_list)
         }
 
         UsbdmAppStatus::Errored => {
