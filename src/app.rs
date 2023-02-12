@@ -1,5 +1,3 @@
-//use std::vec;
-
 use iced::alignment;
 use iced::executor;
 use iced::widget::Row;
@@ -13,9 +11,8 @@ use iced::{
 
 use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
-use rusb::{UsbContext};
 use crate::errors::{Error};
-use crate::enums::{bdm_commands,vdd,vpp};
+use crate::programmer::{Programmer};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -39,44 +36,15 @@ enum UsbdmAppStatus {
 
 }
 
-struct UsbdmApp {
-
-
-    usb_device  : Option<UsbInterface>,
-    capabilities : Option<Capabilities>,
-    status       : UsbdmAppStatus,
-
-  //  feedback     : FeedBack,
-   
-    //jtag_buffer_size : u32,
-    
-    
-    
-    //state_from_bdm : BdmStatus,
-    
-    
-    
-    }
-
-impl UsbdmApp
+struct UsbdmApp 
 {
 
-fn set_vdd(&self, power: u8 ) -> Result<(), Error>
-{
-    match &self.usb_device
-    {   
-    Some(usb_device) => usb_device.set_vdd(power)?,
-
-    None => panic!("usb_device not found!")
-    } 
-
-    Ok(())
+  programmer   : Option<Programmer>,
+  status       : UsbdmAppStatus,
+    
     
 }
 
-
-
-}
     
 
 impl Application for  UsbdmApp 
@@ -91,10 +59,9 @@ impl Application for  UsbdmApp
         (   
         UsbdmApp
         {
-
+        programmer : None,
         status : UsbdmAppStatus::Start, 
-        usb_device : None,
-        capabilities : None, 
+
         },
         Command::none()
         )
@@ -138,17 +105,22 @@ impl Application for  UsbdmApp
 
             Message::SetPower => 
             {    
+                match &self.programmer
+                {   
+                Some(programmer) =>{ programmer.set_vdd_5v(); Command::none()}
+                    
+                None => Command::none()
+                } 
             
-                self.set_vdd(vdd::BDM_TARGET_VDD_5V);
-                Command::none()
-                
             } 
 
             Message::FindUsbdmEnum(Ok(_handle)) => 
             {
-                self.usb_device = Some(UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured"));
-                self.status  = UsbdmAppStatus::Connected;
-                Command::none()
+            
+               let usb_int = UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured");
+               self.programmer = Some(Programmer::new(usb_int)); 
+               self.status  = UsbdmAppStatus::Connected;
+               Command::none()
             } 
 
 
