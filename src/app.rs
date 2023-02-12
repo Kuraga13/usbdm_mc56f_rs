@@ -10,7 +10,7 @@ use iced::{
 };
 
 use iced_native::Event;
-use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
+use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::programmer::{Programmer};
 
@@ -99,7 +99,18 @@ impl Application for  UsbdmApp
             Message::Disconnect => 
             {    
             
-                Command::perform(find_usbdm_as(),  Message::FindUsbdmEnum)
+                match &self.programmer
+                {   
+                Some(programmer) =>{ 
+                println!("Try disconnect and drop");
+                drop(&mut self.programmer);
+                self.programmer = None;
+                self.status  = UsbdmAppStatus::Start; 
+                Command::none()
+                }
+                    
+                None => Command::none()
+                } 
                 
             } 
 
@@ -116,7 +127,7 @@ impl Application for  UsbdmApp
 
             Message::FindUsbdmEnum(Ok(_handle)) => 
             {
-            
+                println!("Try claim usb");
                let usb_int = UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured");
                self.programmer = Some(Programmer::new(usb_int)); 
                self.status  = UsbdmAppStatus::Connected;
@@ -163,13 +174,13 @@ impl Application for  UsbdmApp
 
         
         let disconnect_usbdm_button = button(
-            text("Connect")
+            text("Disconnect")
                 .width(Length::Fill)
                 .horizontal_alignment(alignment::Horizontal::Left),
         )
         .width(Length::Units(100))
         .padding(20)
-        .on_press(Message::Toggled(true));
+        .on_press(Message::Disconnect);
 
 
               

@@ -51,11 +51,13 @@ pub  fn find_usbdm() -> Result<rusb::Device<rusb::GlobalContext>, Error>
 
 pub struct UsbInterface
 {
-    handle: Arc<RwLock<rusb::DeviceHandle<rusb::GlobalContext>>>,
+   // handle: Arc<RwLock<rusb::DeviceHandle<rusb::GlobalContext>>>,
+    handle: rusb::DeviceHandle<rusb::GlobalContext>,
     pub read_ep: u8,
     write_ep: u8,
     model: String,
     serial_number: String,
+    interface_n  : u8,
 
 }
 
@@ -72,8 +74,8 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
 
 
     let mut handle = device.open()?;
-
-    handle.claim_interface(interface_descriptor.interface_number())?;
+    let number  = interface_descriptor.interface_number();
+    handle.claim_interface(number)?;
     
     let device_descriptor = device.device_descriptor().unwrap();
     
@@ -90,7 +92,9 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
         write_ep: find_endpoint(rusb::Direction::Out, rusb::TransferType::Bulk).unwrap(),
         model: handle.read_product_string_ascii(&device_descriptor)?,
         serial_number: handle.read_serial_number_string_ascii(&device_descriptor)?,
-        handle: Arc::new(RwLock::new(handle)),
+        //handle: Arc::new(RwLock::new(handle)),
+        handle: handle,
+        interface_n : number,
 
        
     })
@@ -109,7 +113,8 @@ pub fn print_usb_interface(&self)  {
 /// `write` - write_bulk to usbdm. param - programmer, data u8 slice, timeout.
 pub fn write(&self, data: &[u8], timeout_value: u64) -> Result<(), Error> {
     let timeout = Duration::from_millis(timeout_value);
-    self.handle.read().unwrap().write_bulk(self.write_ep, data, timeout)?;
+    //self.handle.read().unwrap().write_bulk(self.write_ep, data, timeout)?;
+    self.handle.write_bulk(self.write_ep, data, timeout)?;
     Ok(())
 }
 
@@ -119,7 +124,8 @@ pub fn read(&self) -> Result<Vec<u8>, Error> {
 
     const RECEIVE_SIZE: usize = 32;
     let mut buff = [0; RECEIVE_SIZE];
-    self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
+    //self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
+    self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
     let answer = buff.to_vec();
     let check_status = self.check_usbm_return_code(&answer)?;
     Ok(answer)
@@ -151,7 +157,8 @@ pub fn read_slice(&self) -> Result<[u8;32], Error> {
 
     const RECEIVE_SIZE: usize = 32;
     let mut buff = [0; RECEIVE_SIZE];
-    self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
+    //self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
+    self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
     
 
     
@@ -170,7 +177,8 @@ pub fn control_transfer(
 ) -> Result<Vec<u8>, Error> {
 
 
-   self.handle.read().unwrap().read_control(request_type, request, value, index, usb_buff, timeout)?;
+  // self.handle.read().unwrap().read_control(request_type, request, value, index, usb_buff, timeout)?;
+   self.handle.read_control(request_type, request, value, index, usb_buff, timeout)?;
    let control_answer = usb_buff.to_vec();
    
    Ok(control_answer) 
@@ -282,6 +290,14 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
 }
 
 
+impl Drop for UsbInterface{
+
+    fn drop(&mut self) {
+
+        self.handle.release_interface(self.interface_n).unwrap();
+        println!("UsbInterface dropped");
+    }
+}
 
 ///`Capabilities`
 ///The idea is to group a huge number of USBDM structures, enumerations and settings into three abstractions.

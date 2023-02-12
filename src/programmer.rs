@@ -23,6 +23,14 @@ pub struct Programmer {
     
     }
 
+impl Drop for Programmer{
+
+    fn drop(&mut self) {
+        drop(&mut self.usb_device);
+        println!("Programmer dropped");
+    }
+}
+
 impl Programmer
 {
 
