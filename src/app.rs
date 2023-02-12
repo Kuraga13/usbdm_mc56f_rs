@@ -1,4 +1,4 @@
-use std::vec;
+//use std::vec;
 
 use iced::alignment;
 use iced::executor;
@@ -15,7 +15,7 @@ use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
 use rusb::{UsbContext};
 use crate::errors::{Error};
-use crate::enums::{BDMCommands,Vdd,Vpp };
+use crate::enums::{bdm_commands,vdd,vpp};
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -139,7 +139,7 @@ impl Application for  UsbdmApp
             Message::SetPower => 
             {    
             
-                self.set_vdd(Vdd::BDM_TARGET_VDD_5V);
+                self.set_vdd(vdd::BDM_TARGET_VDD_5V);
                 Command::none()
                 
             } 
