@@ -68,9 +68,10 @@ async fn test_main() {
 //   
 
 
-pub struct UsbdmProgrammer <T: UsbContext> {
 
-usb_device  : UsbInterface<T>,
+pub struct UsbdmProgrammer {
+
+usb_device  : UsbInterface,
 
 
 capabilities : Capabilities,
@@ -86,11 +87,10 @@ feedback     : FeedBack,
 }
 
 
-
-impl <T: rusb::UsbContext>  UsbdmProgrammer<T>
+impl UsbdmProgrammer
 {
 
-fn new(mut device : UsbInterface<T>) -> Self {
+fn new(mut device : UsbInterface) -> Self {
 
 
     Self{

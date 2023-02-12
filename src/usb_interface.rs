@@ -48,10 +48,10 @@ pub  fn find_usbdm() -> Result<rusb::Device<rusb::GlobalContext>, Error>
 
 
 #[derive(Debug)]
-pub struct UsbInterface<T: UsbContext>
 
+pub struct UsbInterface
 {
-    handle: Arc<RwLock<rusb::DeviceHandle<T>>>,
+    handle: Arc<RwLock<rusb::DeviceHandle<rusb::GlobalContext>>>,
     pub read_ep: u8,
     write_ep: u8,
     model: String,
@@ -60,13 +60,11 @@ pub struct UsbInterface<T: UsbContext>
 }
 
 
-
-
-impl <T: rusb::UsbContext> UsbInterface<T>
+impl  UsbInterface
 {
 
-pub fn new(device: rusb::Device<T>) -> Result<Self, Error> {
 
+pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
     
     let config = device.active_config_descriptor()?;
     let interface = config.interfaces().next();
