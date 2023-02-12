@@ -15,6 +15,7 @@ use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
 use rusb::{UsbContext};
 use crate::errors::{Error};
+use crate::enums::{BDMCommands,Vdd,Vpp };
 
 #[derive(Debug, Clone)]
 enum Message {
@@ -25,6 +26,7 @@ enum Message {
     Connect,
     Disconnect,
     FindUsbdmEnum(Result<rusb::Device<rusb::GlobalContext>, Error>),
+    SetPower,
 }
 
 #[derive(Debug, Clone)]
@@ -56,7 +58,25 @@ struct UsbdmApp {
     
     }
 
+impl UsbdmApp
+{
 
+fn set_vdd(&self, power: u8 ) -> Result<(), Error>
+{
+    match &self.usb_device
+    {   
+    Some(usb_device) => usb_device.set_vdd(power)?,
+
+    None => panic!("usb_device not found!")
+    } 
+
+    Ok(())
+    
+}
+
+
+
+}
     
 
 impl Application for  UsbdmApp 
@@ -87,16 +107,17 @@ impl Application for  UsbdmApp
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
     
-            Message::EventOccurred(event) => {
+            Message::EventOccurred(event) => 
+            {
                 if let Event::Window(window::Event::CloseRequested) = event {
                     window::close()
                 } else {
                     Command::none()
                 }
             }
-            Message::Toggled(enabled) => {
+            Message::Toggled(enabled) => 
+            {
                 
-
                 Command::none()
             }
             Message::Exit => window::close(),
@@ -104,13 +125,22 @@ impl Application for  UsbdmApp
             Message::Connect => 
             {    
                 
-            Command::perform(find_usbdm_as(),  Message::FindUsbdmEnum)
+                Command::perform(find_usbdm_as(),  Message::FindUsbdmEnum)
                 
             } 
 
             Message::Disconnect => 
             {    
-            Command::perform(find_usbdm_as(),  Message::FindUsbdmEnum)
+            
+                Command::perform(find_usbdm_as(),  Message::FindUsbdmEnum)
+                
+            } 
+
+            Message::SetPower => 
+            {    
+            
+                self.set_vdd(Vdd::BDM_TARGET_VDD_5V);
+                Command::none()
                 
             } 
 
@@ -124,7 +154,7 @@ impl Application for  UsbdmApp
 
             Message::FindUsbdmEnum(Err(_)) =>
             {
-              // *self = UsbdmApp::Errored(error);
+            
                self.status = UsbdmAppStatus::Errored;
                Command::none()
             } 
@@ -167,7 +197,18 @@ impl Application for  UsbdmApp
         )
         .width(Length::Units(100))
         .padding(20)
-        .on_press(Message::Connect);
+        .on_press(Message::Toggled(true));
+
+
+              
+        let set_power = button(
+            text("Power On")
+                .width(Length::Fill)
+                .horizontal_alignment(alignment::Horizontal::Right),
+        )
+        .width(Length::Units(100))
+        .padding(20)
+        .on_press(Message::SetPower);
 
 
         let conn_error = text("Not Connected".to_string());
@@ -190,6 +231,7 @@ impl Application for  UsbdmApp
             .align_items(Alignment::Center)
             .spacing(20)
             .push(exit)
+            .push(set_power)
             .push(disconnect_usbdm_button)
             .push(conn_ok)
         }
