@@ -13,6 +13,7 @@ pub enum Error {
   // USBDM_ErrorCode,
    Usb(rusb::Error),
    PowerStateError,
+   LostConnection,
 }
 
 impl std::error::Error for Error {}
@@ -161,7 +162,6 @@ impl From<u8> for USBDM_ErrorCode {
     fn from(error : u8) -> USBDM_ErrorCode {
         match error {
            0            =>             USBDM_ErrorCode::BDM_RC_OK  ,
-//     0x10000 =>  USBDM_ErrorCode::BDM_RC_ERROR_HANDLED  ,
            1            =>             USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS,                              // Illegal parameters to command
            2            =>             USBDM_ErrorCode::BDM_RC_FAIL ,                                       // General Fail
            3            =>             USBDM_ErrorCode::BDM_RC_BUSY,                                        // Busy with last command - try again - don't change

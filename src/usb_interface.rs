@@ -14,7 +14,8 @@ pub fn match_vid<T: rusb::UsbContext>(device:&rusb::Device<T>) -> bool
 {
     if let Ok(descriptor) = device.device_descriptor() 
     {
-        descriptor.vendor_id() == USBDM_VID       
+       descriptor.vendor_id() == USBDM_VID    
+  
     } 
     else 
     {
@@ -132,7 +133,7 @@ pub fn read(&self) -> Result<Vec<u8>, Error> {
 
 }
 
-fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error>{
+pub fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error>{
     
     let mut return_code = return_byte[0];
     return_code &= !0xC0;

@@ -94,10 +94,11 @@ fn set_vpp(&self, power: u8 ) -> Result<(), Error>
 
 }
 
-fn refresh_feedback(&mut self)
+pub fn refresh_feedback(&mut self)
 {
     self.feedback = self.usb_device.get_bdm_status().unwrap();
-    println!("{}", self.feedback);
+    self.feedback.print_feedback();
+    //println!("{}", self.feedback);
 }
 
 fn print_usbdm_programmer(&self) -> Result<(), Error>
@@ -110,6 +111,26 @@ fn print_usbdm_programmer(&self) -> Result<(), Error>
     Ok(())
 }
 
+pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
+
+    let mut usb_buf  = [0; 3];
+    let mc56_target  =  7;  // byte to set command
+    let command = "CMD_USBDM_SET_TARGET".to_string();
+
+    usb_buf[0] = 3;            // lenght of command
+    usb_buf[1] = bdm_commands::CMD_USBDM_SET_TARGET;
+    usb_buf[2] = mc56_target;  
+ 
+    let bit = 0x80;           
+    let bitter = usb_buf[1] | bit;
+    usb_buf[1] = bitter;
+
+    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+    let status = self.usb_device.check_usbm_return_code( &answer)?;    // check is status ok
+    Ok(status)
+  }
+  
 }
 
 

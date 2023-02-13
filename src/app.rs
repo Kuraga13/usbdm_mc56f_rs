@@ -58,6 +58,7 @@ enum Message {
     FindUsbdmEnum(Result<rusb::Device<rusb::GlobalContext>, Error>),
     SetPower,
     PowerSelect(PowerSwitchGui),
+    test_feedback,
 }
 
 #[derive(Debug, Clone)]
@@ -79,6 +80,28 @@ struct UsbdmApp
     
 }
 
+impl UsbdmApp
+{
+
+// TODO:
+// 1. this should be on usb interface mean low level!
+// 2. before any query by programmer level we should query this function and return simple error, which can be handled
+// without panic etc.
+// 3. this one not work now, like example
+// 4. we need something like "check not disconnected by user" or don't use option! 
+fn check_connection(&self) -> Result<&Programmer, Error>
+{
+    match &self.programmer
+    {
+    Some(programmer) => Ok(programmer),
+              
+    None => Err(Error::LostConnection),
+   
+    }
+    
+}
+
+}
     
 
 impl Application for  UsbdmApp 
@@ -151,15 +174,16 @@ impl Application for  UsbdmApp
 
             Message::SetPower => 
             {    
-
+            
+             let usbdm = self.check_connection().expect(" Programmer Lost Connection");
              match &self.selected_power
              {   
              
              Some(selected_power) => match selected_power
              {
-                PowerSwitchGui::Off => { &self.programmer.as_ref().expect("Not Programmer").set_vdd_off(); Command::none()}
-                PowerSwitchGui::_3_3v => { &self.programmer.as_ref().expect("Not Programmer").set_vdd_3_3v(); Command::none()}
-                PowerSwitchGui::_5_0v => { &self.programmer.as_ref().expect("Not Programmer").set_vdd_5v();  Command::none()}
+                PowerSwitchGui::Off => {   usbdm.set_vdd_off(); Command::none()}
+                PowerSwitchGui::_3_3v => { usbdm.set_vdd_3_3v(); Command::none()}
+                PowerSwitchGui::_5_0v => { usbdm.set_vdd_5v();  Command::none()}
                 
              } 
                        
@@ -179,8 +203,8 @@ impl Application for  UsbdmApp
 
             Message::FindUsbdmEnum(Ok(_handle)) => 
             {
-                println!("Try claim usb");
-               let usb_int = UsbInterface::new(_handle).expect("Usbdm found but, cant' be configured");
+               println!("Try claim usb");
+               let usb_int = UsbInterface::new(_handle).expect("Programmer Lost Connection");
                self.programmer = Some(Programmer::new(usb_int)); 
                self.status  = UsbdmAppStatus::Connected;
                Command::none()
@@ -191,6 +215,15 @@ impl Application for  UsbdmApp
             {
             
                self.status = UsbdmAppStatus::Errored;
+               Command::none()
+            } 
+
+            Message::test_feedback =>
+            {
+               
+               self.check_connection().expect(" Programmer Lost Connection");
+               let usbdm =  self.programmer.as_mut().expect("");
+               usbdm.refresh_feedback();
                Command::none()
             } 
             
@@ -252,6 +285,16 @@ impl Application for  UsbdmApp
         .on_press(Message::SetPower);
 
 
+        let test_feedback = button(
+            text("test_feedback")
+                .width(Length::Fill)
+                .horizontal_alignment(alignment::Horizontal::Right),
+        )
+        .width(Length::Units(100))
+        .padding(20)
+        .on_press(Message::test_feedback);
+
+
         let conn_error = text("Not Connected".to_string());
         let conn_ok = text("Succes connect Usbdm".to_string());
 
@@ -276,6 +319,7 @@ impl Application for  UsbdmApp
             .push(disconnect_usbdm_button)
             .push(conn_ok)
             .push(pick_list)
+            .push(test_feedback)
         }
 
         UsbdmAppStatus::Errored => {
