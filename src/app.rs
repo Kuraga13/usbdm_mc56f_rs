@@ -6,7 +6,7 @@ use iced::window;
 
 use iced::{
     Alignment, Application, Command, Element, Length, Settings, Subscription,
-    Theme,
+    Theme, Sandbox,
 };
 
 use iced_native::Event;
