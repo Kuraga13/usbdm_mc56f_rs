@@ -16,11 +16,11 @@ use crate::app::{run};
 
 pub fn main() -> iced::Result {
     
-         let mut test = HexBuffer::init();
+         let mut test = HexBuffer::default();
          	
-         let v: Vec<u8>= vec![1, 0x2A, 3];
-         test.fill_buffer(&v,0x0);
-         test.get_byte_in_address(0x1).expect("Can't find address!");
+        // let v: Vec<u8>= vec![1, 0x2A, 3];
+        // test.fill_buffer(&v,0x0);
+         test.get_byte_in_address(0xFFDC).expect("Can't find address!");
         
          run()
     

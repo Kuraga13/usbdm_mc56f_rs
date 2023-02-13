@@ -53,6 +53,28 @@ pub struct HexBuffer
     size : u32,
 
 }
+
+impl Default for HexBuffer
+{
+
+     fn default() -> Self {
+
+        let v: Vec<u8> = vec![0xFF; 0xFFFF]; // default HexBuffer size 0xFFFF, filled 0xFF
+        let mut map_default: HexMap = HashMap::new();
+        let mut address_index: AddressKey = 0;
+        for byte_ in v.iter()
+        {
+            map_default.insert(address_index, OneByte::push(*byte_));
+            address_index += 0x1;
+        } 
+        
+        Self{
+            map    : map_default,
+            size   : 0xFFFF,
+        }
+    }
+}
+
 impl HexBuffer
 {
 
@@ -78,11 +100,13 @@ pub fn fill_buffer(&mut self, buffer : &Vec<u8>, start_address : AddressKey)
 
 pub fn get_byte_in_address(&mut self, address : AddressKey) -> Result<&OneByte, Error>
 {
+    println!("Look values at: {:#04X}", address);
+
     match self.map.get(&address)
     {
         Some(one_byte) => 
         {
-        println!("u8 byte on address: {}", one_byte.byte);
+        println!("u8 byte on address: {:#02X}", one_byte.byte);
         println!("ascii on address: {}", one_byte.ascii);
         Ok(one_byte)
         }
