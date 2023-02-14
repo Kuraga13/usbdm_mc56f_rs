@@ -4,23 +4,23 @@ use packed_struct::prelude::*;
 /// Options passed to the BDM
 #[derive(Debug, PartialEq)]
 pub struct BdmSettings {
-    target_type:                 TargetType,       // Target type - have to be init twice ))) On SetExtOptions + set target command
-pub target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5V) - here you only select target vdd, to power ON need send set vdd command
-    cycle_vdd_on_reset:          bool,             // Cycle target Power when resetting
-    cycle_vdd_on_connect:        bool,             // Cycle target Power if connection problems)
-    leave_target_powered:        bool,             // Leave target power on exit
-    auto_reconnect:              AutoConnect,      // Automatically re-connect to target (for speed change)
-    guess_speed:                 bool,             // Guess speed for target w/o ACKN
-    bdm_clock_source:            BdmClockSource,   // BDM clock source in target
-    use_reset_signal:            bool,             // Whether to use RESET signal on BDM interface
-    mask_interrupts:             bool,             // Whether to mask interrupts when  stepping
-    interface_frequency:         u64,              // JTAG/CFVx/DSC only (kHz), 0 => selected by connection type
-    use_pst_signals:             bool,             // CFVx, PST Signal monitors
-    power_off_duration:          u64,              // How long to remove power (ms)
-    power_on_recovery_interval:  u64,              // How long to wait after power enabled (ms)
-    reset_duration:              u64,              // How long to assert reset (ms)
-    reset_release_interval:      u64,              // How long to wait after reset release to release other signals (ms)
-    reset_recovery_interval:     u64,              // How long to wait after reset sequence completes (ms)
+    pub target_type:                 TargetType,       // Target type - have to be init twice ))) On SetExtOptions + set target command
+    pub target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5V) - here you only select target vdd, to power ON need send set vdd command
+    pub cycle_vdd_on_reset:          bool,             // Cycle target Power when resetting
+    pub cycle_vdd_on_connect:        bool,             // Cycle target Power if connection problems)
+    pub leave_target_powered:        bool,             // Leave target power on exit
+    pub auto_reconnect:              AutoConnect,      // Automatically re-connect to target (for speed change)
+    pub guess_speed:                 bool,             // Guess speed for target w/o ACKN
+    pub bdm_clock_source:            BdmClockSource,   // BDM clock source in target
+    pub use_reset_signal:            bool,             // Whether to use RESET signal on BDM interface
+    pub mask_interrupts:             bool,             // Whether to mask interrupts when  stepping
+    pub interface_frequency:         u64,              // JTAG/CFVx/DSC only (kHz), 0 => selected by connection type
+    pub use_pst_signals:             bool,             // CFVx, PST Signal monitors
+    pub power_off_duration:          u64,              // How long to remove power (ms)
+    pub power_on_recovery_interval:  u64,              // How long to wait after power enabled (ms)
+    pub reset_duration:              u64,              // How long to assert reset (ms)
+    pub reset_release_interval:      u64,              // How long to wait after reset release to release other signals (ms)
+    pub reset_recovery_interval:     u64,              // How long to wait after reset sequence completes (ms)
 }
 
 ///  Target microcontroller types
