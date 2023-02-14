@@ -1,13 +1,6 @@
 use std::fmt;
 use packed_struct::prelude::*;
 
-/// `Settings` 
-/// The idea is to group a huge number of USBDM structures, enumerations and settings into three abstractions.
-///   
-/// 
-/// One is Settings - Here are all the settings that determine the operation of USBDM such as speed, power, etc.
-
-
 /// Options passed to the BDM
 #[derive(Debug, PartialEq)]
 pub struct BdmSettings {
