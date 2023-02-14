@@ -1,6 +1,7 @@
 
 [package]
 name = "veseliy_pjt_usb"
+build = "src/resources/build.rs"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,5 +13,11 @@ byteorder = {version = "1", features = ["i128"]}
 packed_struct = "0.10.0"
 iced = { version = "0.7", features = ["debug"] }
 iced_native = "0.8.0"
-image = "0.23.12"
+image = "0.24.5"
 
+[build-dependencies]
+winresource = "0.1.14"
+
+[package.metadata.winresource]
+ProductName = "open_mc56f_usbdm"
+LegalCopyright = "GPL v2 © 2022"

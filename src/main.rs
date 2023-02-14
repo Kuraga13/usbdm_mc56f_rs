@@ -11,7 +11,6 @@ mod settings;
 
 
 use std::vec;
-
 use crate::hexbuffer::{HexBuffer};
 use crate::app::{run};
 
@@ -19,8 +18,6 @@ use crate::app::{run};
 
 pub fn main() -> iced::Result {
     
-
-  
         
          run()
         
