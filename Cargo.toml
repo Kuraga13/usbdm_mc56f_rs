@@ -1,3 +1,4 @@
+
 [package]
 name = "veseliy_pjt_usb"
 version = "0.1.0"
@@ -9,6 +10,7 @@ edition = "2021"
 rusb = "0.9.1"
 byteorder = {version = "1", features = ["i128"]}
 packed_struct = "0.10.0"
-
 iced = { version = "0.7", features = ["debug"] }
 iced_native = "0.8.0"
+image = "0.23.12"
+

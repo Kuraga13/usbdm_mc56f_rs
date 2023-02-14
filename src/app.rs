@@ -4,10 +4,13 @@ use iced::widget::Row;
 use iced::widget::{button, checkbox, container, text, Column, column, pick_list};
 use iced::window;
 
+
 use iced::{
     Alignment, Application, Command, Element, Length, Settings, Subscription,
     Theme, Sandbox,
 };
+use iced::window::Icon;
+use image::GenericImageView;
 
 use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as};
@@ -208,6 +211,7 @@ impl Application for  UsbdmApp
 
     fn view(&self) -> Element<Message> {
         
+
         let pick_list = pick_list(
             &TargetVddSelect::ALL[..],
             self.selected_power,
@@ -277,7 +281,6 @@ impl Application for  UsbdmApp
             Column::new()
             .align_items(Alignment::Center)
             .spacing(20)
-            .push(exit)
             .push(connect_usbdm_button)
         }
 
@@ -320,8 +323,32 @@ impl Application for  UsbdmApp
 
 
 pub fn run() -> iced::Result {
-    UsbdmApp::run(Settings {
-        exit_on_close_request: false,
-        ..Settings::default()
-    })
+
+    let bytes = include_bytes!("resources/icon.png");
+    let img = image::load_from_memory(bytes).unwrap();
+    let img_dims = img.dimensions();
+    let img_raw = img.into_rgba8().into_raw();
+
+
+    let icon = window::Icon::from_rgba(img_raw, img_dims.0, img_dims.1).unwrap();
+
+    let settings = Settings {
+        window: window::Settings {
+            size: (1024, 768),
+            resizable: true,
+            decorations: true,
+            min_size: Some((800, 600)),
+            max_size: None,
+            transparent: false,
+            always_on_top: false,
+            icon: Some(icon),
+            visible: true,
+            position: Default::default(),
+          
+        },
+        antialiasing: true,
+        ..Default::default()
+    };
+
+    UsbdmApp::run(settings)
 }
