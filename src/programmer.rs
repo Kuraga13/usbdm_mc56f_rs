@@ -2,7 +2,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
 use rusb::{UsbContext};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack};
-use crate::settings::{BdmSettings, TargetVddSelect};
+use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
 use crate::enums::{bdm_commands,vdd,vpp};
 
 
@@ -136,8 +136,46 @@ pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
     self.usb_device.write(&usb_buf,1500)?;                                    // write command
     let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
     let status = self.usb_device.check_usbm_return_code( &answer)?;    // check is status ok
+
+    self.settings.target_type = TargetType::MC56F80xx;
+
     Ok(status)
-  }
+}
+
+pub fn set_bdm_options(&mut self) -> Result<(), Error>{
+
+    let mut usb_buf  = [0; 6];
+
+    usb_buf[0] = 6;            // lenght of command
+    usb_buf[1] = bdm_commands::CMD_USBDM_SET_OPTIONS;
+    
+    let mut options: u8 = 0;
+    if self.settings.cycle_vdd_on_reset {
+        options |= 1<<0;
+    }
+    if self.settings.cycle_vdd_on_connect {
+        options |= 1<<1;
+    }
+    if self.settings.leave_target_powered {
+        options |= 1<<2;
+    }
+    if self.settings.guess_speed {
+        options |= 1<<3;
+    }
+    if self.settings.use_reset_signal {
+        options |= 1<<4;
+    }
+    
+    usb_buf[2] = options;  
+    usb_buf[3] = self.settings.target_voltage as u8;
+    usb_buf[4] = self.settings.bdm_clock_source as u8;
+    usb_buf[5] = self.settings.auto_reconnect as u8;
+
+    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+    let status = self.usb_device.check_usbm_return_code( &answer)?;    // check is status ok
+    Ok(status)
+}
   
 }
 
