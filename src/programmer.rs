@@ -6,12 +6,14 @@ use crate::enums::{bdm_commands,vdd,vpp};
 
 
 
+
 pub struct Programmer {
 
 
     usb_device   : UsbInterface,
     capabilities : Capabilities,
     feedback     : FeedBack,
+
    
     //jtag_buffer_size : u32,
     
@@ -45,6 +47,7 @@ pub fn new(mut device : UsbInterface) -> Self {
             capabilities    : device.get_bdm_version().expect("Error on get bdm ver"),
             feedback        : device.get_bdm_status().expect("Error on feedback"),
             usb_device      : device,
+
         }
     
     }
@@ -71,8 +74,7 @@ pub fn set_vdd_5v(&self) -> Result<(), Error>
     
     self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_5V)?;
     Ok(())
-    
-    
+     
 }
 
 

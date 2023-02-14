@@ -4,6 +4,7 @@ use std::sync::{Arc, RwLock};
 use crate::errors::{Error, USBDM_ErrorCode};
 use crate::enums::{bdm_commands};
 use crate::feedback::{FeedBack};
+use crate::settings::{BdmSettings};
 use packed_struct::prelude::*;
 
 const USBDM_VID: u16 = 0x16D0;

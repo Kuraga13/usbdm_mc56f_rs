@@ -16,7 +16,7 @@ use packed_struct::prelude::*;
 ///
 #[derive(PackedStruct, Debug, Copy, Clone, PartialEq)]
 #[packed_struct(bit_numbering="lsb0",size_bytes="2",endian="lsb",)]
-pub struct FeedBack{
+pub struct FeedBack {
    
     #[packed_field(bits="0")]
     ackn_mode: bool,                                // Supports ACKN ?
