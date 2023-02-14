@@ -4,6 +4,7 @@ use packed_struct::prelude::*;
 /// Options passed to the BDM
 #[derive(Debug, PartialEq)]
 pub struct BdmSettings {
+
     pub target_type:                 TargetType,       // Target type - have to be init twice ))) On SetExtOptions + set target command
     pub target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5V) - here you only select target vdd, to power ON need send set vdd command
     pub cycle_vdd_on_reset:          bool,             // Cycle target Power when resetting
@@ -21,6 +22,7 @@ pub struct BdmSettings {
     pub reset_duration:              u64,              // How long to assert reset (ms)
     pub reset_release_interval:      u64,              // How long to wait after reset release to release other signals (ms)
     pub reset_recovery_interval:     u64,              // How long to wait after reset sequence completes (ms)
+
 }
 
 ///  Target microcontroller types
@@ -148,4 +150,6 @@ mod tests {
         let b: String = format!("{}", BdmSettings::new());
         assert_eq!(a, b);
     }
+
 }
+
