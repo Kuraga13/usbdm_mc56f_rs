@@ -12,38 +12,8 @@ use iced::{
 use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
+use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PowerSwitchGui {
-    Off,
-    _3_3v,
-    _5_0v,
-
-}
-
-impl PowerSwitchGui {
-    const ALL: [PowerSwitchGui; 3] = [
-        PowerSwitchGui::Off,
-        PowerSwitchGui::_3_3v,
-        PowerSwitchGui::_5_0v,
-
-    ];
-}
-
-impl std::fmt::Display for PowerSwitchGui {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                PowerSwitchGui::Off => "Off",
-                PowerSwitchGui::_3_3v => "3.3v",
-                PowerSwitchGui::_5_0v => "5.0v",
-            }
-        )
-    }
-}
 
 
 
@@ -57,7 +27,7 @@ enum Message {
     Disconnect,
     FindUsbdmEnum(Result<rusb::Device<rusb::GlobalContext>, Error>),
     SetPower,
-    PowerSelect(PowerSwitchGui),
+    PowerSelect(TargetVddSelect),
     test_feedback,
 }
 
@@ -76,7 +46,7 @@ struct UsbdmApp
 
   programmer   : Option<Programmer>,
   status       : UsbdmAppStatus,
-  selected_power: Option<PowerSwitchGui>,
+  selected_power: Option<TargetVddSelect>,
     
 }
 
@@ -181,9 +151,11 @@ impl Application for  UsbdmApp
              
              Some(selected_power) => match selected_power
              {
-                PowerSwitchGui::Off => {   usbdm.set_vdd_off(); Command::none()}
-                PowerSwitchGui::_3_3v => { usbdm.set_vdd_3_3v(); Command::none()}
-                PowerSwitchGui::_5_0v => { usbdm.set_vdd_5v();  Command::none()}
+                TargetVddSelect::VddOff => {   usbdm.set_vdd_off(); Command::none()}
+                TargetVddSelect::Vdd3V3 => { usbdm.set_vdd_3_3v(); Command::none()}
+                TargetVddSelect::Vdd5V => { usbdm.set_vdd_5v();  Command::none()}
+                TargetVddSelect::VddEnable => { usbdm.set_vdd_off(); Command::none()}
+                TargetVddSelect::VddDisable => { usbdm.set_vdd_off();  Command::none()}
                 
              } 
                        
@@ -237,7 +209,7 @@ impl Application for  UsbdmApp
     fn view(&self) -> Element<Message> {
         
         let pick_list = pick_list(
-            &PowerSwitchGui::ALL[..],
+            &TargetVddSelect::ALL[..],
             self.selected_power,
             Message::PowerSelect,
         )

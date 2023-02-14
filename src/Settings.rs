@@ -49,7 +49,7 @@ pub target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5
  }
 
 /// Internal Target Voltage supply selection
-#[derive(PrimitiveEnum_u8, Clone, Copy, Debug, PartialEq)]
+#[derive(PrimitiveEnum_u8, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TargetVddSelect {
     VddOff       = 0,     // Target Vdd Off
     Vdd3V3       = 1,     // Target Vdd internal 3.3V
@@ -57,6 +57,32 @@ pub enum TargetVddSelect {
     VddEnable    = 0x10,  // Target Vdd internal at last set level
     VddDisable   = 0x11,  // Target Vdd Off but previously set level unchanged
 }
+
+impl TargetVddSelect {
+    pub const ALL: [TargetVddSelect; 3] = [
+        TargetVddSelect::VddOff,
+        TargetVddSelect::Vdd3V3,
+        TargetVddSelect::Vdd5V,
+
+    ];
+}
+
+impl std::fmt::Display for TargetVddSelect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                TargetVddSelect::VddOff => "Off",
+                TargetVddSelect::Vdd3V3 => "3.3v",
+                TargetVddSelect::Vdd5V => "5.0v",
+                TargetVddSelect::VddEnable => "",
+                TargetVddSelect::VddDisable => "",
+            }
+        )
+    }
+}
+
 
 /// Auto-reconnect options
 #[derive(PrimitiveEnum_u8, Clone, Copy, Debug, PartialEq)]
