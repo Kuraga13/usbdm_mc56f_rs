@@ -6,6 +6,7 @@ pub mod bdm_commands {
    pub const  CMD_USBDM_SET_TARGET              : u8  = 1; 
    pub const  CMD_USBDM_SET_VDD                 : u8  = 2; 
    pub const  CMD_USBDM_GET_BDM_STATUS          : u8  = 4;   // Status of last/current command
+   pub const  CMD_USBDM_SET_OPTIONS             : u8   = 6;
    pub const  CMD_USBDM_GET_VER                 : u8  = 12; 
    pub const  CMD_USBDM_SET_VPP                 : u8  = 42;  // Target Vdd Off but previously set level unchanged
    pub const  CMD_USBDM_JTAG_EXECUTE_SEQUENCE   : u8  = 44;  // Execute sequence of JTAG commands
