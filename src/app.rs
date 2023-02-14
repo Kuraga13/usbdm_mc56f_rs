@@ -175,7 +175,7 @@ impl Application for  UsbdmApp
             Message::SetPower => 
             {    
             
-             let usbdm = self.check_connection().expect(" Programmer Lost Connection");
+             let usbdm =  self.programmer.as_mut().expect("");
              match &self.selected_power
              {   
              

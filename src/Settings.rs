@@ -11,7 +11,7 @@ use packed_struct::prelude::*;
 #[derive(Debug, PartialEq)]
 pub struct BdmSettings {
     target_type:                 TargetType,       // Target type - have to be init twice ))) On SetExtOptions + set target command
-    target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5V) - here you only select target vdd, to power ON need send set vdd command
+pub target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5V) - here you only select target vdd, to power ON need send set vdd command
     cycle_vdd_on_reset:          bool,             // Cycle target Power when resetting
     cycle_vdd_on_connect:        bool,             // Cycle target Power if connection problems)
     leave_target_powered:        bool,             // Leave target power on exit

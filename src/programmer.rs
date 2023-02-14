@@ -2,7 +2,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
 use rusb::{UsbContext};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack};
-use crate::settings::{BdmSettings};
+use crate::settings::{BdmSettings, TargetVddSelect};
 use crate::enums::{bdm_commands,vdd,vpp};
 
 
@@ -55,27 +55,30 @@ pub fn new(mut device : UsbInterface) -> Self {
     
     }
 
-pub fn set_vdd_off(&self) -> Result<(), Error>
+pub fn set_vdd_off(&mut self) -> Result<(), Error>
 {
             
   self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_OFF)?;
+  self.settings.target_voltage = TargetVddSelect::VddOff;
   Ok(())
             
             
 }
-pub fn set_vdd_3_3v(&self) -> Result<(), Error>
+pub fn set_vdd_3_3v(&mut self) -> Result<(), Error>
 {
         
   self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_3V3)?;
+  self.settings.target_voltage = TargetVddSelect::Vdd3V3;
   Ok(())
         
         
 }
 
-pub fn set_vdd_5v(&self) -> Result<(), Error>
+pub fn set_vdd_5v(&mut self) -> Result<(), Error>
 {
     
     self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_5V)?;
+    self.settings.target_voltage = TargetVddSelect::Vdd5V;
     Ok(())
      
 }
