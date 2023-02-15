@@ -247,6 +247,30 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
   
       }
 
+       /// `get_full_capabilities` - get all capabilities, if rx_size > 5 we need upgrade Capabilities struct...
+       pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
+      
+        let mut usb_buf = [0; 2];
+        usb_buf[0] = 2;  // lenght
+        usb_buf[1] = bdm_commands::CMD_USBDM_GET_CAPABILITIES;
+        let command = "CMD_USBDM_GET_CAPABILITIES".to_string();
+  
+        let bit = 0x80;
+        let bitter = usb_buf[1] | bit;
+        usb_buf[1] = bitter;
+  
+        self.write(&usb_buf,1500)?;        // write command
+        let answer = self.read()?;                   //  read
+
+        self.check_usbm_return_code( &answer)?;                                                
+        dbg!(answer);
+        
+        Ok(())
+  
+       }
+
+
+
 
       pub fn set_vdd(&self, power: u8 ) -> Result<(), Error>{
       

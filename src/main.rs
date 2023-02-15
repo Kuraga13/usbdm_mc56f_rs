@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+//#![windows_subsystem = "windows"]
 
 mod errors;
 mod usb_interface;
@@ -14,6 +14,12 @@ use std::vec;
 use crate::hexbuffer::{HexBuffer};
 use crate::app::{run};
 
+
+
+
+
+
+   
 
 
 pub fn main() -> iced::Result {

@@ -59,6 +59,7 @@ pub fn set_vdd_off(&mut self) -> Result<(), Error>
 {
             
   self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_OFF)?;
+  self.usb_device.get_full_capabilities();
   self.settings.target_voltage = TargetVddSelect::VddOff;
   Ok(())
             
