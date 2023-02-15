@@ -6,12 +6,16 @@
  [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 
  Initially, the goal is to work comfortably with the mc56f in Rust. Working via USBDM on mc56f dsp controllers is rather inconvenient, and original the project itself is too large to simply fix something.
+ 
+ Target - USBDM/CF version, supporting DSC.
 
 ###  Done now
 * low level USB interface
 * few command's to work with USBDM
+* Settings module (Set Usbdm Options)
+* Feedback module (Get status and parse bits)
 
 ###  In plan
-* Settings module
-* Feedback module
+* Capabilites. In work now
+* GUI - ideally hex buffer
 * JTAG module & test on mc56f8035
