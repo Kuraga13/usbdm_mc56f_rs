@@ -1,9 +1,12 @@
-use crate::usb_interface::{UsbInterface, find_usbdm_as, BdmInfo};
-use rusb::{UsbContext};
+#![allow(unused)]
+
+use crate::usb_interface::{UsbInterface, BdmInfo};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack};
 use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
-use crate::enums::{bdm_commands,vdd,vpp};
+use crate::enums::{bdm_commands,vdd};
+
+
 
 
 
@@ -30,7 +33,7 @@ pub struct Programmer {
 impl Drop for Programmer{
 
     fn drop(&mut self) {
-        self.set_vdd_off();
+        let _ = self.set_vdd_off();
         drop(&mut self.usb_device);
         println!("Programmer dropped");
     }
@@ -102,24 +105,24 @@ fn set_vpp(&self, power: u8 ) -> Result<(), Error>
 
 }
 
-pub fn refresh_feedback(&mut self)
+pub fn refresh_feedback(&mut self) -> Result<(), Error>
 {
     //self.feedback = self.usb_device.get_bdm_status().unwrap();
     //usbdm.set_bdm_options();
 
-    self.get_full_capabilities();
+    self.get_full_capabilities()?;
     println!("{}", self.bdm_info);
     //self.feedback.print_feedback();
     //println!("{}", self.feedback);
-
+    Ok(())
 }
 
 fn print_usbdm_programmer(&self) -> Result<(), Error>
 
 {
    
-    &self.bdm_info.print_version();
-    &self.feedback.print_feedback();
+    self.bdm_info.print_version();
+    self.feedback.print_feedback();
     
     Ok(())
 }
