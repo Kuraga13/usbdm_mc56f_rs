@@ -1,27 +1,28 @@
 use iced::alignment;
 use iced::executor;
 use iced::widget::Row;
-use iced::widget::{button, checkbox, container, text, Column, column, pick_list};
+use iced::widget::{button, checkbox, horizontal_rule,vertical_rule,row,  container, text, Column, column, pick_list};
 use iced::window;
 
 
 use iced::{
     Alignment, Application, Command, Element, Length, Settings, Subscription,
-    Theme, Sandbox,
+    Sandbox,
 };
 use iced::window::Icon;
 use image::GenericImageView;
+use iced::theme::{self, Theme};
 
 use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-
+use crate::hexbuff_widget::{HexBuffer};
 
 
 #[derive(Debug, Clone)]
-enum Message {
+pub enum Message {
     
     EventOccurred(iced_native::Event),
     Toggled(bool),
@@ -50,6 +51,7 @@ struct UsbdmApp
   programmer   : Option<Programmer>,
   status       : UsbdmAppStatus,
   selected_power: Option<TargetVddSelect>,
+  buff          : HexBuffer,
     
 }
 
@@ -92,6 +94,7 @@ impl Application for  UsbdmApp
         programmer : None,
         status : UsbdmAppStatus::Start, 
         selected_power : None,
+        buff           : HexBuffer::new(),
 
         },
         Command::none()
@@ -200,6 +203,7 @@ impl Application for  UsbdmApp
                let usbdm =  self.programmer.as_mut().expect("");
                usbdm.refresh_feedback();
                usbdm.set_bdm_options();
+        
                Command::none()
             } 
             
@@ -220,15 +224,6 @@ impl Application for  UsbdmApp
         )
         .placeholder("Power:");
 
-
-        let exit = button(
-            text("Exit")
-                .width(Length::Fill)
-                .horizontal_alignment(alignment::Horizontal::Center),
-        )
-        .width(Length::Units(100))
-        .padding(10)
-        .on_press(Message::Exit);
 
 
         let connect_usbdm_button = button(
@@ -259,6 +254,7 @@ impl Application for  UsbdmApp
         )
         .width(Length::Units(100))
         .padding(20)
+        .style(theme::Button::Secondary)
         .on_press(Message::SetPower);
 
 
@@ -275,6 +271,15 @@ impl Application for  UsbdmApp
         let conn_error = text("Not Connected".to_string());
         let conn_ok = text("Succes connect Usbdm".to_string());
 
+
+        let  buffer_row = self.buff.view();
+        let  ascii_row2 = HexBuffer::new().ascii_one_row_line_view();
+
+        let footer =  {Row::new()
+        .align_items(Alignment::Center) 
+        .push(pick_list)  
+        .push(set_power)    };
+
         let content = match self.status {
 
         UsbdmAppStatus::Start => {
@@ -283,6 +288,7 @@ impl Application for  UsbdmApp
             .align_items(Alignment::Center)
             .spacing(20)
             .push(connect_usbdm_button)
+        
         }
 
         UsbdmAppStatus::Connected => {
@@ -290,11 +296,8 @@ impl Application for  UsbdmApp
             Column::new()
             .align_items(Alignment::Center)
             .spacing(20)
-            .push(exit)
-            .push(set_power)
             .push(disconnect_usbdm_button)
             .push(conn_ok)
-            .push(pick_list)
             .push(test_feedback)
         }
 
@@ -303,7 +306,6 @@ impl Application for  UsbdmApp
             Column::new()
             .align_items(Alignment::Center)
             .spacing(20)
-            .push(exit)
             .push(connect_usbdm_button)
             .push(conn_error)
    
@@ -311,13 +313,41 @@ impl Application for  UsbdmApp
                  
         }
     };
+    container( column![
 
-        container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x()
-            .center_y()
-            .into()
+        horizontal_rule(10),
+
+        iced::widget::row![
+            content.width(Length::Fill).align_items(iced::Alignment::Start),
+        ],
+        
+        horizontal_rule(10),
+  
+
+        column![
+            row![
+            buffer_row.height(Length::Shrink),
+            ascii_row2.height(Length::Shrink),]
+        ].width(Length::Fill),
+       
+        horizontal_rule(10),
+
+ 
+        iced::widget::column![
+            footer.width(Length::Fill).align_items(iced::Alignment::End),
+        ],
+
+        
+   
+
+    ]
+    .align_items(iced::Alignment::Center)
+     //.height(Length::Shrink
+    )
+    .into()
+
+
+       
     }
 }
 

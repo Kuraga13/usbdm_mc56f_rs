@@ -8,7 +8,7 @@ mod programmer;
 mod hexbuffer;
 mod app;
 mod settings;
-
+mod hexbuff_widget;
 
 use std::vec;
 use crate::hexbuffer::{HexBuffer};
