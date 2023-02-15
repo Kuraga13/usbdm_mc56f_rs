@@ -199,7 +199,6 @@ impl Application for  UsbdmApp
                self.check_connection().expect(" Programmer Lost Connection");
                let usbdm =  self.programmer.as_mut().expect("");
                usbdm.refresh_feedback();
-               usbdm.set_bdm_options();
                Command::none()
             } 
             
