@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use iced_native::layout::{self, Layout};
 use iced_native::renderer;
 use iced_native::widget::{self, Widget};

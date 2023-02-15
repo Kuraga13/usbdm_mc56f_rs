@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::fmt;
 use packed_struct::prelude::*;
 
