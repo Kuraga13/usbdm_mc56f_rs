@@ -186,7 +186,7 @@ pub fn control_transfer(
    Ok(control_answer) 
 }
 
-pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
+pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
       
     let request_type = 64; //LIBUSB_REQUEST_TYPE_VENDOR
     let request_type = request_type| &self.read_ep;
@@ -212,7 +212,7 @@ pub fn get_bdm_version(&self) -> Result<Capabilities, Error>{
     let calculation = ((raw_bdm_software_version&0xF0)<<12) + ((raw_bdm_software_version&0x0F)<<8);
     
 
-     Ok(Capabilities {
+     Ok(BdmInfo {
 
         bdm_software_version : calculation,
         bdm_hardware_version : version[2],
@@ -301,11 +301,11 @@ impl Drop for UsbInterface{
     }
 }
 
-///`Capabilities`
+///`BdmInfo`
 ///The idea is to group a huge number of USBDM structures, enumerations and settings into three abstractions.
 /// 
-/// One is Capabilities - It includes all data about capabilities USBDM, software and hardware versions, buffer sizes
-pub struct Capabilities {
+/// One is BdmInfo - It includes all data information about USBDM, software and hardware versions, buffer sizes
+pub struct BdmInfo {
 
     bdm_software_version : u32, // Version of USBDM Firmware
     bdm_hardware_version : u8, // Version of USBDM Hardware
@@ -314,7 +314,7 @@ pub struct Capabilities {
 }
 
 
-impl Capabilities {
+impl BdmInfo {
 
 
 
