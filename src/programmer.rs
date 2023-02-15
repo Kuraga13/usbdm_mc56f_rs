@@ -1,4 +1,4 @@
-use crate::usb_interface::{UsbInterface, find_usbdm_as, Capabilities};
+use crate::usb_interface::{UsbInterface, find_usbdm_as, BdmInfo};
 use rusb::{UsbContext};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack};
@@ -12,7 +12,7 @@ pub struct Programmer {
 
 
     usb_device   : UsbInterface,
-    capabilities : Capabilities,
+    bdm_info     : BdmInfo,
     feedback     : FeedBack,
     settings     : BdmSettings,
 
@@ -46,7 +46,7 @@ pub fn new(mut device : UsbInterface) -> Self {
         Self{
     
             
-            capabilities    : device.get_bdm_version().expect("Error on get bdm ver"),
+            bdm_info        : device.get_bdm_version().expect("Error on get bdm ver"),
             feedback        : device.get_bdm_status().expect("Error on feedback"),
             settings        : BdmSettings::default(),
             usb_device      : device,
@@ -113,7 +113,7 @@ fn print_usbdm_programmer(&self) -> Result<(), Error>
 
 {
    
-    &self.capabilities.print_version();
+    &self.bdm_info.print_version();
     &self.feedback.print_feedback();
     
     Ok(())
