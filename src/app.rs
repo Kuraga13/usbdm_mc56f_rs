@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use iced::alignment;
 use iced::executor;
 use iced::widget::Row;
@@ -32,7 +34,7 @@ pub enum Message {
     FindUsbdmEnum(Result<rusb::Device<rusb::GlobalContext>, Error>),
     SetPower,
     PowerSelect(TargetVddSelect),
-    test_feedback,
+    TestFeedback,
 }
 
 #[derive(Debug, Clone)]
@@ -135,7 +137,7 @@ impl Application for  UsbdmApp
             
                 match &self.programmer
                 {   
-                Some(programmer) =>{ 
+                Some(_programmer) =>{ 
                 println!("Try disconnect and drop");
                 drop(&mut self.programmer);
                 self.programmer = None;
@@ -157,11 +159,11 @@ impl Application for  UsbdmApp
              
              Some(selected_power) => match selected_power
              {
-                TargetVddSelect::VddOff => {   usbdm.set_vdd_off(); Command::none()}
-                TargetVddSelect::Vdd3V3 => { usbdm.set_vdd_3_3v(); Command::none()}
-                TargetVddSelect::Vdd5V => { usbdm.set_vdd_5v();  Command::none()}
-                TargetVddSelect::VddEnable => { usbdm.set_vdd_off(); Command::none()}
-                TargetVddSelect::VddDisable => { usbdm.set_vdd_off();  Command::none()}
+                TargetVddSelect::VddOff     => {if let Err(_e) =  usbdm.set_vdd_off()  {Command::none()} else {Command::none()}}
+                TargetVddSelect::Vdd3V3     => {if let Err(_e) =  usbdm.set_vdd_3_3v() {Command::none()} else {Command::none()}}
+                TargetVddSelect::Vdd5V      => {if let Err(_e) =  usbdm.set_vdd_5v()   {Command::none()} else {Command::none()}}
+                TargetVddSelect::VddEnable  => {if let Err(_e) =  usbdm.set_vdd_off()  {Command::none()} else {Command::none()}}
+                TargetVddSelect::VddDisable => {if let Err(_e) =  usbdm.set_vdd_off()  {Command::none()} else {Command::none()}}
                 
              } 
                        
@@ -196,15 +198,13 @@ impl Application for  UsbdmApp
                Command::none()
             } 
 
-            Message::test_feedback =>
+            Message::TestFeedback =>
             {
                
                self.check_connection().expect(" Programmer Lost Connection");
                let usbdm =  self.programmer.as_mut().expect("");
-               usbdm.refresh_feedback();
-               usbdm.set_bdm_options();
-        
-               Command::none()
+               if let Err(_e) = usbdm.refresh_feedback() { return Command::none() };
+               Command::none() 
             } 
             
         }
@@ -265,7 +265,7 @@ impl Application for  UsbdmApp
         )
         .width(Length::Units(100))
         .padding(20)
-        .on_press(Message::test_feedback);
+        .on_press(Message::TestFeedback);
 
 
         let conn_error = text("Not Connected".to_string());

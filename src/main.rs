@@ -1,4 +1,4 @@
-//#![windows_subsystem = "windows"]
+#![allow(unused)]
 
 mod errors;
 mod usb_interface;
