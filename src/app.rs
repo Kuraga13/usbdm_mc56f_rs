@@ -1,21 +1,24 @@
 #![allow(unused)]
 
-use iced::alignment;
 use iced::executor;
 use iced::widget::Row;
-use iced::widget::{button, checkbox, horizontal_rule,vertical_rule,row,  container, text, Column, column, pick_list};
+use crate::styling::{LineStyle};
+
+
+use iced::widget::rule;
+use iced::widget::{button, checkbox, horizontal_rule, vertical_rule,row, container, text, Column, Rule, column, pick_list};
 use iced::window;
 
-
+use iced::alignment::{self, Alignment};
 use iced::{
-    Alignment, Application, Command, Element, Length, Settings, Subscription,
+    Application, Command, Element, Length, Settings, Subscription,
     Sandbox,
 };
 use iced::window::Icon;
 use image::GenericImageView;
 use iced::theme::{self, Theme};
+use iced_native::{Event, Widget};
 
-use iced_native::Event;
 use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
@@ -223,6 +226,7 @@ impl Application for  UsbdmApp
             Message::PowerSelect,
         )
         .placeholder("Power:");
+    
 
 
 
@@ -246,16 +250,7 @@ impl Application for  UsbdmApp
         .on_press(Message::Disconnect);
 
 
-              
-        let set_power = button(
-            text("Set Power")
-                .width(Length::Fill)
-                .horizontal_alignment(alignment::Horizontal::Right),
-        )
-        .width(Length::Units(100))
-        .padding(20)
-        .style(theme::Button::Secondary)
-        .on_press(Message::SetPower);
+
 
 
         let test_feedback = button(
@@ -272,29 +267,64 @@ impl Application for  UsbdmApp
         let conn_ok = text("Succes connect Usbdm".to_string());
 
 
-        let  buffer_row = self.buff.view();
-        let  ascii_row2 = HexBuffer::new().ascii_one_row_line_view();
+        //let  buffer_row = self.buff.view();
+        
 
-        let footer =  {Row::new()
-        .align_items(Alignment::Center) 
-        .push(pick_list)  
-        .push(set_power)    };
+        //let  ascii_row2 = HexBuffer::new().ascii_one_row_line_view();
+       // let  address_row = HexBuffer::new().adress_row();
+       // let  address_row_demo = HexBuffer::new().adress_row();
+       // let  demo_row = HexBuffer::new().demo_row();
 
-        let content = match self.status {
+       let buffer = self.buff.view();
+
+         let footer = match self.status {
+
+            UsbdmAppStatus::Start => {
+            
+                Column::new()
+                .push(Row::new()
+                .push(iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Secondary))
+                .spacing(15)
+                .push(pick_list))
+                
+            }
+    
+            UsbdmAppStatus::Connected => {
+            
+                Column::new()
+                .spacing(15)
+                .push(Row::new()
+                .push(iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Primary).on_press(Message::SetPower))
+                .spacing(15)
+                .push(pick_list))
+               
+            }
+    
+            UsbdmAppStatus::Errored => {
+
+                Column::new()
+                .push(Row::new()
+                .push(iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Secondary))
+                .spacing(15)
+                .push(pick_list))
+                     
+            }
+        };
+
+        let header = match self.status {
 
         UsbdmAppStatus::Start => {
         
             Column::new()
-            .align_items(Alignment::Center)
             .spacing(20)
             .push(connect_usbdm_button)
+            
         
         }
 
         UsbdmAppStatus::Connected => {
         
             Column::new()
-            .align_items(Alignment::Center)
             .spacing(20)
             .push(disconnect_usbdm_button)
             .push(conn_ok)
@@ -304,46 +334,39 @@ impl Application for  UsbdmApp
         UsbdmAppStatus::Errored => {
         
             Column::new()
-            .align_items(Alignment::Center)
             .spacing(20)
-            .push(connect_usbdm_button)
-            .push(conn_error)
-   
-
+            .push(row![connect_usbdm_button, conn_error])
                  
         }
     };
-    container( column![
 
-        horizontal_rule(10),
+    let page_header = {Column::new()
+    .push(iced::widget::row![header.width(Length::Fill).padding(10).align_items(Alignment::Start)])
+    .push(horizontal_rule(10))
+    };
 
-        iced::widget::row![
-            content.width(Length::Fill).align_items(iced::Alignment::Start),
-        ],
-        
-        horizontal_rule(10),
-  
+    
+    let page_footer = {Row::new()
+        .push(iced::widget::row![footer.width(Length::Fill).padding(10).align_items(Alignment::End)])
+        .push(horizontal_rule(10))
+        };
+    
 
-        column![
-            row![
-            buffer_row.height(Length::Shrink),
-            ascii_row2.height(Length::Shrink),]
-        ].width(Length::Fill),
-       
-        horizontal_rule(10),
+    //let vertical_line = Rule::vertical(1)
+    //.style(theme::Rule::Custom(Box::new(LineStyle::new(1))));
 
- 
-        iced::widget::column![
-            footer.width(Length::Fill).align_items(iced::Alignment::End),
-        ],
+    let page_buffer = {Column::new()
+    .push(column![
+        buffer
+    ])
+    .push( horizontal_rule(10))
+    };
 
-        
-   
 
-    ]
-    .align_items(iced::Alignment::Center)
-     //.height(Length::Shrink
-    )
+    column![
+        page_header,
+        page_footer,
+        page_buffer ]
     .into()
 
 

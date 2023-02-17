@@ -13,6 +13,8 @@ byteorder = {version = "1", features = ["i128"]}
 packed_struct = "0.10.0"
 iced = { version = "0.7", features = ["debug"] }
 iced_native = "0.8.0"
+iced_aw = {version = "0.3", default-features = false, features = ["tabs", "grid"] }
+iced_lazy = "0.4.0"
 image = "0.24.5"
 
 [build-dependencies]

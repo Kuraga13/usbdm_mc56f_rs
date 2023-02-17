@@ -6,6 +6,7 @@ mod enums;
 mod feedback;
 mod programmer;
 mod hexbuffer;
+mod styling;
 mod app;
 mod settings;
 mod hexbuff_widget;
