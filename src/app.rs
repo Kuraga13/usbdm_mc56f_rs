@@ -3,16 +3,16 @@
 use iced::executor;
 use iced::widget::Row;
 use crate::styling::{LineStyle};
-
+use iced_lazy::responsive;
 
 use iced::widget::rule;
-use iced::widget::{button, checkbox, horizontal_rule, vertical_rule,row, container, text, Column, Rule, column, pick_list};
+use iced::widget::{Container, button, checkbox, horizontal_rule, vertical_rule,row, container, text, Column, Scrollable, Rule, column, pick_list};
 use iced::window;
 
 use iced::alignment::{self, Alignment};
 use iced::{
     Application, Command, Element, Length, Settings, Subscription,
-    Sandbox,
+    Sandbox, Size,
 };
 
 
@@ -23,7 +23,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-use crate::hexbuff_widget::{HexBuffer};
+use crate::hexbuff_widget::{HexBufferView};
 
 
 #[derive(Debug, Clone)]
@@ -56,7 +56,8 @@ pub struct UsbdmApp
   programmer     : Option<Programmer>,
   status         : UsbdmAppStatus,
   selected_power : Option<TargetVddSelect>,
-  buff           : HexBuffer,
+  buff           : HexBufferView,
+  buff_upd       : bool,
     
 }
 
@@ -99,7 +100,8 @@ impl Application for  UsbdmApp
         programmer : None,
         status : UsbdmAppStatus::Start, 
         selected_power : None,
-        buff           : HexBuffer::new(),
+        buff           : HexBufferView::new(),
+        buff_upd       : true,
 
         },
         Command::none()
@@ -275,7 +277,7 @@ impl Application for  UsbdmApp
        // let  address_row_demo = HexBuffer::new().adress_row();
        // let  demo_row = HexBuffer::new().demo_row();
 
-       let buffer = self.buff.view();
+     
 
          let footer = match self.status {
 
@@ -340,36 +342,34 @@ impl Application for  UsbdmApp
         }
     };
 
-    let page_header = {Column::new()
-    .push(iced::widget::row![header.width(Length::Fill).padding(10).align_items(Alignment::Start)])
-    .push(horizontal_rule(10))
-    };
-
-    
     let page_footer = {Row::new()
         .push(iced::widget::row![footer.width(Length::Fill).padding(10).align_items(Alignment::End)])
         .push(horizontal_rule(10))
         };
-    
+
+    let page_header = {Row::new()
+    .push(iced::widget::row![header.width(Length::Fill).padding(10).align_items(Alignment::Start)])
+    .push(horizontal_rule(10))
+    };
+
 
     //let vertical_line = Rule::vertical(1)
     //.style(theme::Rule::Custom(Box::new(LineStyle::new(1))));
 
-    let page_buffer = {Column::new()
-    .push(column![
-        buffer
-    ])
-    .push( horizontal_rule(10))
-    };
 
+    let page_buffer = column![self.buff.view()];
+  
 
-    column![
-        page_header,
-        page_footer,
-        page_buffer ]
+    let page_buff_scroll = Scrollable::new(page_buffer);
+
+    let programmer_page = Column::new()
+        .push(page_header)
+        .push(page_footer)
+        .push(page_buff_scroll);
+      
+                
+    Container::new(programmer_page)
     .into()
-
-
        
     }
 }

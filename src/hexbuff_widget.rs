@@ -1,29 +1,33 @@
+use iced::theme::{self, Theme};
 use iced::theme::Rule;
 use iced::alignment;
-use iced::widget::{column, container, image, row, text, vertical_rule, horizontal_rule, Column, Container, Row, Space};
+use iced::widget::{text_input, column, container, image, row, text, vertical_rule, horizontal_rule, Column, Container, Row, Space, Text};
 use crate::app::{Message };
-use iced::{Length, Color, Renderer};
+use iced::{ Length, Color, Renderer, Alignment, Element};
 use iced_aw::Grid;
 
 
+const COLUMNS: usize = 3;
 pub struct HexBuffer {
  pub   bytes: Vec<u8>,
  pub   start_addr: u16,
  pub   end_addr: u16,
  pub   lenght_: u16,
  pub   hex_index: usize,
-}
 
+ 
+}
 impl HexBuffer
 {
 
     pub fn new() -> Self {
         HexBuffer {
-            bytes: vec![0xFF; 0xFE00],
+            bytes: vec![0xFF; 0xFFFF],
             start_addr: 0x0000,
-            end_addr: 0xfe00,
+            end_addr: 0x2000,
             lenght_ : 0x0F,
-            hex_index : 0, 
+            hex_index : 0x0F, 
+            //buffer_builded : self.
         }
         
     }
@@ -33,228 +37,146 @@ impl HexBuffer
         self.start_addr = start_addr;
         self.end_addr = end_addr;
     }
+}
 
 
-    fn title(&self) -> String {
-        todo!()
+pub fn build_buffer<'a>(buff : &HexBuffer) -> Element<'a, Message, iced::Renderer<Theme>> {
+
+
+    let mut grid = Grid::with_columns(COLUMNS)
+    .push(Text::new("").style(theme::Text::Color(Color::from([0.05882, 0.72157, 0.10196]))))
+    .push(Text::new("01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F").style(theme::Text::Color(Color::from([0.05882, 0.72157, 0.10196]))))
+    .push(Text::new("ASCII").style(theme::Text::Color(Color::from([0.05882, 0.72157, 0.10196]))));
+   // Add elements to the grid
+
+    let mut rows_amount = (buff.end_addr - buff.start_addr) / buff.lenght_;
+
+    //let hex_index = usize::from(rows_amount);
+    let hex_index = 10;
+    dbg!(hex_index);
+
+
+    for i in 0..hex_index {
+    grid.insert(Text::new(format!("Row {}, Test", (1))));
+    grid.insert(Text::new(format!("Row {}, Test", (2))));
+    grid.insert(Text::new(format!("Row {}, Test", (3))));
     }
-
-    pub fn width(&self) -> iced::Length {
-        iced::Length::Units(20)
-    }
-
-    pub fn height(&self) -> iced::Length {
-        iced::Length::Units(20)
-    }
-
-   // fn layout(&self, _: iced::Layout) -> iced::Layout {
-   //     iced::Layout::default()
- //   }
-
- // .width(Length::FillPortion(2))]
-
- pub fn preapare_buffer(&mut self) 
- {
-    
-    let address = &self.start_addr.to_be_bytes();
-
-
-    self.bytes.insert(0, address[0]);
-    self.bytes.insert(1, address[1]);
-
-
- }
-
- pub fn view(&self) -> Column<'static, Message> {
-
-  
  
-    let  final_buff = self.one_line_column(self.start_addr);
+    let  final_buff = Column::new()
+    .spacing(15)
+    .max_width(600)
+    .padding(10)
+    .width(Length::Fill)
+    .align_items(Alignment::Center)
+    .push(grid)
+    .into();
     
 
     final_buff
+}
 
 
-  }
 
-  pub fn buffer(&self) -> Column<'static, Message> {
 
-    let mut buffer_to_row: Vec<u8> = Vec::new();
-    buffer_to_row.extend(&self.bytes);
 
-    if(buffer_to_row.len() != usize::from(self.end_addr))
-    {
-        dbg!(buffer_to_row.len());
+pub struct HexBufferView
+{
+
+pub   buffer_builded     : Element<'static, Message, iced::Renderer<Theme>>, 
+      hex_buffer         :    HexBuffer,
+
+}
+
+impl HexBufferView
+{
+
+    pub fn new() -> Self {
+
+        let buffer = HexBuffer::new();
+
+        HexBufferView {
+            buffer_builded : build_buffer(&buffer),
+            hex_buffer : buffer,
+        }   
     }
 
-    let rows_amount = (self.end_addr - self.start_addr) / 0x0F;
+    pub fn view<'a>(&self) -> Element<'a, Message, iced::Renderer<Theme>> {
 
-    let mut start_index = self.start_addr;
 
-    let mut ret_colum = Column::new();
-
-    for i in 0..rows_amount
-    {
-        ret_colum = ret_colum.push(
-        self.one_line_column(start_index),
-        );
-        start_index += self.lenght_;
+    
         
-    }
+        //self.buffer_builded
 
-    ret_colum
+        Container::new(build_buffer(&self.hex_buffer))
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(1)
+        .into()
+    
+      }
 
-  }
 
+      
+  pub fn address_row_line(&self, address : u16) -> Vec<String> {
 
-  pub fn one_line_column(&self, start_address : u16) -> Column<'static, Message> {
-
-    let end_line = start_address + self.lenght_;
-
+    let address_slice = &self.hex_buffer.start_addr.to_be_bytes();
   
-
-    let  address_row = self.address_row(start_address);;
-    let  hex_row = self.hex_one_row_line_view(start_address, end_line);
-    let  ascii_row = self.ascii_one_row_line_view(start_address, end_line);
-    let  buffer = column![
-
-        row![
-        address_row.height(Length::Shrink).padding(10),
-    
-        hex_row.height(Length::Shrink).padding(10),
-    
-        ascii_row.height(Length::Shrink).padding(10),] ];
-
-    buffer
-
-
-  }
-
-
-  pub fn demo_row(&self) -> Row<'static, Message> {
-
-
-    let mut demo_row = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F];
-    ///let mut space_start =  Space::new(Length::Units(1), Length::Units(1),);
-
-
-    Row::with_children(
-        demo_row
-        .iter()
-        .enumerate()
-        .map(|( idx, byte, )| {
-            container(
-                column![row!
-                [text(format!("{:02X}", byte)).size(18).style(Color::from([0.05882, 0.72157, 0.10196]))]]
-            .height(Length::Units(25)),
-            )
-        .width(Length::Units(25))// space between bytes in a row Units(20)
-        .center_y()
-        .into() 
-        })       
-        .collect(), 
-   
-      )
-    
-
-
-  }
-
-
- pub fn address_row(&self, address : u16) -> Row<'static, Message> {
-
-    let address_slice = &self.start_addr.to_be_bytes();
-  
-    let adress1: u8 = address_slice[0];
-    let adress2: u8 = address_slice[1];
+    let adress1: String = format!("{:02X}", address_slice[0]);
+    let adress2: String = format!("{:02X}", address_slice[1]);
 
     let mut adress_to_row = Vec::new();
+
+
     adress_to_row.push(adress1);
     adress_to_row.push(adress2);
 
-    Row::with_children(
-        adress_to_row
-        .iter()
-        .enumerate()
-        .map(|( idx, byte)| {
-            container(
-                column![row![text(format!("{:02X}", byte)).size(18).style(Color::from([0.05882, 0.72157, 0.10196]))]]
-            .height(Length::Units(25)),
-            )
-        .width(Length::Units(20))// space between bytes in a row Units(20)
-        .center_y()
-        .into() 
-        })       
-        .collect(), 
-   
-      )
+    adress_to_row
     
 
-
   }
 
+  pub fn hex_row_line(&self, address : u16) -> Vec<u8> {
 
-  fn hex_one_row_line_view(&self, start_line : u16, end_line : u16) -> Row<'static, Message> {
-
-    let start = usize::from(start_line);
-    let end =  usize::from(end_line);
+    let start = usize::from(address);
+    let end =  usize::from(address + self.hex_buffer.lenght_);
  
-    let mut buffer_to_row = &self.bytes[start..end].to_vec();
+    let mut buffer_to_row = &self.hex_buffer.bytes[start..end].to_vec();
 
-    Row::with_children(
-        buffer_to_row
-        .iter()
-        .enumerate()
-        .map(|( idx, byte)| {
-            container(
-                column![row![text(format!("{:02X}", byte)).size(18)]]
-            .height(Length::Units(25)),
-            )
-        .width(Length::Units(25))// space between bytes in a row Units(20)
-        .center_y()
-        .into() 
-        })       
-        .collect(), 
-   
-      )
+    let fin = buffer_to_row.clone();
 
+    fin
+    
 
   }
 
- pub fn ascii_one_row_line_view(&self, start_line : u16, end_line : u16) -> Row<'static, Message> {
 
-    let start = usize::from(start_line);
-    let end =  usize::from(end_line);
+  pub fn ascii_line_row(&self, address : u16) -> Vec<String> {
 
-    let mut ascii_row = &self.bytes[start..end].to_vec();
+    let start = usize::from(address);
+    let end =  usize::from(address + self.hex_buffer.lenght_);
+ 
+    let mut buffer_to_row = &self.hex_buffer.bytes[start..end].to_vec();
+    let mut vec_str = Vec::new();
 
-    Row::with_children(
-        ascii_row
-        .iter()
-        .enumerate()
-        .map(|( idx, byte)| {
-            container(
-                row![text(format!("{}", *byte as char)).size(18),
-                ]
-            .height(Length::Units(25)),
-            )
-      
-        .width(Length::Units(15))// space between bytes in a row Units(20)
-        .center_y()
-        .into() 
-        })       
-        .collect(), 
-   
-      )
-
-
-  }
-
-  
-
-
-    fn update(&mut self, _message: Message) -> iced::Command<Message> {
-        iced::Command::none()
+    for byte in buffer_to_row.iter() {
+        
+        vec_str.push(format!("{:02X}", byte));
     }
 
+    vec_str
+
+  }
+    
+    
 }
+
+
+
+
+
+
+
+
+
+
+
