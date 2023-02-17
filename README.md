@@ -14,8 +14,9 @@
 * few command's to work with USBDM
 * Settings module (Set Usbdm Options)
 * Feedback module (Get status and parse bits)
+* Capabilites (Get BDM Information, like JTAG buffer size etc, parse bytes & save)
+* Jtag Command Builder
 
 ###  In plan
-* Capabilites. In work now
-* GUI - ideally hex buffer
-* JTAG module & test on mc56f8035
+* GUI - ideally hex buffer, In work now
+* Concrete mc56f (target) commands - connect read, write, erase 
