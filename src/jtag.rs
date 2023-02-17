@@ -207,6 +207,24 @@ pub mod jtag {
     //
     pub const JTAG_SET_PADDING          : u8 = 67; // #4x16-bits - sets HDR HIR TDR TIR
 
+    // Common JTAG Commands
+    pub const JTAG_IDCODE_LENGTH        : u8 = 32;
+    pub const JTAG_IDCODE_COMMAND       : u8 = 0x02;
+    pub const JTAG_BYPASS_COMMAND       : u8 = !0x00;
+
+    // Commands to Master JTAG
+    pub const JTAG_MASTER_COMMAND_LENGTH  : u8 = 8;
+    pub const JTAG_TLM_SELECT_COMMAND   : u8 = 0x05;
+
+    pub const TLM_REGISTER_LENGTH       : u8 = 4;
+    pub const TLM_MASTER_SELECT_MASK    : u8 = 0x01;
+    pub const TLM_SLAVE_SELECT_MASK     : u8 = 0x02;
+
+    // Command to Core JTAG
+    pub const JTAG_CORE_COMMAND_LENGTH  : u8 = 4;
+    pub const CORE_ENABLE_ONCE_COMMAND  : u8 = 0x06;
+    pub const CORE_DEBUG_REQUEST_COMMAND  : u8 = 0x07;
+
     fn add_uu(x: u8, y: u8) -> Vec<u8> {
         vec![x, y]
     } 
@@ -214,6 +232,64 @@ pub mod jtag {
     fn add_vu(mut x: Vec<u8>, y: u8) -> Vec<u8> {
         x.push(y);
         x
+    }
+
+    // Read IDCODE from JTAG TAP
+    //
+    // @param idCode   - 32-bit IDCODE returned from TAP
+    // @param resetTAP - Optionally resets the TAP to RUN-TEST/IDLE before reading IDCODE
+    //                   This will enable the MASTER TAP!
+    //
+    // @note - resetTAP=true will enable the Master TAP & disable the Code TAP
+    // @note - Leaves Core TAP in RUN-TEST/IDLE
+    //
+    pub fn read_id_code(commandRegLength :u8, resetTAP: bool) -> Vec<u8> {
+        let mut sequence: Vec<u8> = Vec::new();
+        if resetTAP {
+            sequence.push(JTAG_TEST_LOGIC_RESET);
+        } else {
+            sequence.push(JTAG_NOP);
+        }
+        sequence.push(JTAG_MOVE_IR_SCAN);  // Write IDCODE command to IR
+        sequence.push(JTAG_SET_EXIT_SHIFT_DR);
+        sequence.push(JTAG_SHIFT_OUT_Q(commandRegLength)); 
+        sequence.push(JTAG_IDCODE_COMMAND);
+        sequence.push(JTAG_SET_EXIT_IDLE);  // Read IDCODE from DR
+        sequence.push(JTAG_SHIFT_IN_Q(32));
+        sequence.push(JTAG_END);
+        
+        sequence
+    }
+
+    pub fn read_master_id_code(resetTAP: bool) -> Vec<u8> {
+        read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP)
+    }
+
+    pub fn read_core_id_code(resetTAP: bool) -> Vec<u8> {
+        read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP)
+    }
+
+    //  Enable the Core TAP using the TLM
+    //
+    //  @note - Resets the TAPs before enabling Core TAP
+    //  @note - It appears that the sequence must end with a EXIT_SHIFT_DR?
+    //  @note Leaves Core TAP in RUN-TEST/IDLE to TLM action??
+
+    pub fn enableCoreTAP() -> Vec<u8> {
+        let mut sequence: Vec<u8> = Vec::new();
+        sequence.push(JTAG_TEST_LOGIC_RESET);               // Reset TAP
+        sequence.append(&mut JTAG_REPEAT_16(50)); // ~2.26ms
+        sequence.push(JTAG_NOP);
+        sequence.push(JTAG_END_REPEAT);
+        sequence.push(JTAG_MOVE_IR_SCAN);                   // Write TLM command to IR
+        sequence.push(JTAG_SET_EXIT_SHIFT_DR);
+        sequence.push(JTAG_SHIFT_OUT_Q(JTAG_MASTER_COMMAND_LENGTH));  
+        sequence.push(JTAG_TLM_SELECT_COMMAND);
+        sequence.push(JTAG_SET_EXIT_IDLE);                  // Select Core TAP
+        sequence.push(JTAG_SHIFT_OUT_Q(TLM_REGISTER_LENGTH)); 
+        sequence.push(TLM_SLAVE_SELECT_MASK);
+        sequence.push(JTAG_END);
+        sequence
     }
 }
 
