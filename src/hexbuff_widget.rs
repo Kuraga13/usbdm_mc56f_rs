@@ -1,13 +1,16 @@
 use iced::theme::{self, Theme};
 use iced::theme::Rule;
 use iced::alignment;
-use iced::widget::{text_input, column, container, image, row, text, vertical_rule, horizontal_rule, Column, Container, Row, Space, Text};
-use crate::app::{Message };
+use iced::widget::{Scrollable, column, container, image, row, text, vertical_rule, horizontal_rule, Column, Container, Row, Space, Text};
+use iced_native::widget::image::viewer;
+use crate::menu_window::{Message };
 use iced::{ Length, Color, Renderer, Alignment, Element};
 use iced_aw::Grid;
 
 
 const COLUMNS: usize = 3;
+
+#[derive(Debug, Clone, Default)]
 pub struct HexBuffer {
  pub   bytes: Vec<u8>,
  pub   start_addr: u16,
@@ -24,7 +27,7 @@ impl HexBuffer
         HexBuffer {
             bytes: vec![0xFF; 0xFFFF],
             start_addr: 0x0000,
-            end_addr: 0x2000,
+            end_addr: 0x0050,
             lenght_ : 0x0F,
             hex_index : 0x0F, 
             //buffer_builded : self.
@@ -37,8 +40,42 @@ impl HexBuffer
         self.start_addr = start_addr;
         self.end_addr = end_addr;
     }
-}
 
+
+        pub fn view( &self)  -> Element<Message>  {
+
+        let start = usize::from(self.start_addr);
+        let end =  usize::from(self.end_addr + self.lenght_);
+     
+        ///let mut buffer_to_row = &self.hex_buffer.bytes[start..end].to_vec();
+         let mut buffer_to_row = vec![0xFF; 1000];
+        
+        
+        let scrollable_content = buffer_to_row.iter().enumerate().fold(
+            Column::new()
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .padding(10),
+            |scroll, (i, line)| scroll.push(Text::new(format!("{}. {}", i + 1, line)).size(15)),
+        );
+    
+        let scrollable_content = Scrollable::new(scrollable_content);
+
+        let content1 =  Container::new(scrollable_content)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .max_width(400)
+        .max_height(600)
+        .style(theme::Container::Box)
+        .into();
+
+        content1    
+
+    }
+
+
+
+}
 
 pub fn build_buffer<'a>(buff : &HexBuffer) -> Element<'a, Message, iced::Renderer<Theme>> {
 
@@ -76,13 +113,14 @@ pub fn build_buffer<'a>(buff : &HexBuffer) -> Element<'a, Message, iced::Rendere
 }
 
 
+#[derive(Debug, Copy, Clone, Default)]
+pub struct HexBuffMsg(pub usize, pub usize);
 
 
-
+#[derive(Debug, Clone, Default)]
 pub struct HexBufferView
 {
 
-pub   buffer_builded     : Element<'static, Message, iced::Renderer<Theme>>, 
       hex_buffer         :    HexBuffer,
 
 }
@@ -95,27 +133,86 @@ impl HexBufferView
         let buffer = HexBuffer::new();
 
         HexBufferView {
-            buffer_builded : build_buffer(&buffer),
             hex_buffer : buffer,
         }   
     }
 
-    pub fn view<'a>(&self) -> Element<'a, Message, iced::Renderer<Theme>> {
+    pub fn view(&mut self) ->  Element<HexBuffMsg>  {
 
-
-    
+        let start = usize::from(self.hex_buffer.start_addr);
+        let end =  usize::from(self.hex_buffer.end_addr + self.hex_buffer.lenght_);
+     
+        ///let mut buffer_to_row = &self.hex_buffer.bytes[start..end].to_vec();
+         let mut buffer_to_row = vec![0xFF; 50];
         
-        //self.buffer_builded
+        
+        let scrollable_content = buffer_to_row.iter().enumerate().fold(
+            Column::new()
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .padding(10),
+            |scroll, (i, line)| scroll.push(Text::new(format!("{}. {}", i + 1, line)).size(15)),
+        );
+    
+        let scrollable_content = Scrollable::new(scrollable_content);
 
-        Container::new(build_buffer(&self.hex_buffer))
+        let content1 =  Container::new(scrollable_content)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .max_width(400)
+        .max_height(600)
+        .style(theme::Container::Box);
+
+
+        Column::new()
+        .push(content1)
         .width(Length::Fill)
         .height(Length::Fill)
-        .padding(1)
-        .into()
+        .padding(10)
     
+        .into()
+        
+     
       }
 
+      pub fn view2(&mut self) ->  Element<HexBuffMsg>  {
 
+        let start = usize::from(self.hex_buffer.start_addr);
+        let end =  usize::from(self.hex_buffer.end_addr + self.hex_buffer.lenght_);
+     
+        ///let mut buffer_to_row = &self.hex_buffer.bytes[start..end].to_vec();
+         let mut buffer_to_row = vec![0xFF; 50];
+        
+        
+        let scrollable_content = buffer_to_row.iter().enumerate().fold(
+            Column::new()
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .padding(10),
+            |scroll, (i, line)| scroll.push(Text::new(format!("{}. {}", i + 1, line)).size(15)),
+        );
+    
+        let scrollable_content = Scrollable::new(scrollable_content);
+
+        let content1 =  Container::new(scrollable_content)
+        .width(Length::Shrink)
+        .height(Length::Shrink)
+        .max_width(400)
+        .max_height(600)
+        .style(theme::Container::Box);
+
+
+        Column::new()
+        .push(content1)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(10)
+    
+        .into()
+        
+     
+      }
+   
       
   pub fn address_row_line(&self, address : u16) -> Vec<String> {
 
@@ -169,11 +266,6 @@ impl HexBufferView
     
     
 }
-
-
-
-
-
 
 
 

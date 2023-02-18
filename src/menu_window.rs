@@ -1,4 +1,4 @@
-use iced::widget::column as col;
+use iced::widget::{column as col, Column};
 use iced::widget::{
     button, checkbox, container, horizontal_space, pick_list, row, slider, svg, text, text_input,
     toggler, vertical_slider,
@@ -13,7 +13,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-use crate::hexbuff_widget::{HexBufferView};
+use crate::hexbuff_widget::{HexBufferView, HexBuffMsg, HexBuffer};
 
 
 #[derive(Debug, Clone)]
@@ -66,7 +66,8 @@ pub enum Message {
     TextChange(String),
     SizeOption(SizeOption),
 
-
+    Init,
+    Start,
     Connect,
     Disconnect,
     PowerSelect(TargetVddSelect),
@@ -80,6 +81,9 @@ pub struct App {
     programmer     : Option<Programmer>,
 
     status         : UsbdmAppStatus,
+    buff           : Vec<HexBuffer>,
+
+    buffer_view    : Vec<HexBufferView>,
 
     title: String,
     value: u8,
@@ -100,12 +104,15 @@ impl Application for App {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let theme = iced::Theme::custom(theme::Palette {
             primary: Color::from([0.23, 0.61, 0.81]),
-            danger: Color::from([0.79, 0.08, 0.08]),
+            danger: Color::from([1.0, 0.00, 0.00]),
             success: Color::from([0.70, 0.75, 0.02]),
             ..iced::Theme::Light.palette()
         });
 
-        (
+        (   
+            
+            
+
             Self {
                 title: "Usbdm_rs".to_string(),
                 value: 0,
@@ -121,6 +128,8 @@ impl Application for App {
                 selected_power : TargetVddSelect::VddOff,
                 programmer     : None,
                 status         : UsbdmAppStatus::Start,
+                buff           : vec![HexBuffer::new()],
+                buffer_view    : vec![HexBufferView::default()],
             },
             iced::Command::none(),
         )
@@ -183,6 +192,20 @@ impl Application for App {
                 self.title = self.size_option.to_string();
             }
 
+            Message::Init => 
+            {
+                
+                self.status  = UsbdmAppStatus::Start;
+
+            }
+
+            Message::Start => 
+            {
+                
+            
+
+            }
+            
 
             Message::Connect => 
             {    
@@ -256,6 +279,9 @@ impl Application for App {
                
                let usbdm =  self.programmer.as_mut().expect("");
                if let Err(_e) = usbdm.refresh_feedback() {  };
+               usbdm.set_bdm_options();
+               usbdm.set_target_mc56f();
+               usbdm.dsc_connect();
     
             } 
 
@@ -278,7 +304,7 @@ impl Application for App {
            UsbdmAppStatus::Start      =>  
            {
 
-            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Destructive)
+            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(iced::theme::Button::Custom(Box::new(PowerButtonStyle {})))
 
            }  
               
@@ -307,11 +333,12 @@ impl Application for App {
 
         let mb = match self.size_option {
             SizeOption::Uniform => {
-                MenuBar::new(vec![menu_1(self), menu_2(self), menu_3(self), menu_4(self)])
+                MenuBar::new(vec![menu_1_1(self), menu_1(self), menu_2(self), menu_3(self), menu_4(self)])
                     .item_width(ItemWidth::Uniform(180))
                     .item_height(ItemHeight::Uniform(25))
             }
             SizeOption::Static => MenuBar::new(vec![
+                menu_1_1(self),
                 menu_1(self),
                 menu_2(self),
                 menu_3(self),
@@ -325,7 +352,7 @@ impl Application for App {
         .bounds_expand(30)
         .path_highlight(Some(PathHighlight::MenuActive));
 
-        let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, pick_list_power, set_power_button)
+        let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, horizontal_space(Length::Units(3)), pick_list_power, horizontal_space(Length::Units(3)), set_power_button)
             .padding([2, 8])
             .align_items(alignment::Alignment::Center);
 
@@ -337,6 +364,8 @@ impl Application for App {
             };
         let top_bar = container(r).width(Length::Fill).style(top_bar_style);
 
+       
+
         let back_style: fn(&iced::Theme) -> container::Appearance = |theme| container::Appearance {
             background: Some(theme.extended_palette().primary.base.color.into()),
             ..Default::default()
@@ -346,13 +375,43 @@ impl Application for App {
             .height(Length::Fill)
             .style(back_style);
 
+        //let page_buffer = Column::with_children(
+        //    self.buff.iter().map(HexBuffer::view).collect(),
+       // );
+               
+
         let c = if self.flip {
-            col![back, top_bar,]
+            col![back, top_bar, ]
         } else {
             col![top_bar, back,]
         };
 
         c.into()
+    }
+
+ 
+}
+
+struct PowerButtonStyle;
+impl button::StyleSheet for PowerButtonStyle {
+    type Style = iced::Theme;
+
+    fn active(&self, style: &Self::Style) -> button::Appearance {
+        button::Appearance {
+            text_color: style.extended_palette().background.base.text,
+            background: Some(Color::TRANSPARENT.into()),
+            ..Default::default()
+        }
+    }
+
+    fn hovered(&self, style: &Self::Style) -> button::Appearance {
+        let plt = style.extended_palette();
+
+        button::Appearance {
+            background: Some(plt.primary.weak.color.into()),
+            text_color: plt.primary.weak.text,
+            ..self.active(style)
+        }
     }
 }
 
@@ -621,6 +680,79 @@ fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
             connect_button_item("Connect", Message::Connect),
             programmer_button_item("Read", Message::TestFeedback, &_app.status),
             programmer_button_item("Write", Message::TestFeedback, &_app.status),
+            programmer_button_item("Erase", Message::TestFeedback, &_app.status),
+        ],
+    )
+    .width(110);
+
+    root
+}
+
+
+fn menu_1_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
+    let sub_5 = debug_sub_menu(
+        "SUB",
+        vec![
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+        ],
+    );
+    let sub_4 = debug_sub_menu(
+        "SUB",
+        vec![
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+        ],
+    )
+    .width(180);
+    let sub_3 = debug_sub_menu(
+        "More sub menus",
+        vec![
+            debug_item("You can"),
+            debug_item("nest menus"),
+            sub_4,
+            debug_item("how ever"),
+            debug_item("You like"),
+            sub_5,
+        ],
+    );
+    let sub_2 = debug_sub_menu(
+        "Another sub menu",
+        vec![
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+            sub_3,
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+        ],
+    )
+    .width(140);
+    let sub_1 = debug_sub_menu(
+        "A sub menu",
+        vec![
+            debug_item("Item"),
+            debug_item("Item"),
+            sub_2,
+            debug_item("Item"),
+            debug_item("Item"),
+            debug_item("Item"),
+        ],
+    )
+    .width(220);
+
+    let root = MenuTree::with_children(
+        debug_button("File"),
+        vec![
+            connect_button_item("Open", Message::Connect),
+            programmer_button_item("Save", Message::TestFeedback, &_app.status),
+            programmer_button_item("Save As", Message::TestFeedback, &_app.status),
             programmer_button_item("Erase", Message::TestFeedback, &_app.status),
         ],
     )

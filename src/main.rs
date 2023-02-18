@@ -2,12 +2,12 @@
 
 mod errors;
 mod usb_interface;
+mod jtag;
 mod enums;
 mod feedback;
 mod programmer;
 mod hexbuffer;
 mod styling;
-mod app;
 mod menu_window;
 mod settings;
 mod hexbuff_widget;
@@ -17,7 +17,6 @@ use iced::window::Icon;
 use iced::window;
 use image::GenericImageView;
 use iced::{ Application, Settings, };
-use crate::app::{UsbdmApp};
 use crate::menu_window::{App};
 
 pub fn main() -> iced::Result {

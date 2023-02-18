@@ -7,7 +7,7 @@ use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
 use crate::enums::{bdm_commands,vdd};
 
 
-
+use crate::jtag::*;
 
 
 
@@ -123,6 +123,23 @@ fn print_usbdm_programmer(&self) -> Result<(), Error>
    
     self.bdm_info.print_version();
     self.feedback.print_feedback();
+    
+    Ok(())
+}
+
+pub fn dsc_connect(&self) -> Result<(), Error>
+
+{
+    let id_code_sequence = jtag::read_master_id_code(true); // first id request we reset CORE TAP
+
+    self.usb_device.exec_jtag_seq(id_code_sequence, 0x04);
+
+    let enable_core_tap_sequense = jtag::enableCoreTAP(); // on second not
+
+    self.usb_device.exec_jtag_seq(enable_core_tap_sequense, 0);
+
+    let id_code_sequence2 = jtag::read_master_id_code(true); // on second not
+
     
     Ok(())
 }
