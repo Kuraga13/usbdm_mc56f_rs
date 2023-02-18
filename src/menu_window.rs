@@ -9,7 +9,7 @@ use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
 
 
-use crate::usb_interface::{UsbInterface, find_usbdm_as};
+use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
@@ -67,8 +67,11 @@ pub enum Message {
     SizeOption(SizeOption),
 
 
+    Connect,
+    Disconnect,
     PowerSelect(TargetVddSelect),
     SetPower,
+    TestFeedback,
 }
 
 pub struct App {
@@ -97,12 +100,14 @@ impl Application for App {
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let theme = iced::Theme::custom(theme::Palette {
             primary: Color::from([0.23, 0.61, 0.81]),
+            danger: Color::from([0.79, 0.08, 0.08]),
+            success: Color::from([0.70, 0.75, 0.02]),
             ..iced::Theme::Light.palette()
         });
 
         (
             Self {
-                title: "Menu Test".to_string(),
+                title: "Usbdm_rs".to_string(),
                 value: 0,
                 check: false,
                 toggle: false,
@@ -179,6 +184,50 @@ impl Application for App {
             }
 
 
+            Message::Connect => 
+            {    
+              let check_connect = find_usbdm();
+
+              match check_connect
+                 {
+                    Ok(check_connect) =>
+                    {
+
+                    println!("Try claim usb");
+                    let usb_int = UsbInterface::new(check_connect).expect("Programmer Lost Connection");
+                    self.programmer = Some(Programmer::new(usb_int)); 
+                    self.status  = UsbdmAppStatus::Connected;
+
+
+                    }
+                    Err(_e) =>
+                    {
+                    dbg!("Programmer not connected");
+                    self.status = UsbdmAppStatus::Errored;
+                    self.title =  String::from("Programmer not found! Check connection").clone();
+                    }
+                 }
+            } 
+
+            Message::Disconnect => 
+            {    
+            
+                match &self.programmer
+                {   
+                Some(_programmer) =>{ 
+                println!("Try disconnect and drop");
+                drop(&mut self.programmer);
+                self.programmer = None;
+                self.status  = UsbdmAppStatus::Start; 
+                
+                }
+                    
+                None => {}
+                } 
+                
+            } 
+
+
             Message::SetPower => 
             {    
             
@@ -202,6 +251,15 @@ impl Application for App {
             }
 
 
+            Message::TestFeedback =>
+            {
+               
+               let usbdm =  self.programmer.as_mut().expect("");
+               if let Err(_e) = usbdm.refresh_feedback() {  };
+    
+            } 
+
+
 
         }
         iced::Command::none()
@@ -220,7 +278,7 @@ impl Application for App {
            UsbdmAppStatus::Start      =>  
            {
 
-            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Secondary)
+            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Destructive)
 
            }  
               
@@ -332,18 +390,69 @@ fn base_button<'a>(
         .on_press(msg)
 }
 
+fn base_button_empty<'a>(
+    content: impl Into<Element<'a, Message, iced::Renderer>>,
+) -> button::Button<'a, Message, iced::Renderer> {
+    button(content)
+        .padding([4, 8])
+        .style(iced::theme::Button::Custom(Box::new(ButtonStyle {})))
+        
+}
+
 fn labeled_button<'a>(label: &str, msg: Message) -> button::Button<'a, Message, iced::Renderer> {
+
+
     base_button(
         text(label)
             .width(Length::Fill)
             .height(Length::Fill)
             .vertical_alignment(alignment::Vertical::Center),
-        msg,
-    )
+
+        msg,)
+
+}
+
+
+fn empty_labeled_button<'a>(label: &str) -> button::Button<'a, Message, iced::Renderer> {
+
+
+    base_button_empty(
+        text(label)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .vertical_alignment(alignment::Vertical::Center),)
+
 }
 
 fn debug_button<'a>(label: &str) -> button::Button<'a, Message, iced::Renderer> {
     labeled_button(label, Message::Debug(label.into()))
+}
+
+
+fn connect_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+}
+
+fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppStatus) -> MenuTree<'a, Message, iced::Renderer> {
+
+    match state
+    {
+    
+    UsbdmAppStatus::Connected =>
+    {
+        MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+    }
+    
+    _ => 
+    {
+        MenuTree::new(empty_labeled_button(label).width(Length::Fill).height(Length::Fill))
+    }
+
+    }
+
+
+
+    
 }
 
 fn debug_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
@@ -507,14 +616,12 @@ fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     .width(220);
 
     let root = MenuTree::with_children(
-        debug_button("Nested Menus"),
+        debug_button("Programmer"),
         vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            sub_1,
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
+            connect_button_item("Connect", Message::Connect),
+            programmer_button_item("Read", Message::TestFeedback, &_app.status),
+            programmer_button_item("Write", Message::TestFeedback, &_app.status),
+            programmer_button_item("Erase", Message::TestFeedback, &_app.status),
         ],
     )
     .width(110);
@@ -566,7 +673,7 @@ fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     let root = MenuTree::with_children(
         debug_button("Widgets"),
         vec![
-            debug_item("You can use any widget"),
+            programmer_button_item("Test_Feedback", Message::TestFeedback, &app.status),
             debug_item("as a menu item"),
             bt,
             cb,
@@ -606,10 +713,10 @@ fn menu_3<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     );
 
     let root = MenuTree::with_children(
-        debug_button("Controls"),
+        debug_button("View"),
         vec![
             MenuTree::new(
-                labeled_button("Flip", Message::Flip)
+                labeled_button("Inverse View", Message::Flip)
                     .width(Length::Fill)
                     .height(Length::Fill),
             ),
