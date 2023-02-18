@@ -16,6 +16,22 @@ use crate::programmer::{Programmer};
 use crate::hexbuff_widget::{HexBufferView};
 
 
+#[derive(Debug, Clone)]
+enum UsbdmAppStatus {
+    
+    Start,
+    Connected,
+    //Errored(Error),
+    Errored,
+
+}
+
+
+
+
+
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SizeOption {
@@ -60,6 +76,8 @@ pub struct App {
     selected_power : TargetVddSelect,
     programmer     : Option<Programmer>,
 
+    status         : UsbdmAppStatus,
+
     title: String,
     value: u8,
     check: bool,
@@ -78,7 +96,7 @@ impl Application for App {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
         let theme = iced::Theme::custom(theme::Palette {
-            primary: Color::from([0.45, 0.25, 0.57]),
+            primary: Color::from([0.23, 0.61, 0.81]),
             ..iced::Theme::Light.palette()
         });
 
@@ -97,6 +115,7 @@ impl Application for App {
 
                 selected_power : TargetVddSelect::VddOff,
                 programmer     : None,
+                status         : UsbdmAppStatus::Start,
             },
             iced::Command::none(),
         )
@@ -196,6 +215,31 @@ impl Application for App {
             Message::PowerSelect,
         );
 
+        let set_power_button = match self.status
+        {
+           UsbdmAppStatus::Start      =>  
+           {
+
+            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Secondary)
+
+           }  
+              
+           UsbdmAppStatus::Connected  =>  
+           {
+
+            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Primary).on_press(Message::SetPower)
+
+           }
+           UsbdmAppStatus::Errored    => 
+           {
+
+            iced::widget::Button::new(iced::widget::Text::new("VDD")).style(theme::Button::Secondary)
+
+           }    
+
+        };
+        
+
 
         let pick_size_option = pick_list(
             &SizeOption::ALL[..],
@@ -223,7 +267,7 @@ impl Application for App {
         .bounds_expand(30)
         .path_highlight(Some(PathHighlight::MenuActive));
 
-        let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, pick_list_power)
+        let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, pick_list_power, set_power_button)
             .padding([2, 8])
             .align_items(alignment::Alignment::Center);
 
