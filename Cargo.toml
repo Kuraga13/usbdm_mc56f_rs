@@ -16,9 +16,12 @@ iced = { version = "0.7", features = ["debug", "svg"] }
 iced_native = "0.9.0"
 iced_lazy = "0.5.0"
 image = "0.24.5"
-iced_aw = {  path = "../iced_aw" , features = [ "menu", "quad", "icon_text", "tabs", "grid"] }
 
-
+[dependencies.iced_aw] 
+git = "https://github.com/iced-rs/iced_aw"
+rev="b66f93bcb27d4ea94c7e6d68ac4cf78535ebbabc" #latest commit as of 18.02.2023 v0.3.0
+default-features = false 
+features = [ "menu", "quad", "icon_text", "tabs", "grid"]
 
 [build-dependencies]
 winresource = "0.1.14"
