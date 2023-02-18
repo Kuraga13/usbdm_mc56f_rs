@@ -19,6 +19,9 @@ use iced::{
 use iced::theme::{self, Theme};
 use iced_native::{Event, Widget};
 
+use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
+use iced_aw::quad;
+
 use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};

@@ -8,6 +8,7 @@ mod programmer;
 mod hexbuffer;
 mod styling;
 mod app;
+mod menu_window;
 mod settings;
 mod hexbuff_widget;
 
@@ -17,6 +18,7 @@ use iced::window;
 use image::GenericImageView;
 use iced::{ Application, Settings, };
 use crate::app::{UsbdmApp};
+use crate::menu_window::{App};
 
 pub fn main() -> iced::Result {
     
@@ -30,8 +32,9 @@ pub fn main() -> iced::Result {
     let icon = window::Icon::from_rgba(img_raw, img_dims.0, img_dims.1).unwrap();
 
     let settings = Settings {
-        window: window::Settings {
-            size: (1024, 768),
+        default_text_size: 15,
+        window: iced::window::Settings{
+            size: (800, 500),
             resizable: true,
             decorations: true,
             min_size: Some((800, 600)),
@@ -40,13 +43,14 @@ pub fn main() -> iced::Result {
             always_on_top: false,
             icon: Some(icon),
             visible: true,
-            position: Default::default(),
-          
+            ..Default::default()
+            //position: Default::default(),
         },
-        antialiasing: true,
+        //antialiasing: true,
         ..Default::default()
     };
 
-    UsbdmApp::run(settings)
+    App::run(settings)
+ 
         
 }
