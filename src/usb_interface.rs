@@ -65,6 +65,8 @@ pub struct UsbInterface
 }
 
 
+
+
 impl  UsbInterface
 {
 
@@ -73,14 +75,14 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
     
     let config = device.active_config_descriptor()?;
     let interface = config.interfaces().next();
-    let interface_descriptor = interface.unwrap().descriptors().next().unwrap();
+    let interface_descriptor = interface.ok_or(Error::Usb(rusb::Error::NotFound))?.descriptors().next().ok_or(Error::Usb(rusb::Error::NotFound))?;
 
 
     let mut handle = device.open()?;
     let number  = interface_descriptor.interface_number();
     handle.claim_interface(number)?;
     
-    let device_descriptor = device.device_descriptor().unwrap();
+    let device_descriptor = device.device_descriptor()?;
     
     let find_endpoint = |direction, transfer_type| {
         interface_descriptor
@@ -91,8 +93,8 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
     };
 
     Ok(UsbInterface {
-        read_ep: find_endpoint(rusb::Direction::In, rusb::TransferType::Bulk).unwrap(),
-        write_ep: find_endpoint(rusb::Direction::Out, rusb::TransferType::Bulk).unwrap(),
+        read_ep: find_endpoint(rusb::Direction::In, rusb::TransferType::Bulk)?,
+        write_ep: find_endpoint(rusb::Direction::Out, rusb::TransferType::Bulk)?,
         model: handle.read_product_string_ascii(&device_descriptor)?,
         serial_number: handle.read_serial_number_string_ascii(&device_descriptor)?,
         //handle: Arc::new(RwLock::new(handle)),

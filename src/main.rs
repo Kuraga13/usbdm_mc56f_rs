@@ -1,16 +1,13 @@
 #![allow(unused)]
-
-mod errors;
 mod usb_interface;
+mod gui;
+mod menu_window;
+mod errors;
 mod jtag;
 mod enums;
 mod feedback;
 mod programmer;
-mod hexbuffer;
-mod styling;
-mod menu_window;
 mod settings;
-mod hexbuff_widget;
 mod target;
 
 use std::vec;

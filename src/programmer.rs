@@ -17,18 +17,11 @@ pub struct Programmer {
     usb_device   : UsbInterface,
     bdm_info     : BdmInfo,
     feedback     : FeedBack,
-    settings     : BdmSettings,
+    settings     : BdmSettings, 
+    
+}
 
-   
-    //jtag_buffer_size : u32,
-    
-    
-    
-    //state_from_bdm : BdmStatus,
-    
-    
-    
-    }
+
 
 impl Drop for Programmer{
 

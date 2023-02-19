@@ -35,6 +35,21 @@ pub struct FeedBack {
      
 }
 
+impl Default for FeedBack {
+   fn default() -> Self { 
+      FeedBack {
+           ackn_mode:              false,
+           reset_recent:           false,
+           reset_state:            false,
+           speed_mode:             ConnectionState::NoInfo,
+           halt_state:             false,
+           power_state:            PowerState::None,
+           vpp_state:              VppState::Off,
+       }
+   } 
+}
+
+
 impl FeedBack{
 
 

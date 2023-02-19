@@ -15,7 +15,7 @@ use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
 use crate::jtag::jtag::{JtagInterface};
 use crate::target::{Target};
-use crate::hexbuff_widget::{HexBufferView, HexBuffMsg, HexBuffer};
+use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer};
 
 
 #[derive(Debug, Clone)]
@@ -104,6 +104,8 @@ impl Application for App {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
+
+
         let theme = iced::Theme::custom(theme::Palette {
             primary: Color::from([0.23, 0.61, 0.81]),
             danger: Color::from([1.0, 0.00, 0.00]),
