@@ -295,30 +295,6 @@ pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
         Ok(())
       }
 
-      
-      pub fn exec_jtag_seq(&self, mut jtag_seq : Vec<u8>,  answer_lenght : u8) -> Result<(), Error>{
-      
-    
-        let command = "CMD_USBDM_JTAG_EXECUTE_SEQUENCE".to_string();
-
-        let command_leght : u8 = 0x4 + jtag_seq.len() as u8;
-  
-        let mut full_command : Vec<u8> = Vec::new();
-        full_command.push(command_leght);
-        full_command.push(bdm_commands::CMD_USBDM_JTAG_EXECUTE_SEQUENCE | 0x80);
-        full_command.push(answer_lenght);
-        full_command.push(jtag_seq.len() as u8);
-        full_command.append(&mut jtag_seq);
-
-  
-        self.write(&full_command.as_slice(),1500)?;                                    // write command
-        let answer = self.read().expect("Can't read answer");          // read status from bdm
-       // self.check_usbm_return_code(command, &answer)?;               // check is status ok
-        Ok(())
-      } 
-
-
-
 }
 
 

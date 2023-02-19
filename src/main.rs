@@ -11,6 +11,7 @@ mod styling;
 mod menu_window;
 mod settings;
 mod hexbuff_widget;
+mod target;
 
 use std::vec;
 use iced::window::Icon;
