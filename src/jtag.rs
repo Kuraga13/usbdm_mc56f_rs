@@ -1,7 +1,11 @@
 #[allow(non_snake_case)]
 
 pub mod jtag {
+    
+    use crate::programmer::Programmer;
+    use crate::errors::Error;
 
+    
     pub const JTAG_COMMAND_MASK        : u8 = 0x7<<5;
    
     pub const JTAG_MISC0               : u8 = 0<<5;
@@ -38,7 +42,7 @@ pub mod jtag {
 
     pub const JTAG_DEBUG_ON            : u8 = 19;  // Turn on debugging messages (on PC interpreter)
     pub const JTAG_DEBUG_OFF           : u8 = 63;  // Turn off debugging messages (on PC interpreter)
-
+  
     //============================================================================================
     // The following have no operands
     pub const fn JTAG_SUB(x: u8)      -> u8 { 20 + x }
@@ -234,48 +238,57 @@ pub mod jtag {
         x
     }
 
-    // Read IDCODE from JTAG TAP
-    //
-    // @param idCode   - 32-bit IDCODE returned from TAP
-    // @param resetTAP - Optionally resets the TAP to RUN-TEST/IDLE before reading IDCODE
-    //                   This will enable the MASTER TAP!
-    //
-    // @note - resetTAP=true will enable the Master TAP & disable the Code TAP
-    // @note - Leaves Core TAP in RUN-TEST/IDLE
-    //
-    pub fn read_id_code(commandRegLength :u8, resetTAP: bool) -> Vec<u8> {
-        let mut sequence: Vec<u8> = Vec::new();
-        if resetTAP {
-            sequence.push(JTAG_TEST_LOGIC_RESET);
-        } else {
-            sequence.push(JTAG_NOP);
+    pub struct JtagInterface {
+        bdm_prog: Programmer,
         }
-        sequence.push(JTAG_MOVE_IR_SCAN);  // Write IDCODE command to IR
-        sequence.push(JTAG_SET_EXIT_SHIFT_DR);
-        sequence.push(JTAG_SHIFT_OUT_Q(commandRegLength)); 
-        sequence.push(JTAG_IDCODE_COMMAND);
-        sequence.push(JTAG_SET_EXIT_IDLE);  // Read IDCODE from DR
-        sequence.push(JTAG_SHIFT_IN_Q(32));
-        sequence.push(JTAG_END);
-        
-        sequence
-    }
 
-    pub fn read_master_id_code(resetTAP: bool) -> Vec<u8> {
-        read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP)
-    }
+    impl JtagInterface{
+        pub fn init(&mut self, bdm: Programmer) {
+            self.bdm_prog = bdm;
+            }
 
-    pub fn read_core_id_code(resetTAP: bool) -> Vec<u8> {
-        read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP)
-    }
+        // Read IDCODE from JTAG TAP
+        //
+        // @param idCode   - 32-bit IDCODE returned from TAP
+        // @param resetTAP - Optionally resets the TAP to RUN-TEST/IDLE before reading IDCODE
+        //                   This will enable the MASTER TAP!
+        //
+        // @note - resetTAP=true will enable the Master TAP & disable the Code TAP
+        // @note - Leaves Core TAP in RUN-TEST/IDLE
+        //
+        fn read_id_code(&self, commandRegLength :u8, resetTAP: bool) -> Result<(Vec<u8>), Error> {
+            let mut sequence: Vec<u8> = Vec::new();
+            if resetTAP {
+                sequence.push(JTAG_TEST_LOGIC_RESET);
+            } else {
+                sequence.push(JTAG_NOP);
+            }
+            sequence.push(JTAG_MOVE_IR_SCAN);  // Write IDCODE command to IR
+            sequence.push(JTAG_SET_EXIT_SHIFT_DR);
+            sequence.push(JTAG_SHIFT_OUT_Q(commandRegLength)); 
+            sequence.push(JTAG_IDCODE_COMMAND);
+            sequence.push(JTAG_SET_EXIT_IDLE);  // Read IDCODE from DR
+            sequence.push(JTAG_SHIFT_IN_Q(32));
+            sequence.push(JTAG_END);
 
-    //  Enable the Core TAP using the TLM
+            self.bdm_prog.exec_jtag_seq(sequence, 4)
+        }
+
+        pub fn read_master_id_code(&self, resetTAP: bool) -> Result<(Vec<u8>), Error> {
+            self.read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP)
+        }
+
+        pub fn read_core_id_code(&self, resetTAP: bool) -> Result<(Vec<u8>), Error> {
+            self.read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP)
+        }
+
+            //  Enable the Core TAP using the TLM
     //
     //  @note - Resets the TAPs before enabling Core TAP
     //  @note - It appears that the sequence must end with a EXIT_SHIFT_DR?
     //  @note Leaves Core TAP in RUN-TEST/IDLE to TLM action??
 
-    pub fn enableCoreTAP() -> Vec<u8> {
+    pub fn enableCoreTAP(&self) -> Result<(), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_TEST_LOGIC_RESET);               // Reset TAP
         sequence.append(&mut JTAG_REPEAT_16(50)); // ~2.26ms
@@ -289,7 +302,11 @@ pub mod jtag {
         sequence.push(JTAG_SHIFT_OUT_Q(TLM_REGISTER_LENGTH)); 
         sequence.push(TLM_SLAVE_SELECT_MASK);
         sequence.push(JTAG_END);
-        sequence
+        self.bdm_prog.exec_jtag_seq(sequence, 0)?;
+        Ok(())
     }
+
+
+}
 }
 

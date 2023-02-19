@@ -127,22 +127,7 @@ fn print_usbdm_programmer(&self) -> Result<(), Error>
     Ok(())
 }
 
-pub fn dsc_connect(&self) -> Result<(), Error>
 
-{
-    let id_code_sequence = jtag::read_master_id_code(true); // first id request we reset CORE TAP
-
-    self.usb_device.exec_jtag_seq(id_code_sequence, 0x04);
-
-    let enable_core_tap_sequense = jtag::enableCoreTAP(); // on second not
-
-    self.usb_device.exec_jtag_seq(enable_core_tap_sequense, 0);
-
-    let id_code_sequence2 = jtag::read_master_id_code(true); // on second not
-
-    
-    Ok(())
-}
 
 
 
@@ -243,6 +228,27 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
     Ok(())
 
    }
+
+   pub fn exec_jtag_seq(&self, mut jtag_seq : Vec<u8>,  answer_lenght : u8) -> Result<(Vec<u8>), Error>{
+      
+    
+    let command = "CMD_USBDM_JTAG_EXECUTE_SEQUENCE".to_string();
+
+    let command_leght : u8 = 0x4 + jtag_seq.len() as u8;
+
+    let mut full_command : Vec<u8> = Vec::new();
+    full_command.push(command_leght);
+    full_command.push(bdm_commands::CMD_USBDM_JTAG_EXECUTE_SEQUENCE | 0x80);
+    full_command.push(answer_lenght);
+    full_command.push(jtag_seq.len() as u8);
+    full_command.append(&mut jtag_seq);
+
+
+    self.usb_device.write(&full_command.as_slice(),1500)?;                                    // write command
+    let answer: Vec<u8> = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+   // self.check_usbm_return_code(command, &answer)?;               // check is status ok
+    Ok((answer))
+  } 
   
 }
 

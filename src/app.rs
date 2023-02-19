@@ -26,6 +26,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
+use crate::jtag::{JtagInterface};
 use crate::hexbuff_widget::{HexBufferView};
 
 
@@ -57,11 +58,11 @@ pub struct UsbdmApp
 {
 
   programmer     : Option<Programmer>,
+  jtag           : JtagInterface,
   status         : UsbdmAppStatus,
   selected_power : Option<TargetVddSelect>,
   buff           : HexBufferView,
-  buff_upd       : bool,
-    
+  buff_upd       : bool,  
 }
 
 impl UsbdmApp
@@ -100,8 +101,9 @@ impl Application for  UsbdmApp
         (   
         UsbdmApp
         {
-        programmer : None,
-        status : UsbdmAppStatus::Start, 
+        programmer     : None,
+        jtag           : None,
+        status         : UsbdmAppStatus::Start, 
         selected_power : None,
         buff           : HexBufferView::new(),
         buff_upd       : true,
@@ -193,7 +195,8 @@ impl Application for  UsbdmApp
             {
                println!("Try claim usb");
                let usb_int = UsbInterface::new(_handle).expect("Programmer Lost Connection");
-               self.programmer = Some(Programmer::new(usb_int)); 
+               self.programmer = Some(Programmer::new(usb_int));
+               self.jtag = init(self.programmer); 
                self.status  = UsbdmAppStatus::Connected;
                Command::none()
             } 
