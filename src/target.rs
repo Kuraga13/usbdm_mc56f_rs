@@ -1,4 +1,4 @@
-use crate::jtag::jtag::{JtagInterface};
+use crate::jtag::{JtagInterface};
 use crate::errors::Error;
 
 pub struct Target {

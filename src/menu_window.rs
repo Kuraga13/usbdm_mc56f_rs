@@ -13,7 +13,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-use crate::jtag::jtag::{JtagInterface};
+use crate::jtag::{JtagInterface};
 use crate::target::{Target};
 use crate::hexbuff_widget::{HexBufferView, HexBuffMsg, HexBuffer};
 
