@@ -268,6 +268,21 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
    // self.check_usbm_return_code(command, &answer)?;               // check is status ok
     Ok((answer))
   } 
+
+  pub fn bdm_control_pins(&mut self, control: u16) -> Result<(), Error>{
+
+    let mut usb_buf  = [0; 4];
+
+    usb_buf[0] = 6;            // lenght of command
+    usb_buf[1] = bdm_commands::CMD_USBDM_CONTROL_PINS;
+    usb_buf[2] = (control>>8) as u8;  
+    usb_buf[3] = control as u8;
+
+    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+    let status = self.usb_device.check_usbm_return_code(&answer)?;    // check is status ok
+    Ok(status)
+}
   
 }
 
