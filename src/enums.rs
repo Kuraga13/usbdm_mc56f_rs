@@ -14,13 +14,6 @@ pub mod bdm_commands {
 
  }
 
- pub mod vdd {
-    pub const BDM_TARGET_VDD_OFF     : u8    = 0;     // Target Vdd Off
-    pub const BDM_TARGET_VDD_3V3     : u8    = 1;     // Target Vdd internal 3.3V
-    pub const BDM_TARGET_VDD_5V      : u8    = 2;     // Target Vdd internal 5.0V
-    pub const BDM_TARGET_VDD_ENABLE  : u8    = 0x10;  // Target Vdd internal at last set level
-    pub const BDM_TARGET_VDD_DISABLE : u8    = 0x11;  // Target Vdd Off but previously set level unchanged
- } 
  
 pub mod vpp {
    pub const BDM_TARGET_VPP_OFF      : u8    = 0;     // Target Vpp Off

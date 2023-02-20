@@ -13,8 +13,8 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-use crate::jtag::*;
 use crate::target::{Target};
+use crate::target::TargetProgramming;
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::{self, main_window};
 
@@ -22,7 +22,8 @@ use crate::gui::{self, main_window};
 pub enum UsbdmAppStatus {
     
     Start,
-    Connected,
+    ConnectedPowerOn,
+    ConnectedPowerOff,
     //Errored(Error),
     Errored,
 
@@ -47,18 +48,20 @@ pub enum Message {
     Connect,
     Disconnect,
     PowerSelect(TargetVddSelect),
-    SetPower,
+    PowerToggle,
     TestFeedback,
+    Error(Error)
 }
 
 pub struct App {
 
            target         : Option<Target>,
-        //   programmer     : Option<Programmer>,
            buff           : Vec<HexBuffer>,
            buffer_view    : Vec<HexBufferView>,
     pub    selected_power : TargetVddSelect,
     pub    status         : UsbdmAppStatus,
+
+
     pub    title: String,
     pub    value: u8,
     pub    check: bool,
@@ -98,8 +101,7 @@ impl Application for App {
                 size_option: main_window::SizeOption::Static,
 
 
-                selected_power : TargetVddSelect::VddOff,
-             //   programmer     : None,
+                selected_power : TargetVddSelect::Vdd3V3,
                 target         : None,
                 status         : UsbdmAppStatus::Start,
                 buff           : vec![HexBuffer::new()],
@@ -166,6 +168,14 @@ impl Application for App {
                 self.title = self.size_option.to_string();
             }
 
+            Message::Error(Error) =>
+            {
+
+
+
+            }
+
+
             Message::Init => 
             {
                 
@@ -194,7 +204,9 @@ impl Application for App {
                     let usb_int = UsbInterface::new(check_connect).expect("Programmer Lost Connection");
                     let programmer = Some(Programmer::new(usb_int));
                     self.target  = Some(Target::init(programmer.expect("Programmer Lost Connection")));
-                    self.status  = UsbdmAppStatus::Connected;
+                    self.target.as_mut().expect("target lost").init().unwrap_or(self.status = UsbdmAppStatus::Errored);
+                    self.target.as_mut().expect("target lost").connect(self.selected_power).unwrap_or(self.status = UsbdmAppStatus::Errored);
+                    self.status  = UsbdmAppStatus::ConnectedPowerOn;
 
                     }
                     Err(_e) =>
@@ -208,12 +220,12 @@ impl Application for App {
 
             Message::Disconnect => 
             {    
-            
                 match &self.target
                 {   
                 Some(target) =>{ 
                 println!("Try disconnect and drop");
-                drop(target);
+            
+                self.target.as_mut().expect("target lost").disconnect();
                 self.target = None;
                 self.status  = UsbdmAppStatus::Start; 
                 
@@ -221,21 +233,26 @@ impl Application for App {
                     
                 None => {}
                 } 
-                
             } 
 
-
-            Message::SetPower => 
+            Message::PowerToggle => 
             {    
-            
-             let usbdm =  self.target.as_mut().expect("");
-             match &self.selected_power{   
 
-                TargetVddSelect::VddOff     => {if let Err(_e) =  usbdm.programmer.set_vdd_off()  {} else {}}
-                TargetVddSelect::Vdd3V3     => {if let Err(_e) =  usbdm.programmer.set_vdd_3_3v() {} else {}}
-                TargetVddSelect::Vdd5V      => {if let Err(_e) =  usbdm.programmer.set_vdd_5v()   {} else {}}
-                TargetVddSelect::VddEnable  => {if let Err(_e) =  usbdm.programmer.set_vdd_off()  {} else {}}
-                TargetVddSelect::VddDisable => {if let Err(_e) =  usbdm.programmer.set_vdd_off()  {} else {}}}
+             let mcu =  self.target.as_mut().expect("");
+             let is_power = mcu.programmer.check_power().expect("Err on check power!");
+
+              if(is_power)
+              { 
+                dbg!("Try Power off, from state now: {}", &is_power);
+                mcu.power(TargetVddSelect::VddOff);
+                self.status  = UsbdmAppStatus::ConnectedPowerOff;
+              }
+              else
+              { 
+                dbg!("Try Power On, from state now: {}", &is_power);
+                mcu.power(self.selected_power);
+                self.status  = UsbdmAppStatus::ConnectedPowerOn;
+              } 
 
             }   
 
@@ -243,19 +260,22 @@ impl Application for App {
             Message::PowerSelect(power_select) => 
             {
 
-                self.selected_power = power_select;
+              self.selected_power = power_select;
 
             }
 
 
             Message::TestFeedback =>
             {
-               
-               let usbdm =  self.target.as_mut().expect("");
-               if let Err(_e) = usbdm.programmer.refresh_feedback() {  };
-               usbdm.programmer.set_bdm_options();
-               usbdm.programmer.set_target_mc56f();
-               usbdm.dsc_connect().expect("Dsc target connect error");
+            
+              let mcu =  self.target.as_mut().expect("");
+              mcu.power(TargetVddSelect::VddOff);
+              if let Err(_e) = mcu.programmer.refresh_feedback() { self.status = UsbdmAppStatus::Errored};
+             // mcu.power(TargetVddSelect::VddDisable);
+              //mcu.programmer.set_bdm_options();
+              // usbdm.programmer.set_bdm_options();
+              // usbdm.programmer.set_target_mc56f();
+              // usbdm.dsc_connect().expect("Dsc target connect error");
                //let target = init(jtag);
                //target.dsc_connect();
     

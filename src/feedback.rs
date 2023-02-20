@@ -29,7 +29,7 @@ pub struct FeedBack {
     #[packed_field(bits="5")]
     halt_state: bool,                              // CFVx halted (from ALLPST)?
     #[packed_field(bits="6:7", ty="enum")]
-    power_state: PowerState,                       // Target has power?
+pub power_state: PowerState,                       // Target has power?
     #[packed_field(bits="8:9", ty="enum")]
     vpp_state: VppState,                           // State of Target Vpp* used only for Rs08
      

@@ -2,9 +2,9 @@
 
 use crate::usb_interface::{UsbInterface, BdmInfo};
 use crate::errors::{Error};
-use crate::feedback::{FeedBack};
+use crate::feedback::{FeedBack, PowerState,};
 use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
-use crate::enums::{bdm_commands,vdd};
+use crate::enums::{bdm_commands};
 
 
 use crate::jtag::*;
@@ -25,7 +25,7 @@ pub struct Programmer {
 impl Drop for Programmer{
 
     fn drop(&mut self) {
-        let _ = self.set_vdd_off();
+        let _ = self.set_vdd(TargetVddSelect::VddOff);
         drop(&mut self.usb_device);
         println!("Programmer dropped");
     }
@@ -49,62 +49,90 @@ pub fn new(mut device : UsbInterface) -> Self {
     
     }
 
-pub fn set_vdd_off(&mut self) -> Result<(), Error>
-{
-            
-  self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_OFF)?;
-  self.settings.target_voltage = TargetVddSelect::VddOff;
-  Ok(())
-            
-            
-}
-pub fn set_vdd_3_3v(&mut self) -> Result<(), Error>
-{
-        
-  self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_3V3)?;
-  self.settings.target_voltage = TargetVddSelect::Vdd3V3;
-  Ok(())
-        
-        
+
+
+pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
+      
+  
+    let mut usb_buf  = [0; 4];
+    let command = "CMD_USBDM_SET_VDD".to_string();
+  
+    usb_buf[0] = 4;
+    usb_buf[1] = bdm_commands::CMD_USBDM_SET_VDD;
+    usb_buf[2] = u8::from(power);  
+    usb_buf[3] = u8::from(power);  
+  
+    let bit = 0x80;
+    let bitter = usb_buf[1] | bit;
+    usb_buf[1] = bitter;
+  
+    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    let answer = self.usb_device.read().expect("Can't read answer");
+    self.settings.target_voltage = power;
+    Ok(())
+  
+            // read status from bdm
+       // self.check_usbm_return_code(command, &answer)?;               // check is status o
 }
 
-pub fn set_vdd_5v(&mut self) -> Result<(), Error>
+
+
+
+pub fn check_power(&mut self) -> Result<bool, Error>
 {
+    self.refresh_feedback()?;
+    match self.feedback.power_state
+    {
+     PowerState::Internal => 
+     {
+         Ok(true)
+     }
+     PowerState::External => 
+     {
+         Ok(false)
+     }
+     PowerState::Error => 
+     {
+         Err((Error::PowerStateError))
+     }
+     _ => 
+     {
+         Ok(false)
+     }
+
+  }
+
+}
+
+
+pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
+      
+        let mut usb_buf  = [0; 4];
+        let command = "CMD_USBDM_SET_VPP".to_string();
+  
+        usb_buf[0] = 3;
+        usb_buf[1] = bdm_commands::CMD_USBDM_SET_VPP;
+        usb_buf[2] = u8::from(power);  
     
-    self.usb_device.set_vdd(vdd::BDM_TARGET_VDD_5V)?;
-    self.settings.target_voltage = TargetVddSelect::Vdd5V;
-    Ok(())
-     
-}
+  
+        let bit = 0x80;
+        let bitter = usb_buf[1] | bit;
+        usb_buf[1] = bitter;
+  
+        self.usb_device.write(&usb_buf,1500)?;                                    // write command
+        let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+       // self.check_usbm_return_code(command, &answer)?;               // check is status ok
 
+        self.settings.target_voltage = power;
+        Ok(())
+      }
 
-fn set_vdd(&self, power: u8 ) -> Result<(), Error>
-{
-
-    self.usb_device.set_vdd(power)?;
-    Ok(())
-
-
-}
-
-fn set_vpp(&self, power: u8 ) -> Result<(), Error>
-{
-
-    self.usb_device.set_vpp(power)?;
-    Ok(())
-
-
-}
 
 pub fn refresh_feedback(&mut self) -> Result<(), Error>
 {
-    //self.feedback = self.usb_device.get_bdm_status().unwrap();
-    //usbdm.set_bdm_options();
+    self.feedback = self.usb_device.get_bdm_status()?;
 
-    self.get_full_capabilities()?;
-    println!("{}", self.bdm_info);
-    //self.feedback.print_feedback();
-    //println!("{}", self.feedback);
+    println!("{}", self.feedback);
     Ok(())
 }
 

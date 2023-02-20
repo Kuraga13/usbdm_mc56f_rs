@@ -130,10 +130,16 @@ pub fn power_button<'a>( state : &UsbdmAppStatus) -> button::Button<'a, Message,
        
        }  
           
-       UsbdmAppStatus::Connected  =>  
+       UsbdmAppStatus::ConnectedPowerOn  =>  
        {
 
-        labeled_button("VDD", Message::SetPower).style(theme::Button::Primary)
+        labeled_button("VDD", Message::PowerToggle).style(theme::Button::Destructive)
+
+       }
+       UsbdmAppStatus::ConnectedPowerOff  =>  
+       {
+
+        labeled_button("VDD", Message::PowerToggle).style(iced::theme::Button::Custom(Box::new(PowerButtonStyle {})))
 
        }
        UsbdmAppStatus::Errored    => 
@@ -208,7 +214,12 @@ pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppS
     match state
     {
     
-    UsbdmAppStatus::Connected =>
+    UsbdmAppStatus::ConnectedPowerOn =>
+    {
+        MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+    }
+
+    UsbdmAppStatus::ConnectedPowerOff =>
     {
         MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
     }

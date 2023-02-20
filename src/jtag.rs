@@ -237,6 +237,19 @@ fn add_vu(mut x: Vec<u8>, y: u8) -> Vec<u8> {
 }
 
 
+//pub trait JtagInterface {
+
+/// Read id code.
+//fn read_id_code(&self, commandRegLength :u8, resetTAP: bool) -> Result<(Vec<u8>), Error>;
+
+
+//}
+
+
+
+
+
+
     // Read IDCODE from JTAG TAP
     //
     // @param idCode   - 32-bit IDCODE returned from TAP

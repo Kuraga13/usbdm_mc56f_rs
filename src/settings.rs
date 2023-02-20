@@ -49,9 +49,9 @@ pub struct BdmSettings {
 /// Internal Target Voltage supply selection
 #[derive(PrimitiveEnum_u8, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TargetVddSelect {
-    VddOff       = 0,     // Target Vdd Off
-    Vdd3V3       = 1,     // Target Vdd internal 3.3V
-    Vdd5V        = 2,     // Target Vdd internal 5.0V
+    VddOff       = 0x0,     // Target Vdd Off
+    Vdd3V3       = 0x01,     // Target Vdd internal 3.3V
+    Vdd5V        = 0x02,     // Target Vdd internal 5.0V
     VddEnable    = 0x10,  // Target Vdd internal at last set level
     VddDisable   = 0x11,  // Target Vdd Off but previously set level unchanged
 }
@@ -73,6 +73,22 @@ impl std::fmt::Display for TargetVddSelect {
         )
     }
 }
+
+
+
+
+impl From<TargetVddSelect> for u8 {
+  fn from(power_selected : TargetVddSelect) -> u8 {
+    match power_selected {
+        TargetVddSelect::VddOff     => 0,           // Target Vdd Off
+        TargetVddSelect::Vdd3V3     => 1,           // Target Vdd internal 3.3V
+        TargetVddSelect::Vdd5V      => 2,           // Target Vdd internal 5.0V
+        TargetVddSelect::VddEnable  => 0x10,        // Target Vdd internal at last set level
+        TargetVddSelect::VddDisable => 0x11,        // Target Vdd Off but previously set level unchanged
+    }    
+  }
+}
+
 
 
 /// Auto-reconnect options

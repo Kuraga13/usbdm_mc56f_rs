@@ -256,46 +256,7 @@ pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
 
 
 
-      pub fn set_vdd(&self, power: u8 ) -> Result<(), Error>{
-      
-        let mut usb_buf  = [0; 4];
-        let command = "CMD_USBDM_SET_VDD".to_string();
-  
-        usb_buf[0] = 4;
-        usb_buf[1] = bdm_commands::CMD_USBDM_SET_VDD;
-        usb_buf[2] = power;  
-        usb_buf[3] = power;  
-  
-        let bit = 0x80;
-        let bitter = usb_buf[1] | bit;
-        usb_buf[1] = bitter;
-  
-        self.write(&usb_buf,1500)?;                                    // write command
-        let answer = self.read().expect("Can't read answer");          // read status from bdm
-       // self.check_usbm_return_code(command, &answer)?;               // check is status ok
-        Ok(())
-      }
 
-
-      pub fn set_vpp(&self, power: u8 ) -> Result<(), Error>{
-      
-        let mut usb_buf  = [0; 4];
-        let command = "CMD_USBDM_SET_VDD".to_string();
-  
-        usb_buf[0] = 3;
-        usb_buf[1] = bdm_commands::CMD_USBDM_SET_VPP;
-        usb_buf[2] = power;  
-    
-  
-        let bit = 0x80;
-        let bitter = usb_buf[1] | bit;
-        usb_buf[1] = bitter;
-  
-        self.write(&usb_buf,1500)?;                                    // write command
-        let answer = self.read().expect("Can't read answer");          // read status from bdm
-       // self.check_usbm_return_code(command, &answer)?;               // check is status ok
-        Ok(())
-      }
 
 }
 
