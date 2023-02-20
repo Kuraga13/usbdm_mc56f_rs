@@ -273,7 +273,7 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 4];
 
-    usb_buf[0] = 6;            // lenght of command
+    usb_buf[0] = 4;            // lenght of command
     usb_buf[1] = bdm_commands::CMD_USBDM_CONTROL_PINS;
     usb_buf[2] = (control>>8) as u8;  
     usb_buf[3] = control as u8;
