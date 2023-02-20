@@ -8,11 +8,10 @@ use crate::enums::{bdm_commands,vdd};
 
 
 use crate::jtag::*;
+use crate::target::{Target};
 
-
-
+#[derive(Debug)]
 pub struct Programmer {
-
 
     usb_device   : UsbInterface,
     bdm_info     : BdmInfo,
@@ -41,7 +40,6 @@ pub fn new(mut device : UsbInterface) -> Self {
 
         Self{
     
-            
             bdm_info        : device.get_bdm_version().expect("Error on get bdm ver"),
             feedback        : device.get_bdm_status().expect("Error on feedback"),
             settings        : BdmSettings::default(),

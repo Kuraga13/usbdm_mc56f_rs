@@ -13,7 +13,7 @@ use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
-use crate::jtag::{JtagInterface};
+use crate::jtag::*;
 use crate::target::{Target};
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::{self, main_window};
@@ -53,8 +53,8 @@ pub enum Message {
 
 pub struct App {
 
-
-           programmer     : Option<Programmer>,
+           target         : Option<Target>,
+        //   programmer     : Option<Programmer>,
            buff           : Vec<HexBuffer>,
            buffer_view    : Vec<HexBufferView>,
     pub    selected_power : TargetVddSelect,
@@ -99,7 +99,8 @@ impl Application for App {
 
 
                 selected_power : TargetVddSelect::VddOff,
-                programmer     : None,
+             //   programmer     : None,
+                target         : None,
                 status         : UsbdmAppStatus::Start,
                 buff           : vec![HexBuffer::new()],
                 buffer_view    : vec![HexBufferView::default()],
@@ -191,9 +192,9 @@ impl Application for App {
 
                     println!("Try claim usb");
                     let usb_int = UsbInterface::new(check_connect).expect("Programmer Lost Connection");
-                    self.programmer = Some(Programmer::new(usb_int));
+                    let programmer = Some(Programmer::new(usb_int));
+                    self.target  = Some(Target::init(programmer.expect("Programmer Lost Connection")));
                     self.status  = UsbdmAppStatus::Connected;
-
 
                     }
                     Err(_e) =>
@@ -208,12 +209,12 @@ impl Application for App {
             Message::Disconnect => 
             {    
             
-                match &self.programmer
+                match &self.target
                 {   
-                Some(_programmer) =>{ 
+                Some(target) =>{ 
                 println!("Try disconnect and drop");
-                drop(&mut self.programmer);
-                self.programmer = None;
+                drop(target);
+                self.target = None;
                 self.status  = UsbdmAppStatus::Start; 
                 
                 }
@@ -227,14 +228,14 @@ impl Application for App {
             Message::SetPower => 
             {    
             
-             let usbdm =  self.programmer.as_mut().expect("");
+             let usbdm =  self.target.as_mut().expect("");
              match &self.selected_power{   
 
-                TargetVddSelect::VddOff     => {if let Err(_e) =  usbdm.set_vdd_off()  {} else {}}
-                TargetVddSelect::Vdd3V3     => {if let Err(_e) =  usbdm.set_vdd_3_3v() {} else {}}
-                TargetVddSelect::Vdd5V      => {if let Err(_e) =  usbdm.set_vdd_5v()   {} else {}}
-                TargetVddSelect::VddEnable  => {if let Err(_e) =  usbdm.set_vdd_off()  {} else {}}
-                TargetVddSelect::VddDisable => {if let Err(_e) =  usbdm.set_vdd_off()  {} else {}}}
+                TargetVddSelect::VddOff     => {if let Err(_e) =  usbdm.programmer.set_vdd_off()  {} else {}}
+                TargetVddSelect::Vdd3V3     => {if let Err(_e) =  usbdm.programmer.set_vdd_3_3v() {} else {}}
+                TargetVddSelect::Vdd5V      => {if let Err(_e) =  usbdm.programmer.set_vdd_5v()   {} else {}}
+                TargetVddSelect::VddEnable  => {if let Err(_e) =  usbdm.programmer.set_vdd_off()  {} else {}}
+                TargetVddSelect::VddDisable => {if let Err(_e) =  usbdm.programmer.set_vdd_off()  {} else {}}}
 
             }   
 
@@ -250,11 +251,11 @@ impl Application for App {
             Message::TestFeedback =>
             {
                
-               let usbdm =  self.programmer.as_mut().expect("");
-               if let Err(_e) = usbdm.refresh_feedback() {  };
-               usbdm.set_bdm_options();
-               usbdm.set_target_mc56f();
-               //let jtag = jtag.init(usbdm);
+               let usbdm =  self.target.as_mut().expect("");
+               if let Err(_e) = usbdm.programmer.refresh_feedback() {  };
+               usbdm.programmer.set_bdm_options();
+               usbdm.programmer.set_target_mc56f();
+               usbdm.dsc_connect().expect("Dsc target connect error");
                //let target = init(jtag);
                //target.dsc_connect();
     

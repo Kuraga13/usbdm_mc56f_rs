@@ -236,14 +236,6 @@ fn add_vu(mut x: Vec<u8>, y: u8) -> Vec<u8> {
     x
 }
 
-pub struct JtagInterface {
-    bdm_prog: Programmer,
-}
-
-impl JtagInterface{
-    pub fn init(&mut self, bdm: Programmer) {
-        self.bdm_prog = bdm;
-    }
 
     // Read IDCODE from JTAG TAP
     //
@@ -254,7 +246,7 @@ impl JtagInterface{
     // @note - resetTAP=true will enable the Master TAP & disable the Code TAP
     // @note - Leaves Core TAP in RUN-TEST/IDLE
     //
-    fn read_id_code(&self, commandRegLength :u8, resetTAP: bool) -> Result<(Vec<u8>), Error> {
+    pub fn read_id_code(commandRegLength :u8, resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         if resetTAP {
             sequence.push(JTAG_TEST_LOGIC_RESET);
@@ -269,15 +261,15 @@ impl JtagInterface{
         sequence.push(JTAG_SHIFT_IN_Q(32));
         sequence.push(JTAG_END);
 
-        self.bdm_prog.exec_jtag_seq(sequence, 4)
+        prg.exec_jtag_seq(sequence, 4)
     }
 
-    pub fn read_master_id_code(&self, resetTAP: bool) -> Result<(Vec<u8>), Error> {
-        self.read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP)
+    pub fn read_master_id_code(resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
+        read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP, prg)
     }
 
-    pub fn read_core_id_code(&self, resetTAP: bool) -> Result<(Vec<u8>), Error> {
-        self.read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP)
+    pub fn read_core_id_code(resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
+        read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP, prg)
     }
 
     //  Enable the Core TAP using the TLM
@@ -285,7 +277,7 @@ impl JtagInterface{
     //  @note - Resets the TAPs before enabling Core TAP
     //  @note - It appears that the sequence must end with a EXIT_SHIFT_DR?
     //  @note Leaves Core TAP in RUN-TEST/IDLE to TLM action??
-    pub fn enableCoreTAP(&self) -> Result<(), Error> {
+    pub fn enableCoreTAP(prg:  &Programmer) -> Result<(), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_TEST_LOGIC_RESET);               // Reset TAP
         sequence.append(&mut JTAG_REPEAT_16(50)); // ~2.26ms
@@ -299,7 +291,6 @@ impl JtagInterface{
         sequence.push(JTAG_SHIFT_OUT_Q(TLM_REGISTER_LENGTH)); 
         sequence.push(TLM_SLAVE_SELECT_MASK);
         sequence.push(JTAG_END);
-        self.bdm_prog.exec_jtag_seq(sequence, 0)?;
+        prg.exec_jtag_seq(sequence, 0)?;
         Ok(())
     }
-}

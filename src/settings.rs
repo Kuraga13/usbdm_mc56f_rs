@@ -4,7 +4,7 @@ use std::fmt;
 use packed_struct::prelude::*;
 
 /// Options passed to the BDM
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BdmSettings {
 
     pub target_type:                 TargetType,       // Target type - have to be init twice ))) On SetExtOptions + set target command
