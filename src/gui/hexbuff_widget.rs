@@ -3,7 +3,7 @@ use iced::theme::Rule;
 use iced::alignment;
 use iced::widget::{Scrollable, column, container, image, row, text, vertical_rule, horizontal_rule, Column, Container, Row, Space, Text};
 use iced_native::widget::image::viewer;
-use crate::menu_window::{Message };
+use crate::app::{Message };
 use iced::{ Length, Color, Renderer, Alignment, Element};
 use iced_aw::Grid;
 

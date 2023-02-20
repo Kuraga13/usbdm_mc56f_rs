@@ -1,7 +1,7 @@
 #![allow(unused)]
 mod usb_interface;
 mod gui;
-mod menu_window;
+mod app;
 mod errors;
 mod jtag;
 mod enums;
@@ -15,7 +15,7 @@ use iced::window::Icon;
 use iced::window;
 use image::GenericImageView;
 use iced::{ Application, Settings, };
-use crate::menu_window::{App};
+use crate::app::{App};
 
 pub fn main() -> iced::Result {
     
