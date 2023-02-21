@@ -16,7 +16,8 @@
 * Feedback module (Get status and parse bits)
 * Capabilites (Get BDM Information, like JTAG buffer size etc, parse bytes & save)
 * Jtag Command Builder
+*  Concrete mc56f (target) command: - Connect, tested-done
 
 ###  In plan
 * GUI - ideally hex buffer, In work now
-* Concrete mc56f (target) commands - connect read, write, erase 
+* Concrete mc56f (target) commands - read, write, erase 
