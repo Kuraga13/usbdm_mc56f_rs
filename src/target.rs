@@ -56,6 +56,9 @@ fn write_target(&self) -> Result<(), Error>;
 /// Write target
 fn erase_target(&self) -> Result<(), Error>;
 
+/// reset target
+fn reset_target(&mut self) -> Result<(), Error>;
+
 }
 
 impl TargetProgramming for Target
@@ -165,6 +168,14 @@ fn erase_target(&self) -> Result<(), Error>
 {
     
     unimplemented!()
+    
+}
+
+fn reset_target(&mut self) -> Result<(), Error>
+{
+    
+    //self.programmer.target_hardware_reset()
+    self.programmer.target_power_reset()
     
 }
 

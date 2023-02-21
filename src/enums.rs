@@ -1,4 +1,7 @@
 #![allow(unused)]
+#![allow(non_camel_case_types)]
+
+use packed_struct::prelude::PrimitiveEnum_u16;
 
 pub mod bdm_commands {
    // Common to all targets
@@ -22,3 +25,4 @@ pub mod vpp {
    pub const BDM_TARGET_VPP_ON       : u8    = 2;     // Target Vdd internal 5.0V
    pub const BDM_TARGET_VPP_ERROR    : u8    = 3;     //  Target Vpp ?? WTF?? Why in selection
 } 
+

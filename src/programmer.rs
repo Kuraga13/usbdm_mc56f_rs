@@ -5,7 +5,7 @@ use crate::errors::{Error};
 use crate::feedback::{FeedBack, PowerState,};
 use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
 use crate::enums::{bdm_commands};
-
+use std::{thread, time};
 
 use crate::jtag::*;
 use crate::target::{Target};
@@ -251,8 +251,7 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
    }
 
   
-
-  pub fn bdm_control_pins(&mut self, control: u16) -> Result<(), Error>{
+   pub fn bdm_control_pins(&self, control: u16) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 4];
 
@@ -264,10 +263,36 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
     usb_write(&usb_buf,1500)?;                                    // write command
     let answer = usb_read().expect("Can't read answer");          // read status from bdm
     let status = check_usbm_return_code(&answer)?;    // check is status ok
-    Ok(status)
+    Ok(())
+}
+
+pub fn target_hardware_reset(&self) -> Result<(), Error>{
+    const PIN_RESET_LOW : u16 = 2<<2;   // Set Reset low
+    const PIN_RELEASE   : u16 = 0xffff; // Release all pins (go to default for current target)
+    self.bdm_control_pins(PIN_RESET_LOW)?;
+    thread::sleep(time::Duration::from_millis(self.settings.reset_duration));
+    self.bdm_control_pins(PIN_RELEASE)?;
+    thread::sleep(time::Duration::from_millis(self.settings.reset_recovery_interval));
+    Ok(())
+}
+
+pub fn target_power_reset(&mut self) -> Result<(), Error>{
+    const PIN_RESET_LOW : u16 = 2<<2;   // Set Reset low
+    const PIN_RELEASE   : u16 = 0xffff; // Release all pins (go to default for current target)
+    let previous_power = self.settings.target_voltage;
+    self.set_vdd(TargetVddSelect::VddDisable);
+    thread::sleep(time::Duration::from_millis(self.settings.reset_duration));
+    self.bdm_control_pins(PIN_RESET_LOW)?;
+    self.set_vdd(previous_power);
+    thread::sleep(time::Duration::from_millis(self.settings.reset_release_interval));
+    self.bdm_control_pins(PIN_RELEASE)?;
+    thread::sleep(time::Duration::from_millis(self.settings.reset_recovery_interval));
+    Ok(())
 }
   
 }
+
+
 
 
 
