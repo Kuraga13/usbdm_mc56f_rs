@@ -1,6 +1,6 @@
 #![allow(unused)]
 
-use crate::usb_interface::{UsbInterface, BdmInfo};
+use crate::usb_interface::{UsbInterface, BdmInfo, usb_control_transfer, usb_read, usb_write, usb_drop, get_bdm_version, check_usbm_return_code};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack, PowerState,};
 use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
@@ -9,11 +9,11 @@ use crate::enums::{bdm_commands};
 
 use crate::jtag::*;
 use crate::target::{Target};
+use packed_struct::PackedStruct;
 
 #[derive(Debug)]
 pub struct Programmer {
 
-    usb_device   : UsbInterface,
     bdm_info     : BdmInfo,
     feedback     : FeedBack,
     settings     : BdmSettings, 
@@ -26,7 +26,7 @@ impl Drop for Programmer{
 
     fn drop(&mut self) {
         let _ = self.set_vdd(TargetVddSelect::VddOff);
-        drop(&mut self.usb_device);
+        usb_drop;
         println!("Programmer dropped");
     }
 }
@@ -35,21 +35,21 @@ impl Programmer
 {
 
 
-pub fn new(mut device : UsbInterface) -> Self {
+pub fn new() -> Self {
 
 
         Self{
     
-            bdm_info        : device.get_bdm_version().expect("Error on get bdm ver"),
-            feedback        : device.get_bdm_status().expect("Error on feedback"),
+            bdm_info        : get_bdm_version().expect("Error on get bdm ver"),
+            feedback        : get_bdm_status().expect("Error on feedback"),
             settings        : BdmSettings::default(),
-            usb_device      : device,
 
         }
     
     }
 
 
+    
 
 pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
       
@@ -66,8 +66,8 @@ pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
   
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read().expect("Can't read answer");
+    usb_write(&usb_buf,1500)?;                                    // write command
+    let answer = usb_read().expect("Can't read answer");
     self.settings.target_voltage = power;
     Ok(())
   
@@ -119,8 +119,8 @@ pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
         let bitter = usb_buf[1] | bit;
         usb_buf[1] = bitter;
   
-        self.usb_device.write(&usb_buf,1500)?;                                    // write command
-        let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+        usb_write(&usb_buf,1500)?;                                    // write command
+        let answer = usb_read().expect("Can't read answer");          // read status from bdm
        // self.check_usbm_return_code(command, &answer)?;               // check is status ok
 
         self.settings.target_voltage = power;
@@ -130,7 +130,7 @@ pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
 
 pub fn refresh_feedback(&mut self) -> Result<(), Error>
 {
-    self.feedback = self.usb_device.get_bdm_status()?;
+    self.feedback = get_bdm_status()?;
 
     println!("{}", self.feedback);
     Ok(())
@@ -164,9 +164,9 @@ pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
 
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
-    let status = self.usb_device.check_usbm_return_code( &answer)?;    // check is status ok
+    usb_write(&usb_buf,1500)?;                                    // write command
+    let answer = usb_read().expect("Can't read answer");          // read status from bdm
+    let status = check_usbm_return_code( &answer)?;    // check is status ok
 
     self.settings.target_type = TargetType::MC56F80xx;
 
@@ -202,9 +202,9 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     usb_buf[4] = self.settings.bdm_clock_source as u8;
     usb_buf[5] = self.settings.auto_reconnect as u8;
 
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
-    let status = self.usb_device.check_usbm_return_code( &answer)?;    // check is status ok
+    usb_write(&usb_buf,1500)?;                                    // write command
+    let answer = usb_read().expect("Can't read answer");          // read status from bdm
+    let status = check_usbm_return_code( &answer)?;    // check is status ok
     Ok(status)
 }
 
@@ -220,10 +220,10 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
 
-    self.usb_device.write(&usb_buf,1500)?;        // write command
-    let answer: Vec<u8> = self.usb_device.read()?;                   //  read
+    usb_write(&usb_buf,1500)?;        // write command
+    let answer: Vec<u8> = usb_read()?;                   //  read
     
-    self.usb_device.check_usbm_return_code( &answer)?;  
+    check_usbm_return_code( &answer)?;  
 
     if answer.len() >= 3 {
         let capabilities: u16 = ((answer[1] as u16) << 8) | answer[2] as u16 ^ ((1<<5) | (1<<6));
@@ -263,8 +263,8 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
     full_command.append(&mut jtag_seq);
 
 
-    self.usb_device.write(&full_command.as_slice(),1500)?;                                    // write command
-    let answer: Vec<u8> = self.usb_device.read().expect("Can't read answer");          // read status from bdm
+    usb_write(&full_command.as_slice(),1500)?;                                    // write command
+    let answer: Vec<u8> = usb_read().expect("Can't read answer");          // read status from bdm
    // self.check_usbm_return_code(command, &answer)?;               // check is status ok
     Ok((answer))
   } 
@@ -278,13 +278,40 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
     usb_buf[2] = (control>>8) as u8;  
     usb_buf[3] = control as u8;
 
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read().expect("Can't read answer");          // read status from bdm
-    let status = self.usb_device.check_usbm_return_code(&answer)?;    // check is status ok
+    usb_write(&usb_buf,1500)?;                                    // write command
+    let answer = usb_read().expect("Can't read answer");          // read status from bdm
+    let status = check_usbm_return_code(&answer)?;    // check is status ok
     Ok(status)
 }
   
 }
+
+
+
+       /// `get_bdm_status` - get status byte from USBDM by rusb read_bulk 
+   ///  Return packed-struct (bits-field) `FeebBack` with currently status of USBDM 
+   pub fn get_bdm_status() -> Result<FeedBack, Error>{
+      
+    let mut usb_buf = [0; 2];
+    usb_buf[0] = 2;  // lenght
+    usb_buf[1] = bdm_commands::CMD_USBDM_GET_BDM_STATUS;
+    let command = "CMD_USBDM_GET_BDM_STATUS".to_string();
+
+    let bit = 0x80;
+    let bitter = usb_buf[1] | bit;
+    usb_buf[1] = bitter;
+
+    usb_write(&usb_buf,1500)?;                  // write command
+    let answer = usb_read()?;                   //  read status from bdm and save buffer to answer -
+                                                 
+    let feedback_slice = [answer[3],answer[2]];      // two bytes for status feedback (in answer [3] use only 2 bits... for VPP bits)
+    println!("FeedBack is: {:02X?}", feedback_slice);
+    //let unpack = FeedBack::unpack(&[0x02, 0xff]).unwrap();   // for test TODO - write test's in FeedBack and paste where
+    let unpack = FeedBack::unpack(&feedback_slice).unwrap();
+
+    Ok(unpack)
+
+  }
 
 
 
