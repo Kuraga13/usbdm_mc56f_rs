@@ -16,6 +16,7 @@ use crate::programmer::{Programmer};
 use crate::target::{Target};
 use crate::target::TargetProgramming;
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
+use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
 
 #[derive(Debug, Clone)]
@@ -50,7 +51,8 @@ pub enum Message {
     PowerSelect(TargetVddSelect),
     PowerToggle,
     TestFeedback,
-    Error(Error)
+    Error(Error),
+    
 }
 
 pub struct App {
@@ -292,7 +294,7 @@ impl Application for App {
     fn view(&self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
     
     let main_page = main_window::main_page(self);
-
+    
     main_page.into()
 
     }

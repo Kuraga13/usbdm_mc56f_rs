@@ -261,8 +261,8 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
     usb_buf[3] = control as u8;
 
     usb_write(&usb_buf,1500)?;                                    // write command
-    let answer = usb_read().expect("Can't read answer");          // read status from bdm
-    let status = check_usbm_return_code(&answer)?;    // check is status ok
+    let answer = usb_read().expect("Can't read answer");                // read status from bdm
+    let status = check_usbm_return_code(&answer)?;                   // check is status ok
     Ok(())
 }
 

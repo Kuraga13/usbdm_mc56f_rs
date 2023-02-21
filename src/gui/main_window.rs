@@ -1,7 +1,8 @@
+use iced::theme::Scrollable;
 use iced::widget::{column as col, Column};
 use iced::widget::{
     button, checkbox, container, horizontal_space, pick_list, row, slider, svg, text, text_input,
-    toggler, vertical_slider,Row
+    toggler, vertical_slider,Row, Container, scrollable
 };
 use iced::{alignment, theme, Application, Color, Element, Length};
 
@@ -10,6 +11,7 @@ use iced_aw::quad;
 use crate::app::{Message, App, UsbdmAppStatus};
 use crate::settings::{TargetVddSelect};
 use super::styling::{PowerButtonStyle, ButtonStyle};
+use super::hexbuffer_widget::{TableContents,table_contents };
 
 impl TargetVddSelect {
     pub const ALL: [TargetVddSelect; 2] = [
@@ -79,11 +81,11 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
         .item_width(ItemWidth::Static(180))
         .item_height(ItemHeight::Static(25)),
     }
-    .spacing(4)
+    .spacing(4.0)
     .bounds_expand(30)
     .path_highlight(Some(PathHighlight::MenuActive));
 
-    let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, horizontal_space(Length::Units(3)), pick_list_power, horizontal_space(Length::Units(3)), set_power_button)
+    let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, horizontal_space(Length::Fixed(3.0)), pick_list_power, horizontal_space(Length::Fixed(3.0)), set_power_button)
         .padding([2, 8])
         .align_items(alignment::Alignment::Center);
   
@@ -104,15 +106,30 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
             .width(Length::Fill)
             .height(Length::Fill)
             .style(back_style);
-               
+
+    let test_test_line   = vec![vec!["test_test".to_string(); 1]; 4500];
+    let test_addr_line   = vec![vec!["adress column 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F ascii_ASCII_ascii".to_string(); 1]; 4500];
+    
+
+    let table_test = table_contents(20.00, test_test_line, || test_buffer_double_click() );
+    let test__test = scrollable(Container::new(table_test));
+
+
     let c = if _app.flip {
-            col![back, top_bar, ]
+            col![back, top_bar, test__test]
     } else {
-            col![top_bar, back,]
+            col![top_bar, back, test__test]
     };
 
     c
     
+}
+
+pub fn test_buffer_double_click() ->  Message
+{
+
+Message::TestFeedback
+
 }
 
 
@@ -518,7 +535,7 @@ pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
 
     let sld = MenuTree::new(row![
         "Slider",
-        horizontal_space(Length::Units(8)),
+        horizontal_space(Length::Fixed(8.0)),
         slider(0..=255, app.value, Message::ValueChange)
     ]);
 

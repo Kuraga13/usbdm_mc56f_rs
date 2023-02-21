@@ -29,7 +29,7 @@ pub fn main() -> iced::Result {
     let icon = window::Icon::from_rgba(img_raw, img_dims.0, img_dims.1).unwrap();
 
     let settings = Settings {
-        default_text_size: 15,
+        default_text_size: 15.0,
         window: iced::window::Settings{
             size: (800, 500),
             resizable: true,
