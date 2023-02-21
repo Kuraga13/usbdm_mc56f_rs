@@ -85,6 +85,17 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
   dbg!(core_id_code);
   self.once_status = enableONCE(&self.programmer)?;
   dbg!(&self.once_status);
+  
+  match self.once_status
+  {
+   OnceStatus::UnknownMode => 
+   {
+     return Err((Error::TargetNotConnected))
+   }
+   _=>{}
+
+  }
+
   Ok(())
     
 }

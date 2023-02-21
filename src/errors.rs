@@ -16,6 +16,7 @@ pub enum Error {
    Usb(rusb::Error),
    PowerStateError,
    LostConnection,
+   TargetNotConnected,
 }
 
 impl std::error::Error for Error {}

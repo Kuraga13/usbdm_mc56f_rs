@@ -8,7 +8,7 @@ use iced::{alignment, theme, Application, Color, Element, Length};
 
 use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
-use crate::app::{Message, App, UsbdmAppStatus};
+use crate::app::{Message, App, UsbdmAppStatus, PowerStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
 use super::styling::{PowerButtonStyle, ButtonStyle};
 use super::hexbuffer_widget::{TableContents,table_contents };
@@ -54,7 +54,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
         Message::PowerSelect,
     );
 
-    let set_power_button =  power_button(&_app.status);
+    let set_power_button =  power_button(&_app.status, &_app.power_status);
     
 
 
@@ -136,29 +136,36 @@ Message::TestFeedback
 
 
 
-pub fn power_button<'a>( state : &UsbdmAppStatus) -> button::Button<'a, Message, iced::Renderer> {
+pub fn power_button<'a>( state : &UsbdmAppStatus, power_state : &PowerStatus) -> button::Button<'a, Message, iced::Renderer> {
 
     let power_button = match state
     {
-       UsbdmAppStatus::Start      =>  
+       UsbdmAppStatus::NotConnected      =>  
        {
 
         empty_labeled_button("VDD").style(iced::theme::Button::Custom(Box::new(PowerButtonStyle {})))
        
        }  
           
-       UsbdmAppStatus::ConnectedPowerOn  =>  
+       UsbdmAppStatus::Connected  =>  
        {
+        match power_state
+        {
+         PowerStatus::PowerOn  =>  
+         {
 
-        labeled_button("VDD", Message::PowerToggle).style(theme::Button::Destructive)
+            labeled_button("VDD", Message::PowerToggle).style(theme::Button::Destructive)
 
+         }
+         PowerStatus::PowerOff  => 
+         {
+
+            labeled_button("VDD", Message::PowerToggle).style(iced::theme::Button::Custom(Box::new(PowerButtonStyle {})))
+
+         } 
+        }
        }
-       UsbdmAppStatus::ConnectedPowerOff  =>  
-       {
 
-        labeled_button("VDD", Message::PowerToggle).style(iced::theme::Button::Custom(Box::new(PowerButtonStyle {})))
-
-       }
        UsbdmAppStatus::Errored    => 
        {
 
@@ -226,19 +233,32 @@ pub fn connect_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Messa
     MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
 }
 
-pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppStatus) -> MenuTree<'a, Message, iced::Renderer> {
+pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppStatus, target_state : &TargetStatus) -> MenuTree<'a, Message, iced::Renderer> {
 
     match state
     {
     
-    UsbdmAppStatus::ConnectedPowerOn =>
+    UsbdmAppStatus::Connected =>
     {
-        MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+        match target_state
+        {
+            TargetStatus::Connected => 
+            {
+                MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+            }
+
+            _ =>
+            {
+              MenuTree::new(empty_labeled_button(label).width(Length::Fill).height(Length::Fill))
+            }
+
+        }
+        
     }
 
-    UsbdmAppStatus::ConnectedPowerOff =>
+    UsbdmAppStatus::NotConnected =>
     {
-        MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+        MenuTree::new(empty_labeled_button(label).width(Length::Fill).height(Length::Fill))
     }
     
     _ => 
@@ -247,9 +267,6 @@ pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppS
     }
 
     }
-
-
-
     
 }
 
@@ -417,9 +434,9 @@ pub fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         debug_button("Programmer"),
         vec![
             connect_button_item("Connect", Message::Connect),
-            programmer_button_item("Read", Message::TestFeedback, &_app.status),
-            programmer_button_item("Write", Message::TestFeedback, &_app.status),
-            programmer_button_item("Erase", Message::TestFeedback, &_app.status),
+            programmer_button_item("Read", Message::TestFeedback, &_app.status, &_app.target_status),
+            programmer_button_item("Write", Message::TestFeedback, &_app.status, &_app.target_status),
+            programmer_button_item("Erase", Message::TestFeedback, &_app.status, &_app.target_status),
         ],
     )
     .width(110);
@@ -490,9 +507,9 @@ pub fn menu_1_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         debug_button("File"),
         vec![
             connect_button_item("Open", Message::Connect),
-            programmer_button_item("Save", Message::TestFeedback, &_app.status),
-            programmer_button_item("Save As", Message::TestFeedback, &_app.status),
-            programmer_button_item("Erase", Message::TestFeedback, &_app.status),
+            programmer_button_item("Save", Message::TestFeedback, &_app.status, &_app.target_status),
+            programmer_button_item("Save As", Message::TestFeedback, &_app.status, &_app.target_status),
+            programmer_button_item("Erase", Message::TestFeedback, &_app.status, &_app.target_status),
         ],
     )
     .width(110);
@@ -544,7 +561,7 @@ pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     let root = MenuTree::with_children(
         debug_button("Widgets"),
         vec![
-            programmer_button_item("Test_Feedback", Message::TestFeedback, &app.status),
+            programmer_button_item("Test_Feedback", Message::TestFeedback, &app.status, &app.target_status),
             debug_item("as a menu item"),
             bt,
             cb,

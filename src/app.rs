@@ -22,11 +22,27 @@ use crate::gui::{self, main_window};
 #[derive(Debug, Clone)]
 pub enum UsbdmAppStatus {
     
-    Start,
-    ConnectedPowerOn,
-    ConnectedPowerOff,
+    NotConnected,
+    Connected,
     //Errored(Error),
     Errored,
+
+}
+
+#[derive(Debug, Clone)]
+pub enum TargetStatus {
+    
+    NotConnected,
+    Connected,
+    Errored,
+
+}
+
+#[derive(Debug, Clone)]
+pub enum PowerStatus {
+    
+    PowerOn,
+    PowerOff,
 
 }
 
@@ -62,7 +78,8 @@ pub struct App {
            buffer_view    : Vec<HexBufferView>,
     pub    selected_power : TargetVddSelect,
     pub    status         : UsbdmAppStatus,
-
+    pub    power_status   : PowerStatus,
+    pub    target_status  : TargetStatus,
 
     pub    title: String,
     pub    value: u8,
@@ -105,9 +122,12 @@ impl Application for App {
 
                 selected_power : TargetVddSelect::Vdd3V3,
                 target         : None,
-                status         : UsbdmAppStatus::Start,
+                status         : UsbdmAppStatus::NotConnected,
+                power_status   : PowerStatus::PowerOff,
+                target_status  : TargetStatus::NotConnected,
                 buff           : vec![HexBuffer::new()],
                 buffer_view    : vec![HexBufferView::default()],
+
             },
             iced::Command::none(),
         )
@@ -181,7 +201,7 @@ impl Application for App {
             Message::Init => 
             {
                 
-                self.status  = UsbdmAppStatus::Start;
+                self.status  = UsbdmAppStatus::NotConnected;
 
             }
 
@@ -195,29 +215,73 @@ impl Application for App {
 
             Message::Connect => 
             {    
-              let check_connect = find_usbdm();
+             match self.status
+             {
 
-              match check_connect
-                 {
-                    Ok(check_connect) =>
+                UsbdmAppStatus::NotConnected =>
+                {
+                    let check_connect = find_usbdm();
+                    match check_connect
                     {
-
-                    println!("Try claim usb");
-                    let usb_int = UsbInterface::new(check_connect).expect("Programmer Lost Connection");
-                    let programmer = Some(Programmer::new(usb_int));
-                    self.target  = Some(Target::init(programmer.expect("Programmer Lost Connection")));
-                    self.target.as_mut().expect("target lost").init().unwrap_or(self.status = UsbdmAppStatus::Errored);
-                    self.target.as_mut().expect("target lost").connect(self.selected_power).unwrap_or(self.status = UsbdmAppStatus::Errored);
-                    self.status  = UsbdmAppStatus::ConnectedPowerOn;
-
+                       Ok(check_connect) =>
+                       {
+   
+                       println!("Try claim usb");
+                       let usb_int = UsbInterface::new(check_connect).expect("Can configure USB port for USBDM, check driver or usb port");
+                       let programmer = Some(Programmer::new(usb_int));
+                       self.target  = Some(Target::init(programmer.expect("Programmer Lost Connection")));
+                       self.target.as_mut().expect("target lost").init().unwrap_or(self.status = UsbdmAppStatus::Errored);
+                       if let Err(_e) = self.target.as_mut().expect("target lost").connect(self.selected_power)
+                       {
+                        self.target.as_mut().expect("target lost").power(TargetVddSelect::VddOff);
+                        self.status         = UsbdmAppStatus::Connected;
+                        self.target_status  = TargetStatus::NotConnected;
+                        self.power_status   = PowerStatus::PowerOff;
+                       }
+                       else
+                       {
+                        self.status         = UsbdmAppStatus::Connected;
+                        self.target_status  = TargetStatus::Connected;
+                        self.power_status   = PowerStatus::PowerOn;
+                       }
+                       
+   
+                       }
+                       Err(_e) =>
+                       {
+                       dbg!("Programmer not connected. VID Usbdm CF not found on USB devices");
+                       self.status = UsbdmAppStatus::NotConnected;
+                       self.title =  String::from("Programmer not found! Check connection").clone();
+                       }
                     }
-                    Err(_e) =>
-                    {
-                    dbg!("Programmer not connected");
-                    self.status = UsbdmAppStatus::Errored;
-                    self.title =  String::from("Programmer not found! Check connection").clone();
-                    }
-                 }
+                }
+                UsbdmAppStatus::Connected => 
+                {
+                   let check_connect =  self.target.as_mut().expect("target lost").connect(self.selected_power);
+                   match check_connect
+                   {
+                   Ok(check_connect) =>
+                   {
+
+                   println!("Target Connnected");
+                   self.power_status  = PowerStatus::PowerOn;
+                   self.target_status = TargetStatus::Connected;
+
+                   }
+                   Err(_e) =>
+                   {
+                   dbg!("Target not connected");
+                   self.target.as_mut().expect("target lost").power(TargetVddSelect::VddOff);
+                   self.power_status  = PowerStatus::PowerOff;
+                   self.target_status = TargetStatus::NotConnected;
+                   self.title =  String::from("Target not connected").clone();
+                   }
+                  }
+                }
+    
+                _ => 
+                {} // we should never be here!!
+              }
             } 
 
             Message::Disconnect => 
@@ -229,7 +293,7 @@ impl Application for App {
             
                 self.target.as_mut().expect("target lost").disconnect();
                 self.target = None;
-                self.status  = UsbdmAppStatus::Start; 
+                self.status  = UsbdmAppStatus::NotConnected; 
                 
                 }
                     
@@ -247,13 +311,13 @@ impl Application for App {
               { 
                 dbg!("Try Power off, from state now: {}", &is_power);
                 mcu.power(TargetVddSelect::VddOff);
-                self.status  = UsbdmAppStatus::ConnectedPowerOff;
+                self.power_status  = PowerStatus::PowerOff;
               }
               else
               { 
                 dbg!("Try Power On, from state now: {}", &is_power);
                 mcu.power(self.selected_power);
-                self.status  = UsbdmAppStatus::ConnectedPowerOn;
+                self.power_status  = PowerStatus::PowerOn;
               } 
 
             }   
