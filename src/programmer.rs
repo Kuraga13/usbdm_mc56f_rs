@@ -299,12 +299,12 @@ pub fn target_power_reset(&mut self) -> Result<(), Error>{
     const PIN_RESET_LOW : u16 = 2<<2;   // Set Reset low
     const PIN_RELEASE   : u16 = 0xffff; // Release all pins (go to default for current target)
     let previous_power = self.settings.target_voltage;
-    self.set_vdd(TargetVddSelect::VddDisable);
+    self.set_vdd(TargetVddSelect::VddOff);
     thread::sleep(time::Duration::from_millis(self.settings.reset_duration));
-    self.bdm_control_pins(PIN_RESET_LOW)?;
+    //self.bdm_control_pins(PIN_RESET_LOW)?;
     self.set_vdd(previous_power);
-    thread::sleep(time::Duration::from_millis(self.settings.reset_release_interval));
-    self.bdm_control_pins(PIN_RELEASE)?;
+    //thread::sleep(time::Duration::from_millis(self.settings.reset_release_interval));
+    //self.bdm_control_pins(PIN_RELEASE)?;
     thread::sleep(time::Duration::from_millis(self.settings.reset_recovery_interval));
     Ok(())
 }
