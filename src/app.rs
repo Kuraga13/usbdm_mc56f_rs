@@ -9,7 +9,7 @@ use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
 
 
-use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm, usb_connect};
+use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::programmer::{Programmer};
@@ -170,7 +170,7 @@ impl Application for App {
                 self.title = self.size_option.to_string();
             }
 
-            Message::Error(error) =>
+            Message::Error(Error) =>
             {
 
 
@@ -203,8 +203,8 @@ impl Application for App {
                     {
 
                     println!("Try claim usb");
-                    usb_connect(check_connect).expect("Programmer Lost Connection");
-                    let programmer = Some(Programmer::new());
+                    let usb_int = UsbInterface::new(check_connect).expect("Programmer Lost Connection");
+                    let programmer = Some(Programmer::new(usb_int));
                     self.target  = Some(Target::init(programmer.expect("Programmer Lost Connection")));
                     self.target.as_mut().expect("target lost").init().unwrap_or(self.status = UsbdmAppStatus::Errored);
                     self.target.as_mut().expect("target lost").connect(self.selected_power).unwrap_or(self.status = UsbdmAppStatus::Errored);
