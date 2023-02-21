@@ -2,8 +2,6 @@
 
 use crate::programmer::Programmer;
 use crate::errors::Error;
-use crate::enums::{bdm_commands};
-use crate::usb_interface::{UsbInterface, BdmInfo, usb_control_transfer, usb_read, usb_write, usb_drop, get_bdm_version, check_usbm_return_code};
     
 pub const JTAG_COMMAND_MASK        : u8 = 0x7<<5;
 
@@ -269,14 +267,8 @@ impl From <u8>  for OnceStatus  {
       }    
     }
   }
+  
 
-#[derive(Debug)]
-pub struct JtagInterface {}
-
-impl JtagInterface
-{
-    pub fn new() -> Self { Self{} }
-}
 
 
     // Read IDCODE from JTAG TAP
@@ -288,7 +280,7 @@ impl JtagInterface
     // @note - resetTAP=true will enable the Master TAP & disable the Code TAP
     // @note - Leaves Core TAP in RUN-TEST/IDLE
     //
-    pub fn read_id_code(commandRegLength :u8, resetTAP: bool) -> Result<(Vec<u8>), Error> {
+    pub fn read_id_code(commandRegLength :u8, resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         if resetTAP {
             sequence.push(JTAG_TEST_LOGIC_RESET);
@@ -303,15 +295,15 @@ impl JtagInterface
         sequence.push(JTAG_SHIFT_IN_Q(32));
         sequence.push(JTAG_END);
 
-        exec_jtag_seq(sequence, 4)
+        prg.exec_jtag_seq(sequence, 4)
     }
 
-    pub fn read_master_id_code(resetTAP: bool) -> Result<(Vec<u8>), Error> {
-        read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP)
+    pub fn read_master_id_code(resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
+        read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP, prg)
     }
 
-    pub fn read_core_id_code(resetTAP: bool) -> Result<(Vec<u8>), Error> {
-        read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP)
+    pub fn read_core_id_code(resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
+        read_id_code(JTAG_CORE_COMMAND_LENGTH, resetTAP, prg)
     }
 
     //  Enable the Core TAP using the TLM
@@ -319,7 +311,7 @@ impl JtagInterface
     //  @note - Resets the TAPs before enabling Core TAP
     //  @note - It appears that the sequence must end with a EXIT_SHIFT_DR?
     //  @note Leaves Core TAP in RUN-TEST/IDLE to TLM action??
-    pub fn enableCoreTAP() -> Result<(), Error> {
+    pub fn enableCoreTAP(prg:  &Programmer) -> Result<(), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_TEST_LOGIC_RESET);               // Reset TAP
         sequence.append(&mut JTAG_REPEAT_16(50)); // ~2.26ms
@@ -333,7 +325,7 @@ impl JtagInterface
         sequence.push(JTAG_SHIFT_OUT_Q(TLM_REGISTER_LENGTH)); 
         sequence.push(TLM_SLAVE_SELECT_MASK);
         sequence.push(JTAG_END);
-        exec_jtag_seq(sequence, 0)?;
+        prg.exec_jtag_seq(sequence, 0)?;
         Ok(())
     }
 
@@ -343,35 +335,14 @@ impl JtagInterface
      //
      // @note Assumes Core TAP is active & in RUN-TEST/IDLE
      // @note Leaves Core TAP in RUN-TEST/IDLE
-    pub fn enableONCE() -> Result<(OnceStatus), Error> {
+    pub fn enableONCE(prg:  &Programmer) -> Result<(OnceStatus), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
         sequence.push(JTAG_SET_EXIT_IDLE); 
         sequence.push(JTAG_SHIFT_IN_OUT_Q(JTAG_CORE_COMMAND_LENGTH));
         sequence.push(CORE_ENABLE_ONCE_COMMAND);
         sequence.push(JTAG_END);
-        let answer = exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
+        let answer = prg.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
         let once_byte = answer[1]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
         Ok((OnceStatus::from(once_byte)))
     }
-
-    pub fn exec_jtag_seq(mut jtag_seq : Vec<u8>,  answer_lenght : u8) -> Result<(Vec<u8>), Error>{
-      
-    
-        let command = "CMD_USBDM_JTAG_EXECUTE_SEQUENCE".to_string();
-    
-        let command_leght : u8 = 0x4 + jtag_seq.len() as u8;
-    
-        let mut full_command : Vec<u8> = Vec::new();
-        full_command.push(command_leght);
-        full_command.push(bdm_commands::CMD_USBDM_JTAG_EXECUTE_SEQUENCE | 0x80);
-        full_command.push(answer_lenght);
-        full_command.push(jtag_seq.len() as u8);
-        full_command.append(&mut jtag_seq);
-    
-    
-        usb_write(&full_command.as_slice(),1500)?;                                    // write command
-        let answer: Vec<u8> = usb_read().expect("Can't read answer");          // read status from bdm
-       // self.check_usbm_return_code(command, &answer)?;               // check is status ok
-        Ok((answer))
-      }  
