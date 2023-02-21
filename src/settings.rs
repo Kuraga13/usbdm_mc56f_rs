@@ -10,7 +10,7 @@ pub struct BdmSettings {
     pub target_type:                 TargetType,       // Target type - have to be init twice ))) On SetExtOptions + set target command
     pub target_voltage:              TargetVddSelect,  // Target Vdd (off, 3.3V or 5V) - here you only select target vdd, to power ON need send set vdd command
     pub cycle_vdd_on_reset:          bool,             // Cycle target Power when resetting
-    pub cycle_vdd_on_connect:        bool,             // Cycle target Power if connection problems)
+    pub cycle_vdd_on_connect:        bool,             // Cycle target Power if connection problems
     pub leave_target_powered:        bool,             // Leave target power on exit
     pub auto_reconnect:              AutoConnect,      // Automatically re-connect to target (for speed change)
     pub guess_speed:                 bool,             // Guess speed for target w/o ACKN

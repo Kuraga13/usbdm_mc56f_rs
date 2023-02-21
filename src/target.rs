@@ -56,6 +56,9 @@ fn write_target(&self) -> Result<(), Error>;
 /// Write target
 fn erase_target(&self) -> Result<(), Error>;
 
+/// reset target
+fn reset_target(&mut self) -> Result<(), Error>;
+
 }
 
 impl TargetProgramming for Target
@@ -78,12 +81,12 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
 
   self.power(power);
-  let master_id_code = read_master_id_code(true, &self.programmer).expect("Dsc target connect error");
+  let master_id_code = read_master_id_code(true).expect("Dsc target connect error");
   dbg!(master_id_code);
-  enableCoreTAP(&self.programmer); // on second not
-  let core_id_code = read_core_id_code(true, &self.programmer);
+  enableCoreTAP(); // on second not
+  let core_id_code = read_core_id_code(true);
   dbg!(core_id_code);
-  self.once_status = enableONCE(&self.programmer)?;
+  self.once_status = enableONCE()?;
   dbg!(&self.once_status);
   Ok(())
     
@@ -165,6 +168,14 @@ fn erase_target(&self) -> Result<(), Error>
 {
     
     unimplemented!()
+    
+}
+
+fn reset_target(&mut self) -> Result<(), Error>
+{
+    
+    //self.programmer.target_hardware_reset()
+    self.programmer.target_power_reset()
     
 }
 

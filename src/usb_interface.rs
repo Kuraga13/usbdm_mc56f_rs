@@ -10,7 +10,7 @@ use std::fmt;
 
 const USBDM_VID: u16 = 0x16D0;
 
-
+static mut USB: Option<UsbInterface> = None;
 
 pub fn match_vid<T: rusb::UsbContext>(device:&rusb::Device<T>) -> bool 
 {
@@ -65,13 +65,7 @@ pub struct UsbInterface
 }
 
 
-
-
-impl  UsbInterface
-{
-
-
-pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
+pub fn usb_connect(device: rusb::Device<rusb::GlobalContext>) -> Result<(), Error> {
     
     let config = device.active_config_descriptor()?;
     let interface = config.interfaces().next();
@@ -91,8 +85,8 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
             .map(|x| x.address())
             .ok_or(Error::Usb(rusb::Error::NotFound))
     };
-
-    Ok(UsbInterface {
+unsafe {
+    USB = Some(UsbInterface {
         read_ep: find_endpoint(rusb::Direction::In, rusb::TransferType::Bulk)?,
         write_ep: find_endpoint(rusb::Direction::Out, rusb::TransferType::Bulk)?,
         model: handle.read_product_string_ascii(&device_descriptor)?,
@@ -100,44 +94,58 @@ pub fn new(device: rusb::Device<rusb::GlobalContext>) -> Result<Self, Error> {
         //handle: Arc::new(RwLock::new(handle)),
         handle: handle,
         interface_n : number,
-
-       
-    })
+    });
 }
 
+    Ok(())
+}
 
-/// print USBDM model, serial number, EP
-pub fn print_usb_interface(&self)  {
+pub fn usb_control_transfer(
+    request_type: u8,
+    request: u8,
+    value: u16,
+    index: u16,
+    usb_buff : &mut [u8],
+    timeout: Duration
+) -> Result<Vec<u8>, Error> {
 
-    println!("Model: {}",&self.model);
-    println!("Serial Number: {}",&self.serial_number);
-    println!("Read EP: {} ",&self.read_ep);
-    println!("Write EP: {}",&self.write_ep);
+
+  // self.handle.read().unwrap().read_control(request_type, request, value, index, usb_buff, timeout)?;
+  unsafe { 
+  USB.as_mut().expect("no_usb").handle.read_control(request_type, request, value, index, usb_buff, timeout)?;
+  }
+   let control_answer = usb_buff.to_vec();
+   
+   Ok(control_answer) 
 }
 
 /// `write` - write_bulk to usbdm. param - programmer, data u8 slice, timeout.
-pub fn write(&self, data: &[u8], timeout_value: u64) -> Result<(), Error> {
+pub fn usb_write(data: &[u8], timeout_value: u64) -> Result<(), Error> {
     let timeout = Duration::from_millis(timeout_value);
     //self.handle.read().unwrap().write_bulk(self.write_ep, data, timeout)?;
-    self.handle.write_bulk(self.write_ep, data, timeout)?;
+    unsafe {
+    USB.as_mut().expect("no_usb").handle.write_bulk(USB.as_mut().expect("no_usb").write_ep, data, timeout)?;
+    }
     Ok(())
 }
 
 
 /// `read` - read_bulk from usbdm. param - programmer
-pub fn read(&self) -> Result<Vec<u8>, Error> {
+pub fn usb_read() -> Result<Vec<u8>, Error> {
 
     const RECEIVE_SIZE: usize = 32;
     let mut buff = [0; RECEIVE_SIZE];
     //self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
-    self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
+    unsafe {
+    USB.as_mut().expect("no_usb").handle.read_bulk(USB.as_mut().expect("no_usb").read_ep, &mut buff, Duration::from_millis(2500))?;
+    }
     let answer = buff.to_vec();
-    let check_status = self.check_usbm_return_code(&answer)?;
+    let check_status = check_usbm_return_code(&answer)?;
     Ok(answer)
 
 }
 
-pub fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error>{
+pub fn check_usbm_return_code(return_byte : &Vec<u8>) -> Result<(), Error>{
     
     let mut return_code = return_byte[0];
     return_code &= !0xC0;
@@ -158,6 +166,24 @@ pub fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error
       }
   }
 
+impl  UsbInterface
+{
+
+
+
+/// print USBDM model, serial number, EP
+pub fn print_usb_interface(&self)  {
+
+    println!("Model: {}",&self.model);
+    println!("Serial Number: {}",&self.serial_number);
+    println!("Read EP: {} ",&self.read_ep);
+    println!("Write EP: {}",&self.write_ep);
+}
+
+
+
+
+
 pub fn read_slice(&self) -> Result<[u8;32], Error> {
 
     const RECEIVE_SIZE: usize = 32;
@@ -171,28 +197,16 @@ pub fn read_slice(&self) -> Result<[u8;32], Error> {
 
 }
 
-pub fn control_transfer(
-    &self,
-    request_type: u8,
-    request: u8,
-    value: u16,
-    index: u16,
-    usb_buff : &mut [u8],
-    timeout: Duration
-) -> Result<Vec<u8>, Error> {
 
-
-  // self.handle.read().unwrap().read_control(request_type, request, value, index, usb_buff, timeout)?;
-   self.handle.read_control(request_type, request, value, index, usb_buff, timeout)?;
-   let control_answer = usb_buff.to_vec();
-   
-   Ok(control_answer) 
 }
 
-pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
+
+pub fn get_bdm_version() -> Result<BdmInfo, Error>{
       
     let request_type = 64; //LIBUSB_REQUEST_TYPE_VENDOR
-    let request_type = request_type| &self.read_ep;
+    unsafe {
+    let request_type = request_type| USB.as_mut().expect("no_usb").read_ep;
+    }
 
 
     let request      = bdm_commands::CMD_USBDM_GET_VER; // command
@@ -203,7 +217,7 @@ pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
     let mut usb_buf  = [0; 10];
  
 
-    let version = self.control_transfer(
+    let version = usb_control_transfer(
       request_type,
       request,
       value,
@@ -226,31 +240,6 @@ pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
     
     }
 
-   /// `get_bdm_status` - get status byte from USBDM by rusb read_bulk 
-   ///  Return packed-struct (bits-field) `FeebBack` with currently status of USBDM 
-    pub fn get_bdm_status(&mut self) -> Result<FeedBack, Error>{
-      
-        let mut usb_buf = [0; 2];
-        usb_buf[0] = 2;  // lenght
-        usb_buf[1] = bdm_commands::CMD_USBDM_GET_BDM_STATUS;
-        let command = "CMD_USBDM_GET_BDM_STATUS".to_string();
-  
-        let bit = 0x80;
-        let bitter = usb_buf[1] | bit;
-        usb_buf[1] = bitter;
-  
-        self.write(&usb_buf,1500)?;                  // write command
-        let answer = self.read()?;                   //  read status from bdm and save buffer to answer -
-                                                     
-        let feedback_slice = [answer[3],answer[2]];      // two bytes for status feedback (in answer [3] use only 2 bits... for VPP bits)
-        println!("FeedBack is: {:02X?}", feedback_slice);
-        //let unpack = FeedBack::unpack(&[0x02, 0xff]).unwrap();   // for test TODO - write test's in FeedBack and paste where
-        let unpack = FeedBack::unpack(&feedback_slice).unwrap();
-    
-        Ok(unpack)
-  
-      }
-
        
 
 
@@ -258,17 +247,20 @@ pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
 
 
 
-}
 
 
-impl Drop for UsbInterface{
 
-    fn drop(&mut self) {
+//impl Drop for UsbInterface{
 
-        self.handle.release_interface(self.interface_n).unwrap();
+    pub fn usb_drop() {
+        unsafe{
+        USB.as_mut().expect("no_usb").handle.release_interface(USB.as_mut().expect("no_usb").interface_n).unwrap();
+        
+        USB = None;
+        }
         println!("UsbInterface dropped");
     }
-}
+//}
 
 ///`BdmInfo`
 ///The idea is to group a huge number of USBDM structures, enumerations and settings into three abstractions.
