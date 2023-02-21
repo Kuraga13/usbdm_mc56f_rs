@@ -269,10 +269,12 @@ impl Application for App {
 
             Message::TestFeedback =>
             {
+                println!("Reset");
+                self.target.as_mut().expect("target lost").programmer.target_power_reset();
             
-              let mcu =  self.target.as_mut().expect("");
-              mcu.power(TargetVddSelect::VddOff);
-              if let Err(_e) = mcu.programmer.refresh_feedback() { self.status = UsbdmAppStatus::Errored};
+              //let mcu =  self.target.as_mut().expect("");
+              //mcu.power(TargetVddSelect::VddOff);
+              //if let Err(_e) = mcu.programmer.refresh_feedback() { self.status = UsbdmAppStatus::Errored};
              // mcu.power(TargetVddSelect::VddDisable);
               //mcu.programmer.set_bdm_options();
               // usbdm.programmer.set_bdm_options();
