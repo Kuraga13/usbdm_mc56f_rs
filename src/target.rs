@@ -78,12 +78,12 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
 
   self.power(power);
-  let master_id_code = read_master_id_code(true, &self.programmer).expect("Dsc target connect error");
+  let master_id_code = read_master_id_code(true).expect("Dsc target connect error");
   dbg!(master_id_code);
-  enableCoreTAP(&self.programmer); // on second not
-  let core_id_code = read_core_id_code(true, &self.programmer);
+  enableCoreTAP(); // on second not
+  let core_id_code = read_core_id_code(true);
   dbg!(core_id_code);
-  self.once_status = enableONCE(&self.programmer)?;
+  self.once_status = enableONCE()?;
   dbg!(&self.once_status);
   Ok(())
     

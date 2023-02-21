@@ -16,7 +16,8 @@ pub struct Programmer {
 
     bdm_info     : BdmInfo,
     feedback     : FeedBack,
-    settings     : BdmSettings, 
+    settings     : BdmSettings,
+    jtag         : JtagInterface
     
 }
 
@@ -43,6 +44,7 @@ pub fn new() -> Self {
             bdm_info        : get_bdm_version().expect("Error on get bdm ver"),
             feedback        : get_bdm_status().expect("Error on feedback"),
             settings        : BdmSettings::default(),
+            jtag            : JtagInterface::new(),
 
         }
     
@@ -248,26 +250,7 @@ pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
 
    }
 
-   pub fn exec_jtag_seq(&self, mut jtag_seq : Vec<u8>,  answer_lenght : u8) -> Result<(Vec<u8>), Error>{
-      
-    
-    let command = "CMD_USBDM_JTAG_EXECUTE_SEQUENCE".to_string();
-
-    let command_leght : u8 = 0x4 + jtag_seq.len() as u8;
-
-    let mut full_command : Vec<u8> = Vec::new();
-    full_command.push(command_leght);
-    full_command.push(bdm_commands::CMD_USBDM_JTAG_EXECUTE_SEQUENCE | 0x80);
-    full_command.push(answer_lenght);
-    full_command.push(jtag_seq.len() as u8);
-    full_command.append(&mut jtag_seq);
-
-
-    usb_write(&full_command.as_slice(),1500)?;                                    // write command
-    let answer: Vec<u8> = usb_read().expect("Can't read answer");          // read status from bdm
-   // self.check_usbm_return_code(command, &answer)?;               // check is status ok
-    Ok((answer))
-  } 
+  
 
   pub fn bdm_control_pins(&mut self, control: u16) -> Result<(), Error>{
 
