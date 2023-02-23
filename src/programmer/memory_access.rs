@@ -1,0 +1,94 @@
+use crate::errors::{Error, USBDM_ErrorCode};
+use crate::jtag::*;
+use super::Programmer;
+
+mod memory_space_t {
+    // Memory space indicator - includes element size
+    // One of the following
+    pub const MS_BYTE    : u8  = 1;        // Byte (8-bit) access
+    pub const MS_WORD    : u8  = 2;        // Word (16-bit) access
+    pub const MS_LONG    : u8  = 4;        // Long (32-bit) access
+    // One of the following
+    pub const MS_NONE    : u8  = 0<<4;     // Memory space unused/undifferentiated
+    pub const MS_PROGRAM : u8  = 1<<4;     // Program memory space (e.g. P: on DSC)
+    pub const MS_DATA    : u8  = 2<<4;     // Data memory space (e.g. X: on DSC)
+    pub const MS_GLOBAL  : u8  = 3<<4;     // HCS12 Global addresses (Using BDMPPR register)
+    // Fast memory access for HCS08/HCS12 (stopped target, regs. are modified
+    pub const MS_FAST    : u8  = 1<<7;
+    // Masks for above
+    pub const MS_SIZE    : u8  = 0x7<<0;   // Size
+    pub const MS_SPACE   : u8  = 0x7<<4;   // Memory space
+    // For convenience (DSC)
+    pub const MS_PWORD   : u8  = MS_WORD + MS_PROGRAM;
+    pub const MS_PLONG   : u8  = MS_LONG + MS_PROGRAM;
+    pub const MS_XBYTE   : u8  = MS_LONG + MS_DATA;
+    pub const MS_XWORD   : u8  = MS_WORD + MS_DATA;
+    pub const MS_XLONG   : u8  = MS_LONG + MS_DATA;
+}
+
+impl Programmer
+{
+// Read X/P memory via ONCE & target execution
+//
+// @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+// @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+// @param address     - Memory address
+// @param buffer      - Where to obtain the data
+//
+// @note If memory space size is word or long size then address is DSC word address
+// @note If memory space size is byte size then address is DSC byte pointer address
+// @note Size is limited to dscInfo.maxMemoryReadSize
+//
+fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
+    const JTAG_READ_MEMORY_HEADER_SIZE: usize = 8;
+    if (memory_space == memory_space_t::MS_PLONG) {
+        // Treat as word access
+        memory_space = memory_space_t::MS_PWORD;
+    };
+    
+    let mut num_bytes_adjusted = num_bytes;
+    match (memory_space & memory_space_t::MS_SIZE) {
+        memory_space_t::MS_LONG => {
+            if ((address & 0x01) == 0) {
+                num_bytes_adjusted /= 4;
+            } else {
+                return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS))
+            };},
+        memory_space_t::MS_WORD => { num_bytes_adjusted /= 2; },
+        memory_space_t::MS_BYTE => { num_bytes_adjusted /= 4; },
+        other               => return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS)),
+    };
+
+    /*
+     *    +-----------------------+
+     *    |    JTAG_READ_MEM      |
+     *    +-----------------------+
+     *    |    JTAG_END           |
+     *    +-----------------------+
+     *    |                       |
+     *    +--                   --+
+     *    |                       |
+     *    +--  Memory Address   --+
+     *    |                       |
+     *    +--                  ---+
+     *    |                       |
+     *    +-----------------------+
+     *    |  # of memory elements |
+     *    +-----------------------+
+     *    |   Memory Space        |
+     *    +-----------------------+
+     */
+
+    let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE);
+    sequence.push(JTAG_READ_MEM);          // 0
+    sequence.push(JTAG_END);               // 1
+    sequence.push((address >> 24) as u8);  // 2 Address
+    sequence.push((address >> 16) as u8);  // 3
+    sequence.push((address >> 8) as u8);   // 4
+    sequence.push(address as u8);          // 5
+    sequence.push(num_bytes_adjusted);     // 6 Elements
+    sequence.push(memory_space);           // 7 Memory space
+
+    self.exec_jtag_seq(sequence, num_bytes)
+}
+}

@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+mod memory_access;
+
 use crate::usb_interface::{UsbInterface, BdmInfo};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack, PowerState,};

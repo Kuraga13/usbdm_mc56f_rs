@@ -2,7 +2,6 @@
 
 use crate::programmer::Programmer;
 use crate::errors::{Error, USBDM_ErrorCode};
-use crate::enums::memory_space_t;
     
 pub const JTAG_COMMAND_MASK         : u8 = 0x7<<5;
 
@@ -352,66 +351,4 @@ impl From <u8>  for OnceStatus  {
     }
 
 
-// Read X/P memory via ONCE & target execution
-//
-// @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
-// @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
-// @param address     - Memory address
-// @param buffer      - Where to obtain the data
-//
-// @note If memory space size is word or long size then address is DSC word address
-// @note If memory space size is byte size then address is DSC byte pointer address
-// @note Size is limited to dscInfo.maxMemoryReadSize
-//
-fn read_memory_block(mut memory_space: u8, num_bytes: u8, address: u32, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
-    const JTAG_READ_MEMORY_HEADER_SIZE: usize = 8;
-    if (memory_space == memory_space_t::MS_PLONG) {
-        // Treat as word access
-        memory_space = memory_space_t::MS_PWORD;
-    };
-    
-    let mut num_bytes_adjusted = num_bytes;
-    match (memory_space & memory_space_t::MS_SIZE) {
-        memory_space_t::MS_LONG => {
-            if ((address & 0x01) == 0) {
-                num_bytes_adjusted /= 4;
-            } else {
-                return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS))
-            };},
-        memory_space_t::MS_WORD => { num_bytes_adjusted /= 2; },
-        memory_space_t::MS_BYTE => { num_bytes_adjusted /= 4; },
-        other               => return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS)),
-    };
 
-    /*
-     *    +-----------------------+
-     *    |    JTAG_READ_MEM      |
-     *    +-----------------------+
-     *    |    JTAG_END           |
-     *    +-----------------------+
-     *    |                       |
-     *    +--                   --+
-     *    |                       |
-     *    +--  Memory Address   --+
-     *    |                       |
-     *    +--                  ---+
-     *    |                       |
-     *    +-----------------------+
-     *    |  # of memory elements |
-     *    +-----------------------+
-     *    |   Memory Space        |
-     *    +-----------------------+
-     */
-
-    let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE);
-    sequence.push(JTAG_READ_MEM);          // 0
-    sequence.push(JTAG_END);               // 1
-    sequence.push((address >> 24) as u8);  // 2 Address
-    sequence.push((address >> 16) as u8);  // 3
-    sequence.push((address >> 8) as u8);   // 4
-    sequence.push(address as u8);          // 5
-    sequence.push(num_bytes_adjusted);     // 6 Elements
-    sequence.push(memory_space);           // 7 Memory space
-
-    prg.exec_jtag_seq(sequence, num_bytes)
-}
