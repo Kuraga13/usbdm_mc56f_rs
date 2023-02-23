@@ -63,14 +63,11 @@ pub enum Message {
     
     OkButtonPressed,
 
-    Init,
-    Start,
     Connect,
     Disconnect,
     PowerSelect(TargetVddSelect),
     PowerToggle,
     TestFeedback,
-    Error(Error),
     
 }
 
@@ -96,6 +93,72 @@ pub struct App {
     pub    text: String,
     pub    size_option: main_window::SizeOption,
 }
+
+
+
+pub fn check_err(err: Error, app : &mut App)
+{
+
+    app.show_error_modal = true;
+    app.error_status     = Some(err);
+   
+
+}
+
+
+impl App 
+{
+
+
+
+ fn check_connect_programmer(&mut self)
+ {
+    let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
+
+    let check_connect_usb =  dsc.programmer.refresh_feedback().unwrap_or_else( |err, |  check_err(err, self));
+           
+ }
+
+ fn check_power(&mut self) -> Result<PowerStatus, Error>
+ {
+    
+    let dsc =  self.target.as_mut().expect("");
+    let power = dsc.programmer.check_power();
+    let power_state =  PowerStatus::PowerOff;
+    match power
+    {
+       Ok(true) =>
+       {
+           Ok(PowerStatus::PowerOff)
+       }
+
+       Ok(false) =>
+       {
+           Ok(PowerStatus::PowerOff)
+       }
+
+       (Err(_e)) =>
+       {
+          Err(_e)
+       }
+     } 
+
+ }
+
+ fn check_connect_programmer_and_target(&mut self)
+ {
+    let check_connect_usb =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
+
+    check_connect_usb.programmer.refresh_feedback().unwrap_or_else( |err, |  check_err(err, self));
+           
+    let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
+    let check_connect_dsc =  dsc.connect(self.selected_power).unwrap_or_else( |err, |  check_err(err,  self));
+
+ }
+
+
+}
+
 impl Application for App {
     type Executor = iced::executor::Default;
     type Message = Message;
@@ -202,103 +265,108 @@ impl Application for App {
 
             Message::OkButtonPressed =>
             {
-                self.show_error_modal = false;
+
+              self.show_error_modal = false;
+
             } 
 
-
-            Message::Error(error) =>
-            {
-
-
-
-            }
-
-
-            Message::Init => 
-            {
-                
-                self.status  = UsbdmAppStatus::NotConnected;
-
-            }
-
-            Message::Start => 
-            {
-                
-            
-
-            }
             
 
             Message::Connect => 
-            {    
+            {  
+
              match self.status
              {
 
                 UsbdmAppStatus::NotConnected =>
                 {
+                    // check usb low level - two type errors : can't find VID and second cannot configure descriptor (bad drivers or hw error on usb port)
                     let check_connect = find_usbdm();
                     match check_connect
                     {
                        Ok(check_connect) =>
                        {
    
-                       println!("Try claim usb");
-                       let usb_int = UsbInterface::new(check_connect).expect("Can configure USB port for USBDM, check driver or usb port");
-                       let programmer = Some(Programmer::new(usb_int));
-                       self.target  = Some(Target::init(programmer.expect("Programmer Lost Connection")));
-                       self.target.as_mut().expect("target lost").init().unwrap_or(self.status = UsbdmAppStatus::Errored);
-                       if let Err(_e) = self.target.as_mut().expect("target lost").connect(self.selected_power)
+                       println!("Try claim usb & configure descriptors");
+                       let usb_int = UsbInterface::new(check_connect);
+                       match usb_int
                        {
-                        self.target.as_mut().expect("target lost").power(TargetVddSelect::VddOff);
-                        self.status         = UsbdmAppStatus::Connected;
-                        self.target_status  = TargetStatus::NotConnected;
-                        self.power_status   = PowerStatus::PowerOff;
+                        Ok(usb_int) =>
+                        {
+                            let programmer = Programmer::new(usb_int);
+                            
+                            // init programmer, here we can get errors on get version, settings feedback etc.
+                            match programmer
+                            {
+                                Ok(programmer) =>
+                                {
+                                
+                                self.target  = Some(Target::init(Some(programmer).expect("Option: None")));
+                                }
+
+                                Err(_e) =>
+
+                                {
+
+                                check_err(_e,  self);
+                                //self.error_nandler (_e, UsbdmAppStatus::NotConnected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                                return iced::Command::none();
+
+                                }
+                            }
+                        }
+                        Err(_e) =>
+                        {
+                      
+                            check_err(_e,  self);
+                            //self.error_nandler (_e, UsbdmAppStatus::NotConnected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                            return iced::Command::none();
+
+                        }
+                       }
+                    
+                       
+                       let mut dsc =  self.target.as_mut().expect("target lost");
+                       dsc.init();
+                       
+                       if let Err(_e) = dsc.connect(self.selected_power)
+                       {
+                        dsc.power(TargetVddSelect::VddOff);
+                        check_err(_e, self);
+                        //self.error_nandler (_e, UsbdmAppStatus::Connected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                        return iced::Command::none();
                        }
                        else
                        {
                         self.status         = UsbdmAppStatus::Connected;
                         self.target_status  = TargetStatus::Connected;
-                        self.power_status   = PowerStatus::PowerOn;
+                        self.power_status   =  PowerStatus::PowerOn //self.check_power(); TODO POWER STAYE FROM FUNC
                        }
                        
    
                        }
                        Err(_e) =>
                        {
-                       dbg!("Programmer not connected. VID Usbdm CF not found on USB devices");
-                       self.show_error_modal = true;
-                       self.error_status = Some(Error::Usb(rusb::Error::NoDevice));
-                       self.status = UsbdmAppStatus::NotConnected;
-                       self.title =  String::from("Programmer not found! Check connection").clone();
+                       
+                       check_err(_e, self);
+                       //self.error_nandler (_e, UsbdmAppStatus::NotConnected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                       return iced::Command::none();
+                 
+            
                        }
                     }
                 }
                 UsbdmAppStatus::Connected => 
-                {
-                   let check_connect =  self.target.as_mut().expect("target lost").connect(self.selected_power);
-                   match check_connect
-                   {
-                   Ok(check_connect) =>
-                   {
-
-                   println!("Target Connnected");
-                   self.power_status  = PowerStatus::PowerOn;
-                   self.target_status = TargetStatus::Connected;
-
-                   }
-                   Err(_e) =>
-                   {
-                   dbg!("Target not connected");
-                   self.target.as_mut().expect("target lost").power(TargetVddSelect::VddOff);
-                   self.power_status  = PowerStatus::PowerOff;
-                   self.target_status = TargetStatus::NotConnected;
-                   self.title =  String::from("Target not connected").clone();
-                   }
-                  }
+                {  
+            
+                 self.check_connect_programmer_and_target();
+              
                 }
     
                 _ => 
-                {} // we should never be here!!
+                {
+                    return iced::Command::none(); // we should never be here!!
+                } 
               }
             } 
 
@@ -322,21 +390,39 @@ impl Application for App {
             Message::PowerToggle => 
             {    
 
-             let mcu =  self.target.as_mut().expect("");
-             let is_power = mcu.programmer.check_power().expect("Err on check power!");
+             let status = self.check_power();
+             
+             match status
+             {
 
-              if(is_power)
-              { 
-                dbg!("Try Power off, from state now: {}", &is_power);
-                mcu.power(TargetVddSelect::VddOff);
-                self.power_status  = PowerStatus::PowerOff;
+                Ok(PowerStatus::PowerOn) =>
+                {
+                    let dsc =  self.target.as_mut().expect("");
+                    dsc.power(TargetVddSelect::VddOff);
+                    self.power_status  = PowerStatus::PowerOff;
+
+                }
+
+                Ok(PowerStatus::PowerOff) =>
+
+                {
+    
+                    let dsc =  self.target.as_mut().expect("");
+                    dsc.power(self.selected_power);
+                    self.power_status  = PowerStatus::PowerOn;
+
+                }
+
+                (Err(_e)) =>
+                {   
+                    let dsc =  self.target.as_mut().expect("");
+                    dsc.power(TargetVddSelect::VddOff);
+                    //self.error_nandler (_e, UsbdmAppStatus::Connected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                    check_err(_e, self);
+                    return iced::Command::none();
+                }
+
               }
-              else
-              { 
-                dbg!("Try Power On, from state now: {}", &is_power);
-                mcu.power(self.selected_power);
-                self.power_status  = PowerStatus::PowerOn;
-              } 
 
             }   
 

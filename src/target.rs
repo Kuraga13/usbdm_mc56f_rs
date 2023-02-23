@@ -78,10 +78,10 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
 
   self.power(power);
-  let master_id_code = read_master_id_code(true, &self.programmer).expect("Dsc target connect error");
+  let master_id_code = read_master_id_code(true, &self.programmer)?;
   dbg!(master_id_code);
   enableCoreTAP(&self.programmer); // on second not
-  let core_id_code = read_core_id_code(true, &self.programmer);
+  let core_id_code = read_core_id_code(true, &self.programmer)?;
   dbg!(core_id_code);
   self.once_status = enableONCE(&self.programmer)?;
   dbg!(&self.once_status);
@@ -103,7 +103,7 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 fn power(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
 
- let mut is_powered = self.programmer.check_power().expect("Err on check power!");
+ let mut is_powered = self.programmer.check_power()?;  // "Err on check power!"
  dbg!(is_powered);
  match power
  {
@@ -112,7 +112,7 @@ fn power(&mut self, power : TargetVddSelect) -> Result<(), Error>
         if(is_powered)
         {
          self.programmer.set_vdd(TargetVddSelect::VddOff);
-         is_powered = self.programmer.check_power().expect("Err on check power!");
+         is_powered = self.programmer.check_power()?;
          if(!is_powered)
          {
             Ok(())
@@ -132,7 +132,7 @@ fn power(&mut self, power : TargetVddSelect) -> Result<(), Error>
         if(!is_powered)
         {
         self.programmer.set_vdd(power);
-        is_powered = self.programmer.check_power().expect("Err on check power!");
+        is_powered = self.programmer.check_power()?;
          if(is_powered)
          {
             Ok(())

@@ -18,9 +18,81 @@ pub enum Error {
    LostConnection,
    TargetNotConnected,
    Unknown,
+   PackerErr(packed_struct::PackingError),
 }
 
+pub fn get_title_message_error_modal(err : Error) -> (String, String)
+{
+
+  let mut title   =  String::new();
+  let mut message =  String::new();
+
+    match err
+    {
+        Error::USBDM_Errors(_) =>
+         {
+         
+         title   = "Error from Usbdm programmer".to_string();
+         message = "Return code from Usbdm is:\n".to_string();
+
+
+         }
+
+        Error::Usb(_) =>
+         {
+
+         title   = "Usb error".to_string();
+         message = "Check usd driver, cable and connection.\nUsb error is:".to_string();
+
+         }
+         Error::PowerStateError =>
+         {  
+
+         title   = "Power Error".to_string();
+         message = "Check power circuit on target\n".to_string();
+
+         }
+         Error::LostConnection =>
+         {
+            
+         title   = "Error".to_string();
+         message = "Lost connection with usbdm\n".to_string();
+
+
+         }
+         Error::TargetNotConnected =>
+         {
+
+          title   = "Target not connected".to_string();
+          message = "1. Usbdm programmer: connection OK.\n2. Target controller: not connection, check connection".to_string();
+
+
+         }
+         Error::PackerErr(_) =>
+         {
+
+          title   = "Internal Err".to_string();
+          message = "Internal Error, reset Usdbm, setup all again.\nIf occurs again, please write to me".to_string();
+
+
+         }
+         _ =>
+         {
+
+          title   = "Unknown Error".to_string();
+          message = "Unknown Error, reset Usdbm, setup all again.\nIf occurs again, please write to me".to_string();
+
+         }
+        }
+
+        (title, message)
+
+
+    }
+
+
 impl std::error::Error for Error {}
+
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -31,6 +103,13 @@ impl fmt::Display for Error {
 impl From<rusb::Error> for Error {
     fn from(error: rusb::Error) -> Error {
         Error::Usb(error)      
+    }
+}
+
+
+impl From<packed_struct::PackingError> for Error {
+    fn from(error: packed_struct::PackingError) -> Error {
+        Error::PackerErr(error)      
     }
 }
 

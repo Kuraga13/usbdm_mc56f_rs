@@ -39,8 +39,7 @@ pub async fn find_usbdm_as() -> Result<rusb::Device<rusb::GlobalContext>, Error>
 pub  fn find_usbdm() -> Result<rusb::Device<rusb::GlobalContext>, Error>
 
 {
-    rusb::DeviceList::new()
-    .unwrap()
+    rusb::DeviceList::new()?
     .iter()
     .filter(match_vid)
     .next()
@@ -118,7 +117,6 @@ pub fn print_usb_interface(&self)  {
 /// `write` - write_bulk to usbdm. param - programmer, data u8 slice, timeout.
 pub fn write(&self, data: &[u8], timeout_value: u64) -> Result<(), Error> {
     let timeout = Duration::from_millis(timeout_value);
-    //self.handle.read().unwrap().write_bulk(self.write_ep, data, timeout)?;
     self.handle.write_bulk(self.write_ep, data, timeout)?;
     Ok(())
 }
@@ -129,7 +127,6 @@ pub fn read(&self) -> Result<Vec<u8>, Error> {
 
     const RECEIVE_SIZE: usize = 32;
     let mut buff = [0; RECEIVE_SIZE];
-    //self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
     self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
     let answer = buff.to_vec();
     let check_status = self.check_usbm_return_code(&answer)?;
@@ -162,7 +159,6 @@ pub fn read_slice(&self) -> Result<[u8;32], Error> {
 
     const RECEIVE_SIZE: usize = 32;
     let mut buff = [0; RECEIVE_SIZE];
-    //self.handle.read().unwrap().read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
     self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
     
 
@@ -182,7 +178,6 @@ pub fn control_transfer(
 ) -> Result<Vec<u8>, Error> {
 
 
-  // self.handle.read().unwrap().read_control(request_type, request, value, index, usb_buff, timeout)?;
    self.handle.read_control(request_type, request, value, index, usb_buff, timeout)?;
    let control_answer = usb_buff.to_vec();
    
@@ -244,8 +239,7 @@ pub fn get_bdm_version(&self) -> Result<BdmInfo, Error>{
                                                      
         let feedback_slice = [answer[3],answer[2]];      // two bytes for status feedback (in answer [3] use only 2 bits... for VPP bits)
         println!("FeedBack is: {:02X?}", feedback_slice);
-        //let unpack = FeedBack::unpack(&[0x02, 0xff]).unwrap();   // for test TODO - write test's in FeedBack and paste where
-        let unpack = FeedBack::unpack(&feedback_slice).unwrap();
+        let unpack = FeedBack::unpack(&feedback_slice)?;
     
         Ok(unpack)
   
@@ -265,7 +259,7 @@ impl Drop for UsbInterface{
 
     fn drop(&mut self) {
 
-        self.handle.release_interface(self.interface_n).unwrap();
+        self.handle.release_interface(self.interface_n);
         println!("UsbInterface dropped");
     }
 }
