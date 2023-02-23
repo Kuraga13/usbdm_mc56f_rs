@@ -18,6 +18,7 @@ use crate::target::TargetProgramming;
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
+use crate::gui::error_notify_modal::{error_notify_model};
 
 #[derive(Debug, Clone)]
 pub enum UsbdmAppStatus {
@@ -59,6 +60,8 @@ pub enum Message {
     ThemeChange(bool),
     TextChange(String),
     SizeOption(main_window::SizeOption),
+    
+    OkButtonPressed,
 
     Init,
     Start,
@@ -73,13 +76,15 @@ pub enum Message {
 
 pub struct App {
 
-           target         : Option<Target>,
-           buff           : Vec<HexBuffer>,
-           buffer_view    : Vec<HexBufferView>,
-    pub    selected_power : TargetVddSelect,
-    pub    status         : UsbdmAppStatus,
-    pub    power_status   : PowerStatus,
-    pub    target_status  : TargetStatus,
+           target           : Option<Target>,
+           buff             : Vec<HexBuffer>,
+           buffer_view      : Vec<HexBufferView>,
+    pub    selected_power   : TargetVddSelect,
+    pub    status           : UsbdmAppStatus,
+    pub    power_status     : PowerStatus,
+    pub    target_status    : TargetStatus,
+    pub    show_error_modal : bool,
+    pub    error_status     : Option<Error>,
 
     pub    title: String,
     pub    value: u8,
@@ -119,14 +124,15 @@ impl Application for App {
                 text: "Text Input".into(),
                 size_option: main_window::SizeOption::Static,
 
-
-                selected_power : TargetVddSelect::Vdd3V3,
-                target         : None,
-                status         : UsbdmAppStatus::NotConnected,
-                power_status   : PowerStatus::PowerOff,
-                target_status  : TargetStatus::NotConnected,
-                buff           : vec![HexBuffer::new()],
-                buffer_view    : vec![HexBufferView::default()],
+                show_error_modal : false,
+                error_status     : None,     
+                selected_power   : TargetVddSelect::Vdd3V3,
+                target           : None,
+                status           : UsbdmAppStatus::NotConnected,
+                power_status     : PowerStatus::PowerOff,
+                target_status    : TargetStatus::NotConnected,
+                buff             : vec![HexBuffer::new()],
+                buffer_view      : vec![HexBufferView::default()],
 
             },
             iced::Command::none(),
@@ -146,6 +152,8 @@ impl Application for App {
             Message::Debug(s) => {
                 self.title = s.clone();
             }
+
+
             Message::ValueChange(v) => {
                 self.value = v;
                 self.title = v.to_string();
@@ -190,7 +198,15 @@ impl Application for App {
                 self.title = self.size_option.to_string();
             }
 
-            Message::Error(Error) =>
+
+
+            Message::OkButtonPressed =>
+            {
+                self.show_error_modal = false;
+            } 
+
+
+            Message::Error(error) =>
             {
 
 
@@ -250,6 +266,8 @@ impl Application for App {
                        Err(_e) =>
                        {
                        dbg!("Programmer not connected. VID Usbdm CF not found on USB devices");
+                       self.show_error_modal = true;
+                       self.error_status = Some(Error::Usb(rusb::Error::NoDevice));
                        self.status = UsbdmAppStatus::NotConnected;
                        self.title =  String::from("Programmer not found! Check connection").clone();
                        }
@@ -360,8 +378,28 @@ impl Application for App {
     fn view(&self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
     
     let main_page = main_window::main_page(self);
+        
     
-    main_page.into()
+    let err_view = match self.error_status
+    {
+      Some(err)    =>  
+      {
+        err
+      }  
+      None    =>   
+      {
+        Error::Unknown
+      } 
+
+    };
+
+    // this function captutre content in c and return
+    // if not errors. if error - modal window on view
+    error_notify_model(self.show_error_modal, main_page.into(), err_view) 
+
+
+    
+   // main_page.into()
 
     }
 

@@ -68,15 +68,15 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
     ) {
         use iced_native::text::Renderer as text_renderer;
         let mut viewport_layout_y=(viewport.y-layout.bounds().y);
-        let mut end_y=viewport.y+viewport.height;
-        let mut number_of_element=(viewport_layout_y/self.item_height) as i32;
+        let mut end_y=viewport.y + viewport.height;
+        let mut number_of_element = (viewport_layout_y /self.item_height) as i32;
         let mut element_bounds=Rectangle{x:layout.bounds().x, y:(self.item_height*number_of_element as f32)+layout.bounds().y, width:layout.bounds().width, height:self.item_height};
         let mut contents=self.contents.clone();
 
-        while element_bounds.y<end_y{
-            let mut rectangle_bounds=element_bounds;
-            if element_bounds.y+element_bounds.height>end_y {
-                rectangle_bounds.height=end_y-element_bounds.y;
+        while element_bounds.y < end_y{
+            let mut rectangle_bounds = element_bounds;
+            if element_bounds.y + element_bounds.height > end_y {
+                rectangle_bounds.height = end_y - element_bounds.y;
             }
 
             renderer.fill_quad(
@@ -90,27 +90,36 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
 
             let mut text_bounds=element_bounds;
             text_bounds.y=element_bounds.center_y();
+       
+
             if let Some(itemvec)=contents.get(number_of_element as usize) {
 
-                if itemvec.len()==1{
-                    text_bounds.x=element_bounds.center_x();
-                    renderer.fill_text(
-                        iced_native::text::Text {
-                            content: itemvec[0].as_str(),
-                            bounds: text_bounds,
-                            size: 20.0,
-                            color: Color::BLACK,
-                            font: Font::Default,
-                            horizontal_alignment: Horizontal::Center,
-                            vertical_alignment: Vertical::Center,
-                        }
-                    );
-                }else{
-                    text_bounds.width/=itemvec.len() as f32;
+                     
+                   // text_bounds.width = measure.0;  // /= itemvec.len() as f32;
                     for item in itemvec.iter(){;
+
+                        let measure = renderer.measure(item.as_str(), 20.0, Font::Default, text_bounds.size());     
+                     
+                        text_bounds.width = measure.0;
+                        
+
+                        if item != itemvec.last().unwrap() {
+                            renderer.fill_quad(renderer::Quad  {
+                                bounds: Rectangle {
+                                    x: text_bounds.x + text_bounds.width ,
+                                    y: text_bounds.y-text_bounds.height, // / 2.0,
+                                    width: 1.0,
+                                    height: text_bounds.height,
+                                },
+                                border_radius: Default::default(),
+                                border_width: 0.0,
+                                border_color: Default::default(),
+                            }, Background::Color(Color::BLACK));
+                        }             
+
                         renderer.fill_text(
                             iced_native::text::Text {
-                                content: format!("  {}",item.as_str()).as_str(),
+                                content: format!("{}",item.as_str()).as_str(),
                                 bounds: text_bounds,
                                 size: 20.0,
                                 color: Color::BLACK,
@@ -120,9 +129,7 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
                             }
                         );
                         text_bounds.x+=text_bounds.width;
-                    }
                 }
-
             }
             element_bounds.y+=element_bounds.height;
             number_of_element+=1;
@@ -131,6 +138,7 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
 
     fn layout(&self, renderer: &iced::Renderer, limits: &Limits) -> Node {
         layout::Node::new(Size{
+           
             width: limits.max().width,
             height:  self.item_height*((self.contents.len()) as f32)
         })
