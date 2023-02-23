@@ -114,15 +114,15 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     
 
     let table_test = table_contents(20.00, test_addr_line, || test_buffer_double_click() );
-    let test__test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
+    let test_test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
     
 
 
 
     let c = if _app.flip {
-            col![back, top_bar, test__test]
+            col![back, top_bar, test_test]
     } else {
-            col![top_bar, back, test__test]
+            col![top_bar, back, test_test]
     };
 
 

@@ -1,59 +1,60 @@
 #![allow(non_snake_case)]
 
 use crate::programmer::Programmer;
-use crate::errors::Error;
+use crate::errors::{Error, USBDM_ErrorCode};
+use crate::enums::memory_space_t;
     
-pub const JTAG_COMMAND_MASK        : u8 = 0x7<<5;
+pub const JTAG_COMMAND_MASK         : u8 = 0x7<<5;
 
-pub const JTAG_MISC0               : u8 = 0<<5;
-pub const JTAG_MISC1               : u8 = 1<<5;
-pub const JTAG_MISC2               : u8 = 2<<5;
+pub const JTAG_MISC0                : u8 = 0<<5;
+pub const JTAG_MISC1                : u8 = 1<<5;
+pub const JTAG_MISC2                : u8 = 2<<5;
 
 //============================================================================================
 // The following have no operands
-pub const JTAG_END                 : u8 = 0;   // Mark end of sequence
-pub const JTAG_NOP                 : u8 = 1;   // No-Operation
-pub const JTAG_END_SUB             : u8 = 2;   // Mark end of subroutine (also acts as implicit JTAG_RETURN)
-pub const JTAG_TEST_LOGIC_RESET    : u8 = 3;   // Reset TAP
+pub const JTAG_END                  : u8 = 0;   // Mark end of sequence
+pub const JTAG_NOP                  : u8 = 1;   // No-Operation
+pub const JTAG_END_SUB              : u8 = 2;   // Mark end of subroutine (also acts as implicit JTAG_RETURN)
+pub const JTAG_TEST_LOGIC_RESET     : u8 = 3;   // Reset TAP
 
-pub const JTAG_MOVE_DR_SCAN        : u8 = 4;   // Move TAP to JTAG_SHIFT_DR (from IDLE or SHIFT-DR/IR)
-pub const JTAG_MOVE_IR_SCAN        : u8 = 5;   // Move TAP to JTAG_SHIFT_IR (from IDLE)
+pub const JTAG_MOVE_DR_SCAN         : u8 = 4;   // Move TAP to JTAG_SHIFT_DR (from IDLE or SHIFT-DR/IR)
+pub const JTAG_MOVE_IR_SCAN         : u8 = 5;   // Move TAP to JTAG_SHIFT_IR (from IDLE)
 
-pub const JTAG_SET_STAY_SHIFT      : u8 = 6;   // Set Stay in JTAG_SHIFT_DR/IR after shift
-pub const JTAG_SET_EXIT_SHIFT_DR   : u8 = 7;   // Set exit to JTAG_SHIFT_DR w/o crossing RUN-TEST-IDLE after shift
-pub const JTAG_SET_EXIT_SHIFT_IR   : u8 = 8;   // Set exit to JTAG_SHIFT_IR w/o crossing RUN-TEST-IDLE after shift
-pub const JTAG_SET_EXIT_IDLE       : u8 = 9;   // Set exit to RUN-TEST/IDLE after shift
-pub const JTAG_SET_IN_FILL_0       : u8 = 10;  // Shift in '0' during JTAG_SHIFT_OUT
-pub const JTAG_SET_IN_FILL_1       : u8 = 11;  // Shift in '1' during JTAG_SHIFT_OUT (default)
+pub const JTAG_SET_STAY_SHIFT       : u8 = 6;   // Set Stay in JTAG_SHIFT_DR/IR after shift
+pub const JTAG_SET_EXIT_SHIFT_DR    : u8 = 7;   // Set exit to JTAG_SHIFT_DR w/o crossing RUN-TEST-IDLE after shift
+pub const JTAG_SET_EXIT_SHIFT_IR    : u8 = 8;   // Set exit to JTAG_SHIFT_IR w/o crossing RUN-TEST-IDLE after shift
+pub const JTAG_SET_EXIT_IDLE        : u8 = 9;   // Set exit to RUN-TEST/IDLE after shift
+pub const JTAG_SET_IN_FILL_0        : u8 = 10;  // Shift in '0' during JTAG_SHIFT_OUT
+pub const JTAG_SET_IN_FILL_1        : u8 = 11;  // Shift in '1' during JTAG_SHIFT_OUT (default)
 
-pub const JTAG_ELSE                : u8 = 12;  // Else Marker for JTAG_IF..
-pub const JTAG_END_IF              : u8 = 13;  // EndIf Marker for JTAG_IF..
-pub const JTAG_RETURN              : u8 = 14;  // Return from subroutine - ignores iteration
-pub const JTAG_BREAK               : u8 = 15;  // Break JTAG_REPEAT loop
-pub const JTAG_CONTINUE            : u8 = 16;  // Continue next JTAG_REPEAT iteration
-pub const JTAG_END_REPEAT          : u8 = 17;  // Marks end of JTAG_REPEAT loop
+pub const JTAG_ELSE                 : u8 = 12;  // Else Marker for JTAG_IF..
+pub const JTAG_END_IF               : u8 = 13;  // EndIf Marker for JTAG_IF..
+pub const JTAG_RETURN               : u8 = 14;  // Return from subroutine - ignores iteration
+pub const JTAG_BREAK                : u8 = 15;  // Break JTAG_REPEAT loop
+pub const JTAG_CONTINUE             : u8 = 16;  // Continue next JTAG_REPEAT iteration
+pub const JTAG_END_REPEAT           : u8 = 17;  // Marks end of JTAG_REPEAT loop
 
 //============================================================================================
 // The following have an 8-bit operand as the next byte
-                                   // Operand
-pub const JTAG_SET_ERROR           : u8 = 18;  // Error#    Set error variable & exit sequence if != 0
+                                    // Operand
+pub const JTAG_SET_ERROR            : u8 = 18;  // Error#    Set error variable & exit sequence if != 0
 
-pub const JTAG_DEBUG_ON            : u8 = 19;  // Turn on debugging messages (on PC interpreter)
-pub const JTAG_DEBUG_OFF           : u8 = 63;  // Turn off debugging messages (on PC interpreter)
+pub const JTAG_DEBUG_ON             : u8 = 19;  // Turn on debugging messages (on PC interpreter)
+pub const JTAG_DEBUG_OFF            : u8 = 63;  // Turn off debugging messages (on PC interpreter)
 
 //============================================================================================
 // The following have no operands
-pub const fn JTAG_SUB(x: u8)      -> u8 { 20 + x }
-pub const JTAG_SUBA                : u8 = JTAG_SUB(0);       // Mark start of subroutine A
-pub const JTAG_SUBB                : u8 = JTAG_SUB(1);       // Mark start of subroutine B
-pub const JTAG_SUBC                : u8 = JTAG_SUB(2);       // Mark start of subroutine C
-pub const JTAG_SUBD                : u8 = JTAG_SUB(3);       // Mark start of subroutine D
+pub const fn JTAG_SUB(x: u8)       -> u8 { 20 + x }
+pub const JTAG_SUBA                 : u8 = JTAG_SUB(0);       // Mark start of subroutine A
+pub const JTAG_SUBB                 : u8 = JTAG_SUB(1);       // Mark start of subroutine B
+pub const JTAG_SUBC                 : u8 = JTAG_SUB(2);       // Mark start of subroutine C
+pub const JTAG_SUBD                 : u8 = JTAG_SUB(3);       // Mark start of subroutine D
 
-pub const fn JTAG_CALL_SUB(x: u8) -> u8 { 24 + x }
-pub const JTAG_CALL_SUBA           : u8 = JTAG_CALL_SUB(0);  // Call subroutine A
-pub const JTAG_CALL_SUBB           : u8 = JTAG_CALL_SUB(1);  // Call subroutine B
-pub const JTAG_CALL_SUBC           : u8 = JTAG_CALL_SUB(2);  // Call subroutine C
-pub const JTAG_CALL_SUBD           : u8 = JTAG_CALL_SUB(3);  // Call subroutine D
+pub const fn JTAG_CALL_SUB(x: u8)  -> u8 { 24 + x }
+pub const JTAG_CALL_SUBA            : u8 = JTAG_CALL_SUB(0);  // Call subroutine A
+pub const JTAG_CALL_SUBB            : u8 = JTAG_CALL_SUB(1);  // Call subroutine B
+pub const JTAG_CALL_SUBC            : u8 = JTAG_CALL_SUB(2);  // Call subroutine C
+pub const JTAG_CALL_SUBD            : u8 = JTAG_CALL_SUB(3);  // Call subroutine D
 
 //============================================================================================
 // The following use a value previously set by JTAG_PUSH...
@@ -188,43 +189,46 @@ pub const JTAG_RESERVED_2           : u8 = (2<<5);
 pub const fn JTAG_SHIFT_IN_Q(N: u8)     -> u8 { (3<<5) | (N & JTAG_NUM_BITS_MASK) } // #5=N     Shift in N bits (fill with TDI=0/1)
 pub const fn JTAG_SHIFT_OUT_Q(N: u8)    -> u8 { (4<<5) | (N & JTAG_NUM_BITS_MASK) } // #5=N     Shift out N bits (data taken in-line)
 pub const fn JTAG_SHIFT_IN_OUT_Q(N: u8) -> u8 { (5<<5) | (N & JTAG_NUM_BITS_MASK) } // #5=N     Shift out & in N bits (data taken in-line)
-pub const JTAG_NUM_BITS_MASK        : u8 = 0x1F;                                    // Mask for number of bits (N) within above opcodes
+pub const JTAG_NUM_BITS_MASK          : u8 = 0x1F;                                    // Mask for number of bits (N) within above opcodes
 
 //============================================================================================
 // The following quick commands take a count (N=2-31,0=>32, 1=>DP) as part of the opcode or from dataptr
-pub const fn JTAG_REPEAT_Q(N: u8)  -> u8 { (6<<5) | (N & JTAG_NUM_BITS_MASK) }  // Repeat a block N times
-pub const JTAG_REPEAT_DP            : u8 = JTAG_REPEAT_Q(1);                    // A repeat count of 1 means use 8-bit value from outDataPtr
+pub const fn JTAG_REPEAT_Q(N: u8)    -> u8 { (6<<5) | (N & JTAG_NUM_BITS_MASK) }  // Repeat a block N times
+pub const JTAG_REPEAT_DP              : u8 = JTAG_REPEAT_Q(1);                    // A repeat count of 1 means use 8-bit value from outDataPtr
 
 //============================================================================================
 // The following quick command take a value (N=0-31) as part of the opcode
-pub const fn JTAG_PUSH_Q(N: u8)    -> u8 { (7<<5) | (N & JTAG_NUM_BITS_MASK) }  // Push a 5-bit value
+pub const fn JTAG_PUSH_Q(N: u8)      -> u8 { (7<<5) | (N & JTAG_NUM_BITS_MASK) }  // Push a 5-bit value
 
 //============================================================================================
 // ARM Specific commands
-pub const JTAG_ARM_READAP           : u8 = 64; // #addr (16-bit address A[15:8]=AP#, A[7:4]=Bank#, A[3:2]=Reg# Read value from AP register
-pub const JTAG_ARM_WRITEAP          : u8 = 65; // Write input data value to AP register
-pub const JTAG_ARM_WRITEAP_I        : u8 = 66; // Write immediate value to AP register
+pub const JTAG_ARM_READAP             : u8 = 64; // #addr (16-bit address A[15:8]=AP#, A[7:4]=Bank#, A[3:2]=Reg# Read value from AP register
+pub const JTAG_ARM_WRITEAP            : u8 = 65; // Write input data value to AP register
+pub const JTAG_ARM_WRITEAP_I          : u8 = 66; // Write immediate value to AP register
 
-//=====================================================================================================
-//
-pub const JTAG_SET_PADDING          : u8 = 67; // #4x16-bits - sets HDR HIR TDR TIR
+//============================================================================================
+pub const JTAG_READ_MEM               : u8 = 68; // Set DSC instruction to execute (from DP)
+pub const JTAG_WRITE_MEM              : u8 = 69; // Execute DSC instruction previously set
 
+//============================================================================================
 // Common JTAG Commands
-pub const JTAG_IDCODE_LENGTH        : u8 = 32;
-pub const JTAG_IDCODE_COMMAND       : u8 = 0x02;
-pub const JTAG_BYPASS_COMMAND       : u8 = !0x00;
+pub const JTAG_IDCODE_LENGTH          : u8 = 32;
+pub const JTAG_IDCODE_COMMAND         : u8 = 0x02;
+pub const JTAG_BYPASS_COMMAND         : u8 = !0x00;
 
+//============================================================================================
 // Commands to Master JTAG
 pub const JTAG_MASTER_COMMAND_LENGTH  : u8 = 8;
-pub const JTAG_TLM_SELECT_COMMAND   : u8 = 0x05;
+pub const JTAG_TLM_SELECT_COMMAND     : u8 = 0x05;
 
-pub const TLM_REGISTER_LENGTH       : u8 = 4;
-pub const TLM_MASTER_SELECT_MASK    : u8 = 0x01;
-pub const TLM_SLAVE_SELECT_MASK     : u8 = 0x02;
+pub const TLM_REGISTER_LENGTH         : u8 = 4;
+pub const TLM_MASTER_SELECT_MASK      : u8 = 0x01;
+pub const TLM_SLAVE_SELECT_MASK       : u8 = 0x02;
 
+//============================================================================================
 // Command to Core JTAG
-pub const JTAG_CORE_COMMAND_LENGTH  : u8 = 4;
-pub const CORE_ENABLE_ONCE_COMMAND  : u8 = 0x06;
+pub const JTAG_CORE_COMMAND_LENGTH    : u8 = 4;
+pub const CORE_ENABLE_ONCE_COMMAND    : u8 = 0x06;
 pub const CORE_DEBUG_REQUEST_COMMAND  : u8 = 0x07;
 
 fn add_uu(x: u8, y: u8) -> Vec<u8> {
@@ -346,3 +350,68 @@ impl From <u8>  for OnceStatus  {
         let once_byte = answer[1]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
         Ok((OnceStatus::from(once_byte)))
     }
+
+
+// Read X/P memory via ONCE & target execution
+//
+// @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+// @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+// @param address     - Memory address
+// @param buffer      - Where to obtain the data
+//
+// @note If memory space size is word or long size then address is DSC word address
+// @note If memory space size is byte size then address is DSC byte pointer address
+// @note Size is limited to dscInfo.maxMemoryReadSize
+//
+fn read_memory_block(mut memory_space: u8, num_bytes: u8, address: u32, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
+    const JTAG_READ_MEMORY_HEADER_SIZE: usize = 8;
+    if (memory_space == memory_space_t::MS_PLONG) {
+        // Treat as word access
+        memory_space = memory_space_t::MS_PWORD;
+    };
+    
+    let mut num_bytes_adjusted = num_bytes;
+    match (memory_space & memory_space_t::MS_SIZE) {
+        memory_space_t::MS_LONG => {
+            if ((address & 0x01) == 0) {
+                num_bytes_adjusted /= 4;
+            } else {
+                return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS))
+            };},
+        memory_space_t::MS_WORD => { num_bytes_adjusted /= 2; },
+        memory_space_t::MS_BYTE => { num_bytes_adjusted /= 4; },
+        other               => return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS)),
+    };
+
+    /*
+     *    +-----------------------+
+     *    |    JTAG_READ_MEM      |
+     *    +-----------------------+
+     *    |    JTAG_END           |
+     *    +-----------------------+
+     *    |                       |
+     *    +--                   --+
+     *    |                       |
+     *    +--  Memory Address   --+
+     *    |                       |
+     *    +--                  ---+
+     *    |                       |
+     *    +-----------------------+
+     *    |  # of memory elements |
+     *    +-----------------------+
+     *    |   Memory Space        |
+     *    +-----------------------+
+     */
+
+    let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE);
+    sequence.push(JTAG_READ_MEM);          // 0
+    sequence.push(JTAG_END);               // 1
+    sequence.push((address >> 24) as u8);  // 2 Address
+    sequence.push((address >> 16) as u8);  // 3
+    sequence.push((address >> 8) as u8);   // 4
+    sequence.push(address as u8);          // 5
+    sequence.push(num_bytes_adjusted);     // 6 Elements
+    sequence.push(memory_space);           // 7 Memory space
+
+    prg.exec_jtag_seq(sequence, num_bytes)
+}
