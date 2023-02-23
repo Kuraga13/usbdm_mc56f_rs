@@ -17,6 +17,7 @@ pub enum Error {
    PowerStateError,
    LostConnection,
    TargetNotConnected,
+   Unknown,
 }
 
 impl std::error::Error for Error {}

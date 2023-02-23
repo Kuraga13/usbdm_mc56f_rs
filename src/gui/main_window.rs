@@ -8,6 +8,8 @@ use iced::{alignment, theme, Application, Color, Element, Length};
 
 use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
+
+use crate::errors::{Error};
 use crate::app::{Message, App, UsbdmAppStatus, PowerStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
 use super::styling::{PowerButtonStyle, ButtonStyle};
@@ -107,12 +109,14 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
             .height(Length::Fill)
             .style(back_style);
 
-    let test_test_line   = vec![vec!["test_test".to_string(); 1]; 4500];
-    let test_addr_line   = vec![vec!["adress column 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F ascii_ASCII_ascii".to_string(); 1]; 4500];
+    let test_test_line   = vec![vec!["test_test1".to_string(), "test_test2".to_string(), "test_test3".to_string(),]; 4500];
+    let test_addr_line   = vec![vec!["adress column".to_string(),  "01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(), "ascii_ASCII_ascii".to_string()]; 4500];
     
 
-    let table_test = table_contents(20.00, test_test_line, || test_buffer_double_click() );
-    let test__test = scrollable(Container::new(table_test));
+    let table_test = table_contents(20.00, test_addr_line, || test_buffer_double_click() );
+    let test__test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
+    
+
 
 
     let c = if _app.flip {
@@ -121,8 +125,14 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
             col![top_bar, back, test__test]
     };
 
-    c
-    
+
+    c        
+
+
+         
+ 
+         
+         
 }
 
 pub fn test_buffer_double_click() ->  Message
