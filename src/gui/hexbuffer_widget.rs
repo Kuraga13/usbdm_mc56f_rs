@@ -17,6 +17,7 @@ pub struct TableContents<Message> {
     item_height:f32,
     contents:Vec<Vec<String>>,
     on_double_clicked: Box<dyn Fn() -> Message>,
+    splitter         : AxisBuffer,
 }
 
 impl <Message>TableContents<Message> {
@@ -24,7 +25,7 @@ impl <Message>TableContents<Message> {
         contents:Vec<Vec<String>>,
                 on_double_clicked:impl Fn() -> Message + 'static
     ) -> Self {
-        Self {item_height,contents,on_double_clicked:Box::new(on_double_clicked)}
+        Self {item_height,contents,on_double_clicked:Box::new(on_double_clicked), splitter : AxisBuffer::Vertical}
     }
 }
 
@@ -90,43 +91,60 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
 
             let mut text_bounds=element_bounds;
             text_bounds.y=element_bounds.center_y();
+
+           
             if let Some(itemvec)=contents.get(number_of_element as usize) {
 
-                if itemvec.len()==1{
-                    text_bounds.x=element_bounds.center_x();
-                    renderer.fill_text(
-                        iced_native::text::Text {
-                            content: itemvec[0].as_str(),
-                            bounds: text_bounds,
-                            size: 20.0,
-                            color: Color::BLACK,
-                            font: Font::Default,
-                            horizontal_alignment: Horizontal::Center,
-                            vertical_alignment: Vertical::Center,
-                        }
-                    );
-                }else{
-                    text_bounds.width/=itemvec.len() as f32;
+         
+                  //  text_bounds.width /=(itemvec.len()as f32) * 4.00 ;
+                     let str = format!("{}", itemvec[0].as_str()).as_str();
+                     let two_pixels = renderer.measure(str, 20.0, Font::Default, 2);
+
+                    text_bounds.width  = two_pixels/two_pixels;
+
                     for item in itemvec.iter(){;
+
+            
+                   
                         renderer.fill_text(
                             iced_native::text::Text {
-                                content: format!("  {}",item.as_str()).as_str(),
+                                content: format!("{}",item.as_str()).as_str(),
+                               // bounds: text_bounds,
                                 bounds: text_bounds,
                                 size: 20.0,
                                 color: Color::BLACK,
                                 font: Font::Default,
                                 horizontal_alignment: Horizontal::Left,
                                 vertical_alignment: Vertical::Center,
+                            });
+
+                            if item != itemvec.last().unwrap() {
+
+                                renderer.fill_quad(renderer::Quad {
+                                    bounds: Rectangle {
+                                        x: text_bounds.x + text_bounds.width,
+                                        y: text_bounds.y-text_bounds.height/2.0, // Work
+                                        width: 1.0,
+                                        height: text_bounds.height,
+                                    },
+                                    border_radius: Default::default(),
+                                    border_width: 0.0,
+                                    border_color: Default::default(),
+                                }, Background::Color(Color::BLACK));
                             }
-                        );
+                            
                         text_bounds.x+=text_bounds.width;
-                    }
+                    
                 }
 
             }
+        
             element_bounds.y+=element_bounds.height;
             number_of_element+=1;
         }
+        
+    
+
     }
 
     fn layout(&self, renderer: &iced::Renderer, limits: &Limits) -> Node {
@@ -144,5 +162,89 @@ impl<'a, Message> From<TableContents<Message>> for Element< 'a,Message, iced::Re
 {
     fn from(table_contents: TableContents<Message>) -> Self {
         Self::new(table_contents)
+    }
+}
+
+
+
+/// A fixed reference line for the measurement of coordinates.
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub enum AxisBuffer {
+    /// The horizontal axis: —
+    Horizontal,
+    /// The vertical axis: |
+    Vertical,
+}
+
+impl AxisBuffer {
+    /// Splits the provided [`Rectangle`] on the current [`Axis`] with the
+    /// given `ratio` and `spacing`.
+    pub fn split(
+        &self,
+        rectangle: &Rectangle,
+        ratio: f32,
+        spacing: f32,
+    ) -> (Rectangle, Rectangle) {
+        match self {
+            AxisBuffer::Horizontal => {
+                let height_top =
+                    (rectangle.height * ratio - spacing / 2.0).round();
+                let height_bottom = rectangle.height - height_top - spacing;
+
+                (
+                    Rectangle {
+                        height: height_top,
+                        ..*rectangle
+                    },
+                    Rectangle {
+                        y: rectangle.y + height_top + spacing,
+                        height: height_bottom,
+                        ..*rectangle
+                    },
+                )
+            }
+            AxisBuffer::Vertical => {
+                let width_left =
+                    (rectangle.width * ratio - spacing / 2.0).round();
+                let width_right = rectangle.width - width_left - spacing;
+
+                (
+                    Rectangle {
+                        width: width_left,
+                        ..*rectangle
+                    },
+                    Rectangle {
+                        x: rectangle.x + width_left + spacing,
+                        width: width_right,
+                        ..*rectangle
+                    },
+                )
+            }
+        }
+    }
+
+    /// Calculates the bounds of the split line in a [`Rectangle`] region.
+    pub fn split_line_bounds(
+        &self,
+        rectangle: Rectangle,
+        ratio: f32,
+        spacing: f32,
+    ) -> Rectangle {
+        match self {
+            AxisBuffer::Horizontal => Rectangle {
+                x: rectangle.x,
+                y: (rectangle.y + rectangle.height * ratio - spacing / 2.0)
+                    .round(),
+                width: rectangle.width,
+                height: spacing,
+            },
+            AxisBuffer::Vertical => Rectangle {
+                x: (rectangle.x + rectangle.width * ratio - spacing / 2.0)
+                    .round(),
+                y: rectangle.y,
+                width: spacing,
+                height: rectangle.height,
+            },
+        }
     }
 }

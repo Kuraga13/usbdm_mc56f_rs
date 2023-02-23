@@ -1,17 +1,88 @@
 
 use crate::app::{Message };
 
-use iced::widget::{button, Button, Container, checkbox, horizontal_rule, vertical_rule,row, container, Text, text, Column, Rule, column, pick_list};
+use iced::widget::{button, scrollable, Button, Container, checkbox, horizontal_rule, vertical_rule,row, container, Text, text, Column, Rule, column, pick_list};
 use iced::theme::{self, Theme};
 use iced::widget::rule::{Appearance, FillMode, StyleSheet};
 use iced::widget::rule;
 use iced_native::widget;
+use iced_native::widget::scrollable::style::Scrollbar;
 
 use iced::alignment::{self, Alignment};
 use iced::{
      Application, Background,  Command, Element, Length, Settings, Subscription,
     Sandbox,Color,Vector,
 };
+
+pub struct ScrollerHexBuffer;
+impl scrollable::StyleSheet for ScrollerHexBuffer {
+    type Style = iced::Theme;
+    /// Produces the style of an active scrollbar.
+    fn active(&self, style: &Self::Style) -> Scrollbar
+    {
+        scrollable::Scrollbar{
+
+            background    : Some(Color::WHITE.into()),
+            border_radius : 1.0,
+            border_width  : 1.0,
+            border_color  : Color::BLACK.into(),
+            scroller      : scrollable::Scroller{
+
+                            color         : Color::BLACK.into(),
+                            border_radius : 1.0,
+                            border_width  : 1.0,
+                            border_color  : Color::BLACK.into(),
+            }
+        }
+    }
+
+    /// Produces the style of a hovered scrollbar.
+    fn hovered(&self, style: &Self::Style) -> Scrollbar
+    {
+        {
+            scrollable::Scrollbar{
+    
+                background    : Some(Color::WHITE.into()),
+                border_radius : 1.0,
+                border_width  : 1.0,
+                border_color  : Color::BLACK.into(),
+                scroller      : scrollable::Scroller{
+    
+                                color         : Color::TRANSPARENT.into(),
+                                border_radius : 10.0,
+                                border_width  : 10.0,
+                                border_color  : Color::WHITE.into(),
+                }
+            }
+        }
+    }
+
+    /// Produces the style of a scrollbar that is being dragged.
+    fn dragging(&self, style: &Self::Style) -> Scrollbar {
+        self.hovered(style)
+    }
+
+    /// Produces the style of an active horizontal scrollbar.
+    fn active_horizontal(&self, style: &Self::Style) -> Scrollbar {
+        self.active(style)
+    }
+
+    /// Produces the style of a hovered horizontal scrollbar.
+    fn hovered_horizontal(&self, style: &Self::Style) -> Scrollbar {
+        self.hovered(style)
+    }
+
+    /// Produces the style of a horizontal scrollbar that is being dragged.
+    fn dragging_horizontal(&self, style: &Self::Style) -> Scrollbar {
+        self.hovered_horizontal(style)
+    }
+}
+
+
+
+
+
+
 
 
 pub struct PowerButtonStyle;
