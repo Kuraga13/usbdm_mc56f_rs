@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 mod memory_access;
+pub mod jtag;
 
 use crate::usb_interface::{UsbInterface, BdmInfo};
 use crate::errors::{Error};
@@ -10,7 +11,6 @@ use crate::enums::{bdm_commands};
 use std::{thread, time};
 
 
-use crate::jtag::*;
 use crate::target::{Target};
 
 #[derive(Debug)]

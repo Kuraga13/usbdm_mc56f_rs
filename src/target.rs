@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use crate::jtag::*;
+use crate::programmer::jtag::*;
 use crate::programmer::{Programmer};
 use crate::settings::{TargetVddSelect};
 
@@ -161,8 +161,9 @@ fn disconnect(&self)
 
 fn read_target(&self) -> Result<(), Error>
 {
-    
+
     unimplemented!()
+    
 }
 
 fn write_target(&self) -> Result<(), Error>

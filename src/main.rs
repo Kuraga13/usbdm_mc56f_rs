@@ -3,7 +3,6 @@ mod usb_interface;
 mod gui;
 mod app;
 mod errors;
-mod jtag;
 mod enums;
 mod feedback;
 mod programmer;
