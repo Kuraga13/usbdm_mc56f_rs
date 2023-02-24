@@ -1,5 +1,5 @@
 use packed_struct::prelude::*;
-
+use crate::errors::{Error};
 
 ///`Feedback` 
 ///The idea is to group a huge number of USBDM structures, enumerations and settings into three abstractions.
@@ -86,6 +86,27 @@ impl FeedBack{
     Internal        = 2,   // Target Vdd internal
     Error           = 3,   // Target Vdd error
  } 
+
+ // Use for App
+ #[derive(Debug, Clone, PartialEq)]
+ pub enum PowerStatus {
+     
+     PowerOn,
+     PowerOff,
+ 
+ }
+
+
+ impl From<PowerState> for Result<PowerStatus, Error> {
+   fn from(power_from_bdm : PowerState) -> Result<PowerStatus, Error> {
+     match power_from_bdm {
+            PowerState::None         => Ok(PowerStatus::PowerOff),    // Target Vdd not detected
+            PowerState::External     => Ok(PowerStatus::PowerOff),    // Target Vdd external (in real life - when you on and off power, power state is External)
+            PowerState::Internal     => Ok(PowerStatus::PowerOn),     // Target Vdd internal - On State checked
+            PowerState::Error        => Err(Error::PowerStateError),  // Target Vdd error
+     }    
+   }
+ }
 
 
 /// Connection status & speed determination method - as field of `FeedBack`

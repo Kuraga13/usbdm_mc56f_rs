@@ -7,13 +7,15 @@ use bdm_info::BdmInfo;
 
 use crate::usb_interface::{UsbInterface};
 use crate::errors::{Error};
-use crate::feedback::{FeedBack, PowerState,};
+use crate::feedback::{FeedBack, PowerState, PowerStatus};
 use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
 use crate::enums::{bdm_commands};
 use std::{thread, time};
 
 
 use crate::target::{Target};
+
+
 
 #[derive(Debug)]
 pub struct Programmer {
@@ -49,8 +51,17 @@ impl Programmer
     }
 
 pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
-      
-  
+    
+
+    let current_power_status =   self.get_power_state()?;
+    let expected_power = self.expected_power_status(power);
+    
+    if(current_power_status == expected_power)
+    {
+        return Ok(());                               // Reserve filter on trying double-set power. 
+        dbg!("set_vdd double filter!");              // Needed for right sequence: first you power off, second you setup new power
+    }
+
     let mut usb_buf  = [0; 4];
     let command = "CMD_USBDM_SET_VDD".to_string();
   
@@ -75,31 +86,50 @@ pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
 
 
 
-pub fn check_power(&mut self) -> Result<bool, Error>
+pub fn get_power_state(&mut self) -> Result<PowerStatus, Error>
 {
+    
     self.refresh_feedback()?;
-    match self.feedback.power_state
-    {
-     PowerState::Internal => 
-     {
-         Ok(true)
-     }
-     PowerState::External => 
-     {
-         Ok(false)
-     }
-     PowerState::Error => 
-     {
-         Err((Error::PowerStateError))
-     }
-     _ => 
-     {
-         Ok(false)
-     }
 
-  }
+    let power_status =   Result::from(self.feedback.power_state)?;
+
+    Ok(power_status) 
 
 }
+
+
+pub fn expected_power_status(&mut self, user_power_query : TargetVddSelect) -> PowerStatus
+{
+    
+    match user_power_query
+    {
+        TargetVddSelect::VddOff     => PowerStatus::PowerOff,
+        TargetVddSelect::Vdd3V3     => PowerStatus::PowerOn,
+        TargetVddSelect::Vdd5V      => PowerStatus::PowerOn,
+        TargetVddSelect::VddEnable  => PowerStatus::PowerOn,
+        TargetVddSelect::VddDisable => PowerStatus::PowerOff,
+    }
+
+}
+
+
+pub fn check_expected_power(&mut self, user_power_query : TargetVddSelect) -> Result<(), Error>
+{
+    
+
+    let current_power_status =   self.get_power_state()?;
+    let expected_power = self.expected_power_status(user_power_query);
+    
+    if(current_power_status == expected_power)
+    {
+        Ok(())
+    }
+    else
+    {
+       Err(Error::PowerStateError)
+    }
+}
+
 
 
 pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
@@ -129,7 +159,7 @@ pub fn refresh_feedback(&mut self) -> Result<(), Error>
 {
     self.feedback = self.usb_device.get_bdm_status()?;
 
-    println!("{}", self.feedback);
+    //println!("{}", self.feedback);
     Ok(())
 }
 
@@ -150,7 +180,7 @@ fn print_usbdm_programmer(&self) -> Result<(), Error>
 pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 3];
-    let mc56_target  =  7;  // byte to set command
+    let mc56_target  =  0x07;  // byte to set command
     let command = "CMD_USBDM_SET_TARGET".to_string();
 
     usb_buf[0] = 3;            // lenght of command

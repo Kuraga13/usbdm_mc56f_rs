@@ -251,7 +251,7 @@ fn add_vu(mut x: Vec<u8>, y: u8) -> Vec<u8> {
 
 //}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq)]
 pub enum OnceStatus {
     
    ExecuteMode,
@@ -349,9 +349,26 @@ impl From <u8>  for OnceStatus  {
         sequence.push(CORE_ENABLE_ONCE_COMMAND);
         sequence.push(JTAG_END);
         let answer = prg.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
-        let once_byte = answer[1]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
+        let once_byte = answer[1];
+        dbg!(&answer); // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
         Ok((OnceStatus::from(once_byte)))
     }
 
-
+    // Set Core JTAG-IR to DebugRequest
+    //
+    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
+    // @note Leaves Core TAP in RUN-TEST/IDLE
+    //
+      pub fn targetDebugRequest(prg:  &Programmer) -> Result<(OnceStatus), Error> {
+        let mut sequence: Vec<u8> = Vec::new();
+        sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
+        sequence.push(JTAG_SET_EXIT_IDLE); 
+        sequence.push(JTAG_SHIFT_IN_OUT_Q(JTAG_CORE_COMMAND_LENGTH));
+        sequence.push(CORE_DEBUG_REQUEST_COMMAND);
+        sequence.push(JTAG_END);
+        let answer = prg.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
+        let once_byte = answer[1]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
+        dbg!(&answer);
+        Ok((OnceStatus::from(once_byte)))
+    }
 

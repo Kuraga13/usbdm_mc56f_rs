@@ -12,40 +12,32 @@ use iced_aw::quad;
 use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
+use crate::feedback::{PowerStatus};
 use crate::programmer::{Programmer};
-use crate::target::{Target};
-use crate::target::TargetProgramming;
+use crate::target::{Target, TargetProgramming};
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
 use crate::gui::error_notify_modal::{error_notify_model};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
     
     NotConnected,
     Connected,
-    //Errored(Error),
     Errored,
 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TargetStatus {
     
     NotConnected,
     Connected,
-    Errored,
 
 }
 
-#[derive(Debug, Clone)]
-pub enum PowerStatus {
-    
-    PowerOn,
-    PowerOff,
 
-}
 
 
 
@@ -67,6 +59,7 @@ pub enum Message {
     Disconnect,
     PowerSelect(TargetVddSelect),
     PowerToggle,
+    ReadTarget,
     TestFeedback,
     
 }
@@ -94,69 +87,128 @@ pub struct App {
     pub    size_option: main_window::SizeOption,
 }
 
-
-
-pub fn check_err(err: Error, app : &mut App)
+pub fn show_error( app : &mut App, _e : Error) 
 {
 
     app.show_error_modal = true;
-    app.error_status     = Some(err);
-   
+    app.error_status     = Some(_e);
 
+  
 }
+
+pub fn ok_or_show_error<T, U>( app : &mut App, value : Result<T, U>) ->  Result<T, U>
+where Error: From<U>, U: std::marker::Copy
+{
+  match value
+  {
+    Ok(value) => 
+    {
+        Ok(value)
+    }
+    Err(err) =>
+    {
+        app.show_error_modal = true;
+        app.error_status     = Some(Error::from(err));
+        Err(err)
+    }
+  }
+}
+   
 
 
 impl App 
 {
 
 
-
- fn check_connect_programmer(&mut self)
+ fn check_connection_programmer(&mut self)
  {
     let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
 
-    let check_connect_usb =  dsc.programmer.refresh_feedback().unwrap_or_else( |err, |  check_err(err, self));
+    let mut check_connect_usb =  dsc.programmer.refresh_feedback();
+    ok_or_show_error(self, check_connect_usb);
+    match check_connect_usb
+    {
+        Ok(_) =>
+        {
+            self.status = UsbdmAppStatus::Connected;
+
+        }
+
+
+        Err(_) =>
+        {
+            self.status = UsbdmAppStatus::NotConnected;
+
+        }
+    }
            
  }
 
- fn check_power(&mut self) -> Result<PowerStatus, Error>
+ 
+
+ fn check_connection_target(&mut self)
  {
     
-    let dsc =  self.target.as_mut().expect("");
-    let power = dsc.programmer.check_power();
-    let power_state =  PowerStatus::PowerOff;
-    match power
+    self.check_connection_programmer();
+
+    if(self.status == UsbdmAppStatus::NotConnected)
     {
-       Ok(true) =>
-       {
-           Ok(PowerStatus::PowerOff)
-       }
+        return;
+    }
 
-       Ok(false) =>
-       {
-           Ok(PowerStatus::PowerOff)
-       }
-
-       (Err(_e)) =>
-       {
-          Err(_e)
-       }
-     } 
-
- }
-
- fn check_connect_programmer_and_target(&mut self)
- {
-    let check_connect_usb =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
-
-    check_connect_usb.programmer.refresh_feedback().unwrap_or_else( |err, |  check_err(err, self));
-           
     let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
-    let check_connect_dsc =  dsc.connect(self.selected_power).unwrap_or_else( |err, |  check_err(err,  self));
+    let mut check_connect_dsc =  dsc.connect(self.selected_power);
+    ok_or_show_error(self, check_connect_dsc);
+    match check_connect_dsc
+    {
+
+        Ok(_) =>
+        {
+            self.target_status = TargetStatus::Connected;
+
+        }
+
+
+        Err(_) =>
+        {
+            self.target_status = TargetStatus::NotConnected;
+
+        }
+    }
 
  }
 
+ 
+ fn check_power_state(&mut self)
+ {
 
+    self.check_connection_programmer();
+
+    if(self.status == UsbdmAppStatus::NotConnected)
+    {
+        return;
+    }
+
+    let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
+    let mut power_state =  dsc.programmer.get_power_state();
+    match power_state
+    {
+
+        Ok(power_state) =>
+        {
+            self.power_status = power_state;
+
+        }
+
+
+        Err(err) =>
+        {
+            show_error(  self, err);
+            return;
+
+        }
+    }         
+  }
 }
 
 impl Application for App {
@@ -192,8 +244,8 @@ impl Application for App {
                 selected_power   : TargetVddSelect::Vdd3V3,
                 target           : None,
                 status           : UsbdmAppStatus::NotConnected,
-                power_status     : PowerStatus::PowerOff,
                 target_status    : TargetStatus::NotConnected,
+                power_status     : PowerStatus::PowerOff,
                 buff             : vec![HexBuffer::new()],
                 buffer_view      : vec![HexBufferView::default()],
 
@@ -282,6 +334,7 @@ impl Application for App {
                 {
                     // check usb low level - two type errors : can't find VID and second cannot configure descriptor (bad drivers or hw error on usb port)
                     let check_connect = find_usbdm();
+                    
                     match check_connect
                     {
                        Ok(check_connect) =>
@@ -289,27 +342,27 @@ impl Application for App {
    
                        println!("Try claim usb & configure descriptors");
                        let usb_int = UsbInterface::new(check_connect);
+        
                        match usb_int
                        {
                         Ok(usb_int) =>
-                        {
-                            let programmer = Programmer::new(usb_int);
-                            
+                        {   
                             // init programmer, here we can get errors on get version, settings feedback etc.
+
+                            let programmer = Programmer::new(usb_int);     
                             match programmer
                             {
                                 Ok(programmer) =>
                                 {
                                 
-                                self.target  = Some(Target::init(Some(programmer).expect("Option: None")));
+                                self.target  = Some(Target::new(Some(programmer).expect("Option: None")));
+
                                 }
 
                                 Err(_e) =>
 
                                 {
-
-                                check_err(_e,  self);
-                                //self.error_nandler (_e, UsbdmAppStatus::NotConnected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                                show_error(  self, _e);
                                 return iced::Command::none();
 
                                 }
@@ -317,50 +370,39 @@ impl Application for App {
                         }
                         Err(_e) =>
                         {
-                      
-                            check_err(_e,  self);
-                            //self.error_nandler (_e, UsbdmAppStatus::NotConnected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                            show_error(  self, _e);
                             return iced::Command::none();
 
                         }
                        }
                     
-                       
+
                        let mut dsc =  self.target.as_mut().expect("target lost");
                        dsc.init();
+
+                       self.check_connection_target();
                        
-                       if let Err(_e) = dsc.connect(self.selected_power)
-                       {
-                        dsc.power(TargetVddSelect::VddOff);
-                        check_err(_e, self);
-                        //self.error_nandler (_e, UsbdmAppStatus::Connected, TargetStatus::NotConnected, PowerStatus::PowerOff);
-                        return iced::Command::none();
-                       }
-                       else
-                       {
-                        self.status         = UsbdmAppStatus::Connected;
-                        self.target_status  = TargetStatus::Connected;
-                        self.power_status   =  PowerStatus::PowerOn //self.check_power(); TODO POWER STAYE FROM FUNC
-                       }
-                       
-   
-                       }
-                       Err(_e) =>
-                       {
-                       
-                       check_err(_e, self);
-                       //self.error_nandler (_e, UsbdmAppStatus::NotConnected, TargetStatus::NotConnected, PowerStatus::PowerOff);
+                       self.check_power_state();
+                    
+                    }
+                    Err(_e) =>
+                    {
+                       show_error(  self, _e);
+                       self.status = UsbdmAppStatus::NotConnected;
                        return iced::Command::none();
                  
-            
-                       }
                     }
+                  }
                 }
+
+
+
                 UsbdmAppStatus::Connected => 
                 {  
-            
-                 self.check_connect_programmer_and_target();
-              
+
+                    self.check_connection_target(); 
+                    self.check_power_state();
+
                 }
     
                 _ => 
@@ -390,47 +432,48 @@ impl Application for App {
             Message::PowerToggle => 
             {    
 
-             let status = self.check_power();
-             
-             match status
-             {
+            let dsc =  self.target.as_mut().expect("");
+            self.check_power_state();
 
-                Ok(PowerStatus::PowerOn) =>
-                {
+               match self.power_status
+               {
+
+                 PowerStatus::PowerOn =>
+                 {
                     let dsc =  self.target.as_mut().expect("");
                     dsc.power(TargetVddSelect::VddOff);
-                    self.power_status  = PowerStatus::PowerOff;
+                    self.check_power_state();
 
-                }
+                 }
 
-                Ok(PowerStatus::PowerOff) =>
+                 PowerStatus::PowerOff =>
 
-                {
+                 {
     
                     let dsc =  self.target.as_mut().expect("");
                     dsc.power(self.selected_power);
-                    self.power_status  = PowerStatus::PowerOn;
+                    self.check_power_state();
 
-                }
-
-                (Err(_e)) =>
-                {   
-                    let dsc =  self.target.as_mut().expect("");
-                    dsc.power(TargetVddSelect::VddOff);
-                    //self.error_nandler (_e, UsbdmAppStatus::Connected, TargetStatus::NotConnected, PowerStatus::PowerOff);
-                    check_err(_e, self);
-                    return iced::Command::none();
-                }
-
+                 }
               }
-
             }   
 
 
-            Message::PowerSelect(power_select) => 
+            Message::PowerSelect(power_select)  => 
             {
 
               self.selected_power = power_select;
+
+            }
+
+            Message::ReadTarget  => 
+            {
+              
+              let dsc = self.target.as_mut().expect("target lost");
+              if let(Err(_e)) = dsc.read_target(self.selected_power)
+              {
+                show_error(self, _e);
+              }
 
             }
 

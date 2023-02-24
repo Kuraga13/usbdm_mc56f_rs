@@ -17,6 +17,7 @@ pub enum Error {
    PowerStateError,
    LostConnection,
    TargetNotConnected,
+   TargetNotInDebugMode,
    Unknown,
    PackerErr(packed_struct::PackingError),
 }

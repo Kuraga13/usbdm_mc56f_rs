@@ -10,8 +10,9 @@ use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
 
 use crate::errors::{Error};
-use crate::app::{Message, App, UsbdmAppStatus, PowerStatus, TargetStatus};
+use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
+use crate::feedback::{PowerStatus};
 use super::styling::{PowerButtonStyle, ButtonStyle};
 use super::hexbuffer_widget::{TableContents,table_contents };
 
@@ -444,7 +445,7 @@ pub fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         debug_button("Programmer"),
         vec![
             connect_button_item("Connect", Message::Connect),
-            programmer_button_item("Read", Message::TestFeedback, &_app.status, &_app.target_status),
+            programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
             programmer_button_item("Write", Message::TestFeedback, &_app.status, &_app.target_status),
             programmer_button_item("Erase", Message::TestFeedback, &_app.status, &_app.target_status),
         ],
