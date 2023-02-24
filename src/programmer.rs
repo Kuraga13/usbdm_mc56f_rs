@@ -1,6 +1,11 @@
 #![allow(unused)]
 
-use crate::usb_interface::{UsbInterface, BdmInfo};
+mod memory_access;
+pub mod jtag;
+mod bdm_info;
+use bdm_info::BdmInfo;
+
+use crate::usb_interface::{UsbInterface};
 use crate::errors::{Error};
 use crate::feedback::{FeedBack, PowerState,};
 use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
@@ -8,17 +13,15 @@ use crate::enums::{bdm_commands};
 use std::{thread, time};
 
 
-use crate::jtag::*;
 use crate::target::{Target};
 
 #[derive(Debug)]
 pub struct Programmer {
 
-    usb_device   : UsbInterface,
-    bdm_info     : BdmInfo,
-    feedback     : FeedBack,
-    settings     : BdmSettings, 
-    
+    usb_device     : UsbInterface,
+    bdm_info       : BdmInfo,
+    feedback       : FeedBack,
+    settings       : BdmSettings,      
 }
 
 
@@ -34,24 +37,16 @@ impl Drop for Programmer{
 
 impl Programmer
 {
-
-
-pub fn new(mut device : UsbInterface) -> Result<Self, Error> {
-
-
-        Ok(Self{
-    
-            bdm_info        : device.get_bdm_version()?,      //"Error on get bdm ver"
-            feedback        : device.get_bdm_status()?,    // "Error on feedback"
-            settings        : BdmSettings::default(),
+    pub fn new(mut device : UsbInterface) -> Result<Self, Error> {
+        let mut prog = Self {
             usb_device      : device,
-
-        })
- 
-    
+            bdm_info        : BdmInfo::default(),
+            feedback        : FeedBack::default(),
+            settings        : BdmSettings::default(), };
+        prog.get_bdm_info()?;
+        prog.feedback = prog.usb_device.get_bdm_status()?;
+        Ok(prog)
     }
-
-
 
 pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
       
@@ -210,45 +205,7 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     Ok(status)
 }
 
-/// `get_full_capabilities` - get all capabilities, if rx_size > 5 we need upgrade Capabilities struct...
-pub fn get_full_capabilities(&mut self) -> Result<(), Error>{
-      
-    let mut usb_buf = [0; 2];
-    usb_buf[0] = 2;  // lenght
-    usb_buf[1] = bdm_commands::CMD_USBDM_GET_CAPABILITIES;
-    let command = "CMD_USBDM_GET_CAPABILITIES".to_string();
 
-    let bit = 0x80;
-    let bitter = usb_buf[1] | bit;
-    usb_buf[1] = bitter;
-
-    self.usb_device.write(&usb_buf,1500)?;        // write command
-    let answer: Vec<u8> = self.usb_device.read()?;                   //  read
-    
-    self.usb_device.check_usbm_return_code( &answer)?;  
-
-    if answer.len() >= 3 {
-        let capabilities: u16 = ((answer[1] as u16) << 8) | answer[2] as u16 ^ ((1<<5) | (1<<6));
-        self.bdm_info.capabilities.parse(capabilities);
-    }
-
-    if answer.len() >= 5 {
-        let mut buffer_size: u16 = ((answer[3] as u16) << 8) + answer[4] as u16;
-        let max_packet_size: u16 = 255;
-        if buffer_size > max_packet_size {
-            buffer_size = max_packet_size;
-        }
-        let jtag_header_size: u16 = 5;
-
-        self.bdm_info.command_buffer_size = buffer_size;
-        self.bdm_info.jtag_buffer_size = buffer_size - jtag_header_size;
-     }
-                                                  
-    
-    
-    Ok(())
-
-   }
 
    pub fn exec_jtag_seq(&self, mut jtag_seq : Vec<u8>,  answer_lenght : u8) -> Result<(Vec<u8>), Error>{
       
