@@ -92,7 +92,6 @@ impl Programmer
     }
 
 
-/*
     //================================================================================
     // Read X/P memory via ONCE & target execution
     //
@@ -104,50 +103,27 @@ impl Programmer
     // @note If memory space size is word or long size then address is DSC word address
     // @note If memory space size is byte size then address is DSC byte pointer address
     //
-    pub fn dsc_read_memory (memorySpace: u8, numBytes,
-                               unsigned int        address,
-                               unsigned char       *buffer) {
-   LOGGING_Q;
+    pub fn dsc_read_memory (&self, memory_space: u8, num_bytes: u32, address: u32) -> Result<(Vec<u8>), Error> {
+        let element_size: u8 = memory_space & memory_space_t::MS_SIZE;
+        let mut bytes_done: u32 = 0;
+        let mut current_address: u32 = address;
+        let mut output: Vec<u8> = Vec::new();
 
-   MemorySpace_t  memSpace     = (MemorySpace_t) memorySpace;
-   int            elementSize  = memorySpace&MS_SIZE;
-   unsigned char *bufferPtr = buffer;
-   unsigned int  bytesDone = 0;
-   unsigned int  currentAddress = address;
-
-   USBDM_ErrorCode rc = BDM_RC_OK;
-
-   log.print("(A=%s, S=%d, #=%d)\n", getKnownAddress(memSpace,currentAddress), elementSize, numBytes);
-
-   saveVolatileTargetRegs();
-
-   while (bytesDone<numBytes) {
-      unsigned int blockSize = numBytes-bytesDone;
-      if (blockSize>dscInfo.maxMemoryReadSize) {
-         blockSize = dscInfo.maxMemoryReadSize;
-      }
-      rc = readMemoryBlock(memSpace, blockSize, currentAddress, bufferPtr);
-      if (rc != BDM_RC_OK) {
-         break;
-      }
-      bytesDone += blockSize;
-      bufferPtr += blockSize;
-      if ((memorySpace&MS_SIZE) == MS_Byte) {
-         // Byte currentAddress advanced by count of bytes written
-         currentAddress  += blockSize;
-      }
-      else {
-         // Address advanced by count of words written
-         currentAddress  += blockSize/2;
-      }
-   }
-   if (elementSize == MS_Byte) {
-      log.printDump((uint8_t*)buffer, numBytes, address, UsbdmSystem::BYTE_ADDRESS|UsbdmSystem::BYTE_DISPLAY);
-   }
-   else {
-      log.printDump((uint8_t*)buffer, numBytes, address, UsbdmSystem::WORD_ADDRESS|UsbdmSystem::WORD_DISPLAY);
-   }
-   return rc;
-}
-*/
+        while (bytes_done < num_bytes) {
+            let mut block_size: u32 = num_bytes - bytes_done;
+            if (block_size > self.bdm_info.dsc_max_memory_read_size.into()) {
+                block_size = self.bdm_info.dsc_max_memory_read_size.into(); }
+            let mut data = self.read_memory_block(memory_space, block_size as u8, current_address)?;
+            output.append(&mut data);
+            bytes_done += block_size;
+            if ((memory_space & memory_space_t::MS_SIZE) == memory_space_t::MS_BYTE) {
+                // Byte currentAddress advanced by count of bytes written
+                current_address  += block_size;
+            } else {
+                // Address advanced by count of words written
+                current_address  += block_size/2;
+            }
+        }
+        Ok(output)
+    }
 }
