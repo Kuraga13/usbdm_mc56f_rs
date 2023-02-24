@@ -230,6 +230,9 @@ pub const JTAG_CORE_COMMAND_LENGTH    : u8 = 4;
 pub const CORE_ENABLE_ONCE_COMMAND    : u8 = 0x06;
 pub const CORE_DEBUG_REQUEST_COMMAND  : u8 = 0x07;
 
+pub const JTAG_READ_MEMORY_HEADER_SIZE: u16 = 8;
+pub const JTAG_WRITE_MEMORY_HEADER_SIZE: u16 = 8;
+
 fn add_uu(x: u8, y: u8) -> Vec<u8> {
     vec![x, y]
 } 

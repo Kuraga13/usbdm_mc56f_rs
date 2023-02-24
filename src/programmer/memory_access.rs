@@ -40,7 +40,6 @@ impl Programmer
     // @note Size is limited to dscInfo.maxMemoryReadSize
     //
     fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
-        const JTAG_READ_MEMORY_HEADER_SIZE: usize = 8;
         if (memory_space == memory_space_t::MS_PLONG) {
             // Treat as word access
             memory_space = memory_space_t::MS_PWORD;
@@ -79,7 +78,7 @@ impl Programmer
          *    +-----------------------+
          */
 
-        let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE);
+        let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE.into());
         sequence.push(JTAG_READ_MEM);          // 0
         sequence.push(JTAG_END);               // 1
         sequence.push((address >> 24) as u8);  // 2 Address
@@ -91,4 +90,64 @@ impl Programmer
 
         self.exec_jtag_seq(sequence, num_bytes)
     }
+
+
+/*
+    //================================================================================
+    // Read X/P memory via ONCE & target execution
+    //
+    // @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+    // @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+    // @param address     - Memory address (byte = byte address, word/long = word address)
+    // @param buffer      - Where to obtain the data
+    //
+    // @note If memory space size is word or long size then address is DSC word address
+    // @note If memory space size is byte size then address is DSC byte pointer address
+    //
+    pub fn dsc_read_memory (memorySpace: u8, numBytes,
+                               unsigned int        address,
+                               unsigned char       *buffer) {
+   LOGGING_Q;
+
+   MemorySpace_t  memSpace     = (MemorySpace_t) memorySpace;
+   int            elementSize  = memorySpace&MS_SIZE;
+   unsigned char *bufferPtr = buffer;
+   unsigned int  bytesDone = 0;
+   unsigned int  currentAddress = address;
+
+   USBDM_ErrorCode rc = BDM_RC_OK;
+
+   log.print("(A=%s, S=%d, #=%d)\n", getKnownAddress(memSpace,currentAddress), elementSize, numBytes);
+
+   saveVolatileTargetRegs();
+
+   while (bytesDone<numBytes) {
+      unsigned int blockSize = numBytes-bytesDone;
+      if (blockSize>dscInfo.maxMemoryReadSize) {
+         blockSize = dscInfo.maxMemoryReadSize;
+      }
+      rc = readMemoryBlock(memSpace, blockSize, currentAddress, bufferPtr);
+      if (rc != BDM_RC_OK) {
+         break;
+      }
+      bytesDone += blockSize;
+      bufferPtr += blockSize;
+      if ((memorySpace&MS_SIZE) == MS_Byte) {
+         // Byte currentAddress advanced by count of bytes written
+         currentAddress  += blockSize;
+      }
+      else {
+         // Address advanced by count of words written
+         currentAddress  += blockSize/2;
+      }
+   }
+   if (elementSize == MS_Byte) {
+      log.printDump((uint8_t*)buffer, numBytes, address, UsbdmSystem::BYTE_ADDRESS|UsbdmSystem::BYTE_DISPLAY);
+   }
+   else {
+      log.printDump((uint8_t*)buffer, numBytes, address, UsbdmSystem::WORD_ADDRESS|UsbdmSystem::WORD_DISPLAY);
+   }
+   return rc;
+}
+*/
 }
