@@ -14,6 +14,7 @@ use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
 use super::styling::{PowerButtonStyle, ButtonStyle};
+use super::connection_image::{dsc_connection_image};
 
 use super::hexbuffer_widget::{TableContents,table_contents };
 
@@ -99,34 +100,48 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
                 background: Some(Color::TRANSPARENT.into()),
                 ..Default::default()
             };
+
     let top_bar = container(r).width(Length::Fill).style(top_bar_style);
 
     let back_style: fn(&iced::Theme) -> container::Appearance = |theme| container::Appearance {
             background: Some(theme.extended_palette().primary.base.color.into()),
             ..Default::default()
         };
-
-    let back = container(col![])
+     /* 
+     let back = container(col![])
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(back_style);
+            .style(back_style); */
 
     let test_test_line   = vec![vec!["test_test1".to_string(), "test_test2".to_string(), "test_test3".to_string(),]; 4500];
-    let test_addr_line   = vec![vec!["adress column".to_string(),  "01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(), "ascii_ASCII_ascii".to_string()]; 4500];
+    let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string()]; 4500];
     
 
     let table_test = table_contents(20.00, test_addr_line, || test_buffer_double_click() );
+     
+    let image_conn = dsc_connection_image(1000);
+    
     let test_test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
     
-  
+    let body =
+    if(_app.show_conn_image)
+    {
+        col![image_conn]
+    }
+    else
+    {
+        
+        col![test_test]
+    };
 
 
     let c = if _app.flip {
-            col![back, top_bar, test_test]
-    } else {
-            col![top_bar, back, test_test]
+            col![body, top_bar]
+    } 
+    else 
+    {
+            col![top_bar, body]
     };
-
 
     c        
 
@@ -575,6 +590,17 @@ pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         slider(0..=255, app.value, Message::ValueChange)
     ]);
 
+    let connection_image_item = MenuTree::new(
+        container(toggler(
+            Some("Connection image".to_string()),
+            app.show_conn_image,
+            Message::ConnectionImageOpen,
+        ))
+        .padding([0, 8])
+        .height(Length::Fill)
+        .align_y(alignment::Vertical::Center),
+    );
+
     let txn = MenuTree::new(text_input("", &app.text, Message::TextChange));
 
     let root = MenuTree::with_children(
@@ -582,6 +608,7 @@ pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         vec![
             about_button_item("About", Message::OpenAboutCard),
             programmer_button_item("Test_Feedback", Message::TestFeedback, &app.status, &app.target_status),
+            connection_image_item,
             debug_item("as a menu item"),
             bt,
             cb,

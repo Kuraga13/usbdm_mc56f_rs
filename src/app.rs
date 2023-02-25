@@ -18,7 +18,7 @@ use crate::target::{MC56f80x,TargetFactory, TargetProgramming};
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
-use crate::gui::error_notify_modal::{error_notify_model, about_card};
+use crate::gui::modal_notification::{error_notify_model, about_card};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
@@ -56,6 +56,7 @@ pub enum Message {
     OkButtonPressed,
     OpenAboutCard,
     CloseAboutCard,
+    ConnectionImageOpen(bool),
 
     Connect,
     Disconnect,
@@ -79,6 +80,7 @@ pub struct App {
     pub    target_status    : TargetStatus,
     pub    show_error_modal : bool,
     pub    about_card_open  : bool,
+    pub    show_conn_image  : bool,
     pub    error_status     : Option<Error>,
 
     pub    title: String,
@@ -245,6 +247,7 @@ impl Application for App {
                 size_option: main_window::SizeOption::Static,
 
                 show_error_modal : false,
+                show_conn_image  : false,
                 about_card_open  : false,
                 error_status     : None,     
                 selected_power   : TargetVddSelect::Vdd3V3,
@@ -280,6 +283,14 @@ impl Application for App {
                     .unwrap();
      
             }
+
+            Message::ConnectionImageOpen(show) => {
+
+                self.show_conn_image = show;
+           
+     
+            }
+
             Message::Debug(s) => {
                 self.title = s.clone();
             }
