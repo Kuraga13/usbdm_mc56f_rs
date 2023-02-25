@@ -239,7 +239,7 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
   let test_addr = 0x7000;
   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
   //let memory_read = self.programmer.read_memory_block(test_mem_access_type, 0x20,  test_addr)?;
-  let memory_read = self.programmer.dsc_read_memory(test_mem_access_type, 0x20,  test_addr)?;
+  let memory_read = self.programmer.dsc_read_memory(test_mem_access_type, 0x60,  test_addr)?;
   let mut printed_vec = Vec::new();
 
  for byte in memory_read.iter()
@@ -247,12 +247,12 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
    let in_string = format!("{:02X}", byte);
 
    printed_vec.push(in_string);
-   if(printed_vec.len() == 0x0F)
+   if(printed_vec.len() == 0x10)
    {
 
     for symbol in printed_vec.iter()
     {
-      print!("{}", symbol);
+      print!("{} ", symbol);
     }
 
     print!("\n");
