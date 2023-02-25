@@ -156,7 +156,7 @@ fn disconnect(&mut self);
 fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
 
 /// Write target
-fn write_target(&mutself, power : TargetVddSelect) -> Result<(), Error>;
+fn write_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
 
 /// Write target
 fn erase_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
@@ -274,10 +274,13 @@ fn write_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
     
   self.connect(power)?; 
   dbg!(&self.once_status);
+
+  let test_addr = 0x7000;
+  let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
   
+  //self.write_memory_block(test_mem_access_type, )
   //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
-   let test_addr = 0x7000;
-   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
+   
    //let memory_read = self.programmer.read_memory_block(test_mem_access_type, 0x20,  test_addr)?;
    let memory_read = self.programmer.dsc_read_memory(test_mem_access_type, 0x20,  test_addr)?;
    let mut printed_vec = Vec::new();
