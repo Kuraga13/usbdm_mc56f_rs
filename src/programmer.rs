@@ -75,7 +75,7 @@ pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
     usb_buf[1] = bitter;
   
     self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read()?;
+    let answer = self.usb_device.read(1)?;
     self.settings.target_voltage = power;
     Ok(())
   
@@ -145,7 +145,7 @@ pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
         usb_buf[1] = bitter;
   
         self.usb_device.write(&usb_buf,1500)?;                                    // write command
-        let answer = self.usb_device.read()?;         // read status from bdm
+        let answer = self.usb_device.read(1)?;         // read status from bdm
 
         self.settings.target_voltage = power;
         Ok(())
@@ -189,7 +189,7 @@ pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
     usb_buf[1] = bitter;
 
     self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read()?;        // read status from bdm
+    let answer = self.usb_device.read(1)?;        // read status from bdm
     self.settings.target_type = TargetType::MC56F80xx;
 
     Ok(())
@@ -225,7 +225,7 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     usb_buf[5] = self.settings.auto_reconnect as u8;
 
     self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read()?;         // read status from bdm
+    let answer = self.usb_device.read(1)?;         // read status from bdm
     Ok(())
 }
 
@@ -247,7 +247,8 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
 
 
     self.usb_device.write(&full_command.as_slice(),1500)?;   // write command
-    let answer: Vec<u8> = self.usb_device.read()?;         // read status from bdm 
+    let mut answer: Vec<u8> = self.usb_device.read((answer_lenght + 1).into())?;         // read status from bdm 
+    answer.remove(0);
     Ok((answer))
   } 
 
@@ -261,7 +262,7 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     usb_buf[3] = control as u8;
 
     self.usb_device.write(&usb_buf,1500)?;                                    // write command
-    let answer = self.usb_device.read()?;      // read status from bdm
+    let answer = self.usb_device.read(1)?;      // read status from bdm
     Ok(())
 }
 
