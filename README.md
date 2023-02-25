@@ -9,7 +9,7 @@
  
  Target - USBDM/CF version, supporting DSC.
  
- ###  In test
+ ###  On test
 * Concrete mc56f (target) commands - read
 
 ###  In work
