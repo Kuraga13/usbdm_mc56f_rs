@@ -123,11 +123,10 @@ pub fn write(&self, data: &[u8], timeout_value: u64) -> Result<(), Error> {
 
 
 /// `read` - read_bulk from usbdm. param - programmer
-pub fn read(&self) -> Result<Vec<u8>, Error> {
+pub fn read(&self, rx_size: usize) -> Result<Vec<u8>, Error> {
 
-    const RECEIVE_SIZE: usize = 32;
-    let mut buff = [0; RECEIVE_SIZE];
-    self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
+    let mut buff: Vec<u8> = vec![0; rx_size];
+    self.handle.read_bulk(self.read_ep, buff.as_mut_slice(), Duration::from_millis(500))?;
     let mut answer = buff.to_vec();
     let check_status = self.check_usbm_return_code(&answer)?;
     Ok(answer)
@@ -200,9 +199,9 @@ pub fn control_transfer(
         usb_buf[1] = bitter;
   
         self.write(&usb_buf,1500)?;                  // write command
-        let answer = self.read()?;                   //  read status from bdm and save buffer to answer -
+        let answer = self.read(3)?;                   //  read status from bdm and save buffer to answer -
                                                      
-        let feedback_slice = [answer[3],answer[2]];      // two bytes for status feedback (in answer [3] use only 2 bits... for VPP bits)
+        let feedback_slice = [answer[1],answer[2]];      // two bytes for status feedback (in answer [1] use only 2 bits... for VPP bits)
         println!("FeedBack is: {:02X?}", feedback_slice);
         let unpack = FeedBack::unpack(&feedback_slice)?;
     

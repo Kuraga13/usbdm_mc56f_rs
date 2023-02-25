@@ -125,7 +125,7 @@ impl Programmer {
         usb_buf[1] = bitter;
 
         self.usb_device.write(&usb_buf,1500)?;        // write command
-        let answer: Vec<u8> = self.usb_device.read()?;                   //  read
+        let answer: Vec<u8> = self.usb_device.read(8)?;                   //  read
 
         if answer.len() >= 3 {
             let capabilities: u16 = ((answer[1] as u16) << 8) | answer[2] as u16 ^ ((1<<5) | (1<<6));
@@ -141,6 +141,11 @@ impl Programmer {
             let jtag_header_size: u16 = 5;
             self.bdm_info.command_buffer_size = buffer_size;
             self.bdm_info.jtag_buffer_size = buffer_size - jtag_header_size;
+        }
+
+        if answer.len() >= 8 {
+            // Newer BDMs report extended software version
+            self.bdm_info.bdm_software_version = ((answer[5] as u32) << 16)+((answer[6] as u32) << 8)+answer[7] as u32;
         }
 
         // Calculate permitted read & write length in bytes
