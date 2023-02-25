@@ -114,7 +114,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
             .style(back_style); */
 
     let test_test_line   = vec![vec!["test_test1".to_string(), "test_test2".to_string(), "test_test3".to_string(),]; 4500];
-    let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string()]; 4500];
+    let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(),]; 4500];
     
 
     let table_test = table_contents(20.00, test_addr_line, || test_buffer_double_click() );

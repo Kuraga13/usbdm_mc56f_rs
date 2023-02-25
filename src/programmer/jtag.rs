@@ -349,7 +349,7 @@ impl From <u8>  for OnceStatus  {
         sequence.push(CORE_ENABLE_ONCE_COMMAND);
         sequence.push(JTAG_END);
         let answer = prg.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
-        let once_byte = answer[1];
+        let once_byte = answer[0];
         dbg!(&answer); // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
         Ok((OnceStatus::from(once_byte)))
     }
@@ -367,7 +367,7 @@ impl From <u8>  for OnceStatus  {
         sequence.push(CORE_DEBUG_REQUEST_COMMAND);
         sequence.push(JTAG_END);
         let answer = prg.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
-        let once_byte = answer[1]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
+        let once_byte = answer[0]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
         dbg!(&answer);
         Ok((OnceStatus::from(once_byte)))
     }
