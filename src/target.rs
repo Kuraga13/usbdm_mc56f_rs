@@ -104,11 +104,8 @@ fn init(&mut self) -> Result<(), Error>
 fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
 
+  self.programmer.target_power_reset()?;
   self.power(power);
-  self.programmer.set_bdm_options()?;
-  self.programmer.set_target_mc56f()?;
-  self.programmer.refresh_feedback()?;
- 
 
   let master_id_code = read_master_id_code(true, &self.programmer)?;
   dbg!(master_id_code);
@@ -158,12 +155,12 @@ fn disconnect(&mut self)
 fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
  
- self.programmer.target_power_reset()?;
- self.connect(power);
+ 
+ //self.connect(power)?;
  dbg!(&self.once_status);
  
 
- let memory_read = self.programmer.dsc_read_memory(MS_PWORD, 0x200,  0x8000)?;
+ let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
  
  let mut printed_vec = Vec::new();
 
@@ -177,14 +174,17 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
 
     for symbol in printed_vec.iter()
     {
-      println!("{}", symbol);
+      print!("{}", symbol);
     }
 
-    println!("\n");
+    print!("\n");
     printed_vec.clear();
 
    }  
  }
+ self.programmer.target_power_reset()?;
+ self.programmer.refresh_feedback()?;
+ self.power(TargetVddSelect::VddOff)?;
 
  Ok(())
 

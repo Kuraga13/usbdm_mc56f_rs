@@ -470,11 +470,18 @@ impl Application for App {
             {
               
               let dsc = self.target.as_mut().expect("target lost");
-              if let(Err(_e)) = dsc.read_target(self.selected_power)
-              {
-                show_error(self, _e);
-              }
+              let read = dsc.read_target(self.selected_power);
 
+              match read
+              {
+                Ok(_) => {}
+                Err(_e) =>
+                {
+                show_error(self, _e);
+                println!("ReadTarget error");
+                return iced::Command::none();
+               }
+              }
             }
 
 

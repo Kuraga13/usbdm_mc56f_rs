@@ -39,7 +39,7 @@ impl Programmer
     // @note If memory space size is byte size then address is DSC byte pointer address
     // @note Size is limited to dscInfo.maxMemoryReadSize
     //
-    fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
+    pub fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
         if (memory_space == memory_space_t::MS_PLONG) {
             // Treat as word access
             memory_space = memory_space_t::MS_PWORD;
@@ -88,7 +88,9 @@ impl Programmer
         sequence.push(num_bytes_adjusted);     // 6 Elements
         sequence.push(memory_space);           // 7 Memory space
 
-        self.exec_jtag_seq(sequence, num_bytes)
+        let block = self.exec_jtag_seq(sequence, num_bytes)?;
+
+        Ok(block)
     }
 
 

@@ -252,9 +252,9 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     full_command.append(&mut jtag_seq);
 
 
-    self.usb_device.write(&full_command.as_slice(),1500)?;                                    // write command
+    self.usb_device.write(&full_command.as_slice(),1500)?;   // write command
     let answer: Vec<u8> = self.usb_device.read()?;         // read status from bdm
-   // self.check_usbm_return_code(command, &answer)?;               // check is status ok
+    self.usb_device.check_usbm_return_code(&answer)?;   
     Ok((answer))
   } 
 
