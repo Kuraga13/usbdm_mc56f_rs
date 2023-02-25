@@ -8,6 +8,13 @@
  Initially, the goal is to work comfortably with the mc56f in Rust. Working via USBDM on mc56f dsp controllers is rather inconvenient, and original the project itself is too large to simply fix something.
  
  Target - USBDM/CF version, supporting DSC.
+ 
+ ###  In test
+* Concrete mc56f (target) commands - read
+
+###  In work
+* Concrete mc56f (target) commands - read, write, erase 
+* GUI - ideally hex buffer, In work now
 
 ###  Done now
 * low level USB interface
@@ -16,8 +23,6 @@
 * Feedback module (Get status and parse bits)
 * Capabilites (Get BDM Information, like JTAG buffer size etc, parse bytes & save)
 * Jtag Command Builder
-*  Concrete mc56f (target) command: - Connect, tested-done
+* Concrete mc56f (target) command: - Connect, tested
 
-###  In plan
-* GUI - ideally hex buffer, In work now
-* Concrete mc56f (target) commands - read, write, erase 
+
