@@ -18,7 +18,7 @@ use crate::target::{Target, TargetProgramming};
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
-use crate::gui::error_notify_modal::{error_notify_model};
+use crate::gui::error_notify_modal::{error_notify_model, about_card};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
@@ -43,6 +43,7 @@ pub enum TargetStatus {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    OpenGithub,
     Debug(String),
     ValueChange(u8),
     CheckChange(bool),
@@ -52,8 +53,11 @@ pub enum Message {
     ThemeChange(bool),
     TextChange(String),
     SizeOption(main_window::SizeOption),
-    
+
+
     OkButtonPressed,
+    OpenAboutCard,
+    CloseAboutCard,
 
     Connect,
     Disconnect,
@@ -61,6 +65,8 @@ pub enum Message {
     PowerToggle,
     ReadTarget,
     TestFeedback,
+
+
     
 }
 
@@ -74,6 +80,7 @@ pub struct App {
     pub    power_status     : PowerStatus,
     pub    target_status    : TargetStatus,
     pub    show_error_modal : bool,
+    pub    about_card_open  : bool,
     pub    error_status     : Option<Error>,
 
     pub    title: String,
@@ -240,6 +247,7 @@ impl Application for App {
                 size_option: main_window::SizeOption::Static,
 
                 show_error_modal : false,
+                about_card_open  : false,
                 error_status     : None,     
                 selected_power   : TargetVddSelect::Vdd3V3,
                 target           : None,
@@ -264,6 +272,16 @@ impl Application for App {
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
+
+
+            Message::OpenGithub => {
+                #[cfg(target_os = "windows")]
+                std::process::Command::new("explorer")
+                    .arg("https://github.com/Kuraga13/usbdm_mc56f_rs")
+                    .spawn()
+                    .unwrap();
+     
+            }
             Message::Debug(s) => {
                 self.title = s.clone();
             }
@@ -313,6 +331,9 @@ impl Application for App {
                 self.title = self.size_option.to_string();
             }
 
+            Message::CloseAboutCard | Message::OpenAboutCard => {
+                self.about_card_open = !self.about_card_open;
+            }
 
 
             Message::OkButtonPressed =>
@@ -531,9 +552,18 @@ impl Application for App {
 
     // this function captutre content in c and return
     // if not errors. if error - modal window on view
-    error_notify_model(self.show_error_modal, main_page.into(), err_view) 
+    //error_notify_model(self.show_error_modal, main_page.into(), err_view) 
+    if self.about_card_open 
+    {
+        about_card(self.about_card_open, main_page.into())
+     }
+     else
+     {
+        error_notify_model(self.show_error_modal, main_page.into(), err_view) 
+     }
+    
 
-
+   
     
    // main_page.into()
 

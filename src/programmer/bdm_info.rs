@@ -126,8 +126,6 @@ impl Programmer {
 
         self.usb_device.write(&usb_buf,1500)?;        // write command
         let answer: Vec<u8> = self.usb_device.read()?;                   //  read
-    
-        self.usb_device.check_usbm_return_code( &answer)?;  
 
         if answer.len() >= 3 {
             let capabilities: u16 = ((answer[1] as u16) << 8) | answer[2] as u16 ^ ((1<<5) | (1<<6));

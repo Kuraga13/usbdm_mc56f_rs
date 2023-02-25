@@ -156,7 +156,7 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
  
  
- //self.connect(power)?;
+ self.connect(power)?;
  dbg!(&self.once_status);
  
 

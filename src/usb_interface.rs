@@ -128,13 +128,13 @@ pub fn read(&self) -> Result<Vec<u8>, Error> {
     const RECEIVE_SIZE: usize = 32;
     let mut buff = [0; RECEIVE_SIZE];
     self.handle.read_bulk(self.read_ep, &mut buff, Duration::from_millis(2500))?;
-    let answer = buff.to_vec();
+    let mut answer = buff.to_vec();
     let check_status = self.check_usbm_return_code(&answer)?;
     Ok(answer)
 
 }
 
-pub fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error>{
+fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error>{
     
     let mut return_code = return_byte[0];
     return_code &= !0xC0;
@@ -142,7 +142,7 @@ pub fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error
      
     if return_from_bdm != USBDM_ErrorCode::BDM_RC_OK {     
 
-       eprintln!("Error: BDM RC status from BDM : {}!", return_from_bdm);
+       println!("Error: BDM RC status from BDM : {}!", return_from_bdm);
        return Err(Error::USBDM_Errors(return_from_bdm))
 
       }

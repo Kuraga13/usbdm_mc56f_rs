@@ -14,6 +14,7 @@ use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
 use super::styling::{PowerButtonStyle, ButtonStyle};
+
 use super::hexbuffer_widget::{TableContents,table_contents };
 
 impl TargetVddSelect {
@@ -117,7 +118,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     let table_test = table_contents(20.00, test_addr_line, || test_buffer_double_click() );
     let test_test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
     
-
+  
 
 
     let c = if _app.flip {
@@ -239,6 +240,9 @@ pub fn debug_button<'a>(label: &str) -> button::Button<'a, Message, iced::Render
     labeled_button(label, Message::Debug(label.into()))
 }
 
+pub fn about_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+}
 
 pub fn connect_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
@@ -282,6 +286,10 @@ pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppS
 }
 
 pub fn debug_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(debug_button(label).width(Length::Fill).height(Length::Fill))
+}
+
+pub fn about_buttton<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(debug_button(label).width(Length::Fill).height(Length::Fill))
 }
 
@@ -570,8 +578,9 @@ pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     let txn = MenuTree::new(text_input("", &app.text, Message::TextChange));
 
     let root = MenuTree::with_children(
-        debug_button("Widgets"),
+        debug_button("Info"),
         vec![
+            about_button_item("About", Message::OpenAboutCard),
             programmer_button_item("Test_Feedback", Message::TestFeedback, &app.status, &app.target_status),
             debug_item("as a menu item"),
             bt,
