@@ -15,10 +15,9 @@ use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
 use crate::programmer::{Programmer};
 use crate::target::{MC56f80x,TargetFactory, TargetProgramming};
-use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
-use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card};
+use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
@@ -41,7 +40,7 @@ pub enum TargetStatus {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    OpenGithub,
+
     Debug(String),
     ValueChange(u8),
     CheckChange(bool),
@@ -52,7 +51,7 @@ pub enum Message {
     TextChange(String),
     SizeOption(main_window::SizeOption),
 
-
+    OpenGithub,
     OkButtonPressed,
     OpenAboutCard,
     CloseAboutCard,
@@ -72,8 +71,7 @@ pub enum Message {
 pub struct App {
 
            target           : Option<MC56f80x>,
-           buff             : Vec<HexBuffer>,
-           buffer_view      : Vec<HexBufferView>,
+    pub    buffer           : HexBuffer,
     pub    selected_power   : TargetVddSelect,
     pub    status           : UsbdmAppStatus,
     pub    power_status     : PowerStatus,
@@ -245,7 +243,8 @@ impl Application for App {
                 dark_mode: false,
                 text: "Text Input".into(),
                 size_option: main_window::SizeOption::Static,
-
+                
+                buffer           : HexBuffer::default(),
                 show_error_modal : false,
                 show_conn_image  : false,
                 about_card_open  : false,
@@ -255,8 +254,6 @@ impl Application for App {
                 status           : UsbdmAppStatus::NotConnected,
                 target_status    : TargetStatus::NotConnected,
                 power_status     : PowerStatus::PowerOff,
-                buff             : vec![HexBuffer::new()],
-                buffer_view      : vec![HexBufferView::default()],
 
             },
             iced::Command::none(),

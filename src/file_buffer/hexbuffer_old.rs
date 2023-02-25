@@ -8,6 +8,8 @@ use iced_native::{Color, Element, Length, Point, Rectangle, Size};
 use std::collections::HashMap;
 use crate::errors::{Error};
 
+
+
 type AddressKey = u32;
 type ByteValue  = u8;
 type AsciiValue = char;

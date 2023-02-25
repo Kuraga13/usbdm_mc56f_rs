@@ -31,7 +31,7 @@ use std::borrow::BorrowMut;
 use std::collections::HashMap;
 type AddressKey       = u32;
 type MemorySpaceType  = u8;
-type HexMap = HashMap<AddressKey, MemorySpaceType>;
+type HexMap = HashMap<AddressKey, MemorySpaceType>; // map need to find memory type. On mc56f you have different access on memory space
 
 pub struct MemoryMap
 {

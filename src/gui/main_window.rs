@@ -13,7 +13,7 @@ use crate::errors::{Error};
 use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
-use super::styling::{PowerButtonStyle, ButtonStyle};
+use super::styling::{PowerButtonStyle, ButtonStyle, EnablePowerButtonStyle};
 use super::connection_image::{dsc_connection_image};
 
 use super::hexbuffer_widget::{TableContents,table_contents };
@@ -117,7 +117,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(),]; 4500];
     
 
-    let table_test = table_contents(20.00, test_addr_line, || test_buffer_double_click() );
+    let table_test = table_contents(20.00, _app.buffer.download_string(), || test_buffer_double_click() );
      
     let image_conn = dsc_connection_image(1000);
     
@@ -181,7 +181,7 @@ pub fn power_button<'a>( state : &UsbdmAppStatus, power_state : &PowerStatus) ->
          PowerStatus::PowerOn  =>  
          {
 
-            labeled_button("VDD", Message::PowerToggle).style(theme::Button::Destructive)
+            labeled_button("VDD", Message::PowerToggle).style(iced::theme::Button::Custom(Box::new(EnablePowerButtonStyle {})))
 
          }
          PowerStatus::PowerOff  => 
