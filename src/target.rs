@@ -4,7 +4,7 @@ use crate::programmer::jtag::{OnceStatus};
 use crate::programmer::{Programmer};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
-
+use std::borrow::BorrowMut;
 
     // Memory space indicator - includes element size
     // One of the following
@@ -28,37 +28,113 @@ use crate::feedback::{PowerStatus};
     pub const MS_XWORD   : u8  = MS_WORD + MS_DATA;
     pub const MS_XLONG   : u8  = MS_LONG + MS_DATA;
 
+use std::collections::HashMap;
+type AddressKey       = u32;
+type MemorySpaceType  = u8;
+type HexMap = HashMap<AddressKey, MemorySpaceType>;
+
+pub struct MemoryMap
+{
+
+  pub memory_size    : usize,  // MC56f80x memory map is linear and have one segment, so now we can do it simple way
+  pub start_address  : u32,
+  pub mem_space_type : HexMap, // use for conversion address->MemorySpaceType (MS_PWORD,MS_PLONG etc.). 
+
+}
+
+impl MemoryMap
+{
+
+ pub fn init_memory_map(mem_size : usize, start_addr : u32, hex_map : HexMap) -> Self {
+  
+      Self{
+          memory_size     : mem_size,
+          start_address   : start_addr,
+          mem_space_type  : hex_map,
+    }
+}
+
+  pub fn get_memory_space_type(&self, addr: AddressKey) -> Result<&MemorySpaceType, Error>
+  {
+    match self.mem_space_type.get(&addr)
+    {
+        Some(m_type) => 
+        {
+        println!("space type on this addr is: {:#02X}", m_type);
+        Ok(m_type)
+        }
+        _ => 
+        {
+        println!("AddressKey not found!");
+        Err(Error::PowerStateError)
+        }
+     }
+  }
+
+  fn memory_size(&self)           -> usize
+  {
+
+    self.memory_size
+
+  }
+  fn memory_start_address(&self)  -> u32
+  {
+   
+    self.start_address
+
+  }
+}
 
 
+ pub trait TargetFactory{
+
+  type Output: TargetProgramming;
+
+  fn create_target( prg : Programmer,  mem_size : usize, start_addr : u32, name : String) -> Self::Output;
+  
+}
+
+ impl TargetFactory for MC56f80x {
+
+  type Output = MC56f80x;
+  
+  fn create_target(prg : Programmer,  mem_size : usize, start_addr : u32, name : String) -> MC56f80x
+   {
+        
+     let v: Vec<u8> = vec![0x00; mem_size]; // default HexBuffer size 0xFFFF, filled 0xFF
+     let mut map: HexMap = HashMap::new();
+     let mut address_index: AddressKey = start_addr;
+
+     for byte_ in v.iter() {
+
+         map.insert(address_index, MS_PWORD);
+         address_index += 0x1;
+    } 
+
+    let m_map = MemoryMap::init_memory_map(mem_size, start_addr, map);
 
 
+    return MC56f80x{programmer : prg, once_status : OnceStatus::UnknownMode, memory_map : m_map, mcu_name : name};
+  }
+}
 
-pub struct Target {
+
+pub struct MC56f80x {
     
-   pub programmer  : Programmer,
-   pub once_status : OnceStatus,
-
+   pub programmer    : Programmer,
+   pub once_status   : OnceStatus,
+   memory_map        : MemoryMap,
+   mcu_name          : String, 
     
 }
 
-impl Drop for Target{
+
+impl Drop for MC56f80x{
 
         fn drop(&mut self) {
             drop(&mut self.programmer);
             println!("Target dropped");
         }
-}
-
-impl Target{
-
-    pub fn new(prg : Programmer) -> Self {
-        Self{
-
-            programmer  : prg,
-            once_status : OnceStatus::UnknownMode,
-          
-      }
-   }
 }
 
 pub trait TargetProgramming
@@ -87,7 +163,7 @@ fn erase_target(&self) -> Result<(), Error>;
 
 }
 
-impl TargetProgramming for Target
+impl TargetProgramming for MC56f80x
 {
 
 fn init(&mut self) -> Result<(), Error>
@@ -159,9 +235,12 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
  self.connect(power)?;
  dbg!(&self.once_status);
  
-
- let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
  
+ //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
+  let test_addr = 0x7000;
+  let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
+  let memory_read = self.programmer.read_memory_block(test_mem_access_type, 0x20,  test_addr)?;
+
  let mut printed_vec = Vec::new();
 
  for byte in memory_read.iter()

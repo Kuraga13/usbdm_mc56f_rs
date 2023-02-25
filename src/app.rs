@@ -14,7 +14,7 @@ use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
 use crate::programmer::{Programmer};
-use crate::target::{Target, TargetProgramming};
+use crate::target::{MC56f80x,TargetFactory, TargetProgramming};
 use crate::gui::hexbuff_widget::{HexBufferView, HexBuffer, };
 use crate::gui::hexbuffer_widget::{TableContents,table_contents };
 use crate::gui::{self, main_window};
@@ -36,8 +36,6 @@ pub enum TargetStatus {
     Connected,
 
 }
-
-
 
 
 
@@ -72,7 +70,7 @@ pub enum Message {
 
 pub struct App {
 
-           target           : Option<Target>,
+           target           : Option<MC56f80x>,
            buff             : Vec<HexBuffer>,
            buffer_view      : Vec<HexBufferView>,
     pub    selected_power   : TargetVddSelect,
@@ -376,8 +374,10 @@ impl Application for App {
                                 Ok(programmer) =>
                                 {
                                 
-                                self.target  = Some(Target::new(Some(programmer).expect("Option: None")));
-
+            
+                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target( programmer, 0x7FFF, 0x000, "MC56f8035".to_string()));
+                                  self.target = dsc;
+                                
                                 }
 
                                 Err(_e) =>
