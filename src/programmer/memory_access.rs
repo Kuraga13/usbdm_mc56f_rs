@@ -114,20 +114,13 @@ impl Programmer
         while (bytes_done < num_bytes) {
             let mut block_size: u32 = num_bytes - bytes_done;
             
-            if (block_size > self.bdm_info.dsc_max_memory_read_size.into()) {
-                block_size = self.bdm_info.dsc_max_memory_read_size.into(); }
+            if (block_size > 0x10) {
+                block_size = 0x10; }
             
             let mut data = self.read_memory_block(memory_space, block_size as u8, current_address)?;
             output.append(&mut data);
             bytes_done += block_size;
-            
-            if ((memory_space & memory_space_t::MS_SIZE) == memory_space_t::MS_BYTE) {
-                // Byte currentAddress advanced by count of bytes written
-                current_address  += block_size;
-            } else {
-                // Address advanced by count of words written
-                current_address  += block_size/2;
-            }
+            current_address  += block_size;
         }
         Ok(output)
     }

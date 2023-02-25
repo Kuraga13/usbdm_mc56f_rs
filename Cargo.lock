@@ -1122,13 +1122,14 @@ dependencies = [
  "iced_native",
  "iced_wgpu",
  "iced_winit",
+ "image",
  "thiserror",
 ]
 
 [[package]]
 name = "iced_aw"
 version = "0.4.0"
-source = "git+https://github.com/iced-rs/iced_aw?rev=406131b#406131b48722c2672d100334a3ba75c693d62118"
+source = "git+https://github.com/iced-rs/iced_aw?rev=f2b1bbb#f2b1bbb743303ccac304e8c4e5f93336a7619628"
 dependencies = [
  "iced_graphics",
  "iced_native",
@@ -1198,6 +1199,8 @@ dependencies = [
  "glam",
  "iced_native",
  "iced_style",
+ "image",
+ "kamadak-exif",
  "log",
  "raw-window-handle 0.5.0",
  "resvg",
@@ -1344,6 +1347,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "445dde2150c55e483f3d8416706b97ec8e8237c307e5b7b4b8dd15e6af2a0730"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "kamadak-exif"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef4fc70d0ab7e5b6bafa30216a6b48705ea964cdfc29c050f2412295eba58077"
+dependencies = [
+ "mutate_once",
 ]
 
 [[package]]
@@ -1533,6 +1545,12 @@ dependencies = [
  "wasi",
  "windows-sys 0.45.0",
 ]
+
+[[package]]
+name = "mutate_once"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16cf681a23b4d0a43fc35024c176437f9dcd818db34e0f42ab456a0ee5ad497b"
 
 [[package]]
 name = "naga"
