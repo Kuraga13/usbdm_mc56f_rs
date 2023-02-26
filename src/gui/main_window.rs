@@ -469,7 +469,7 @@ pub fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         vec![
             connect_button_item("Connect", Message::Connect),
             programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
-            programmer_button_item("Write", Message::TestFeedback, &_app.status, &_app.target_status),
+            programmer_button_item("Write", Message::WriteTarget, &_app.status, &_app.target_status),
             programmer_button_item("Erase", Message::TestFeedback, &_app.status, &_app.target_status),
         ],
     )

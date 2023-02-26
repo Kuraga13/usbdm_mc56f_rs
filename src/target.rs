@@ -153,10 +153,10 @@ fn power(&mut self, power : TargetVddSelect ) -> Result<(), Error>;
 fn disconnect(&mut self);
 
 /// Read target
-fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
+fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>;
 
 /// Write target
-fn write_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
+fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> Result<(), Error>;
 
 /// Write target
 fn erase_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
@@ -228,22 +228,23 @@ fn disconnect(&mut self)
   
 }
 
-fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
+fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>
 {
+
+  self.connect(power)?;
+  dbg!(&self.once_status);
  
- 
- self.connect(power)?;
- dbg!(&self.once_status);
- 
- //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
+  //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
   let test_addr = 0x7000;
   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
   //let memory_read = self.programmer.read_memory_block(test_mem_access_type, 0x20,  test_addr)?;
   let memory_read = self.programmer.dsc_read_memory(test_mem_access_type, 0x60,  test_addr)?;
+  
+  /*
   let mut printed_vec = Vec::new();
 
- for byte in memory_read.iter()
- {
+    for byte in memory_read.iter()
+  {
    let in_string = format!("{:02X}", byte);
 
    printed_vec.push(in_string);
@@ -259,55 +260,33 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
     printed_vec.clear();
 
    }  
- }
- self.programmer.target_power_reset()?;
- self.programmer.refresh_feedback()?;
- self.power(TargetVddSelect::VddOff)?;
-
- Ok(())
-
-
-}
-
-fn write_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
-{
-    
-  self.connect(power)?; 
-  dbg!(&self.once_status);
-
-  let test_addr = 0x7000;
-  let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
+   }
+   */
   
-  //self.write_memory_block(test_mem_access_type, )
-  //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
-   
-   //let memory_read = self.programmer.read_memory_block(test_mem_access_type, 0x20,  test_addr)?;
-   let memory_read = self.programmer.dsc_read_memory(test_mem_access_type, 0x20,  test_addr)?;
-   let mut printed_vec = Vec::new();
- 
-  for byte in memory_read.iter()
-  {
-    let in_string = format!("{:02X}", byte);
- 
-    printed_vec.push(in_string);
-    if(printed_vec.len() == 0x0F)
-    {
- 
-     for symbol in printed_vec.iter()
-     {
-       print!("{}", symbol);
-     }
- 
-     print!("\n");
-     printed_vec.clear();
- 
-    }  
-  }
   self.programmer.target_power_reset()?;
   self.programmer.refresh_feedback()?;
   self.power(TargetVddSelect::VddOff)?;
+
+  Ok(memory_read)
+
+}
+
+fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> Result<(), Error>
+{
+  
+  self.connect(power)?; 
+  dbg!(&self.once_status);
+
+   
+   let test_addr = self.memory_map.start_address;
+   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
+   let memory_read = self.programmer.dsc_write_memory(test_mem_access_type, data_to_write,  test_addr)?;
+
+   self.programmer.target_power_reset()?;
+   self.programmer.refresh_feedback()?;
+   self.power(TargetVddSelect::VddOff)?;
  
-  Ok(())
+   Ok(())
     
 }
 

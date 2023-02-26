@@ -65,7 +65,7 @@ impl HexBuffer
     Ok(())
 }
 
- pub fn download_u8(&mut self) -> Result<Vec<u8>, Error> {
+ pub fn download_u8(&mut self) -> Vec<u8> {
 
     let mut byte_vec = Vec::new();
     for str_vec in self.buffer.iter()
@@ -77,7 +77,7 @@ impl HexBuffer
         }  
     }
     
-    Ok(byte_vec)
+   byte_vec
 
 }
 

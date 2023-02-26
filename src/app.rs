@@ -62,6 +62,7 @@ pub enum Message {
     PowerSelect(TargetVddSelect),
     PowerToggle,
     ReadTarget,
+    WriteTarget,
     TestFeedback,
 
 
@@ -503,11 +504,39 @@ impl Application for App {
 
               match read
               {
-                Ok(_) => {}
+                Ok(read) => 
+                {
+
+                    self.buffer.upload(read);
+                }
                 Err(_e) =>
                 {
                 show_error(self, _e);
                 println!("ReadTarget error");
+                return iced::Command::none();
+               }
+              }
+            }
+
+            Message::WriteTarget  => 
+            {
+              
+              let dsc = self.target.as_mut().expect("target lost");
+
+              let write = self.buffer.download_u8();  
+              let write_target = dsc.write_target(self.selected_power, write);
+
+              match write_target
+              {
+                Ok(_) => 
+                {
+
+               
+                }
+                Err(_e) =>
+                {
+                show_error(self, _e);
+                println!("WriteTarget error");
                 return iced::Command::none();
                }
               }

@@ -87,7 +87,7 @@ impl button::StyleSheet for EnablePowerButtonStyle {
     fn active(&self, style: &Self::Style) -> button::Appearance {
         button::Appearance {
             text_color: style.extended_palette().background.base.text,
-            background: Some(Color::from_rgba( 26.00, 255.00, 0.0, 1.0 ).into()),
+            background: Some(Color::from_rgb8( 52, 226, 3).into()),
             ..Default::default()
         }
     }
