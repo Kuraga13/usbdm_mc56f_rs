@@ -209,22 +209,15 @@ impl Programmer
     // @note If memory space size is byte size then address is DSC byte pointer address
     //
     pub fn dsc_write_memory(&self, mut memory_space: u8, mut data: Vec<u8>, mut address: u32) -> Result<(), Error> {
-
+    
         while (data.len() > 0) {
             let mut block_size = data.len();
             
-            if block_size > self.bdm_info.dsc_max_memory_write_size.into() {
-                block_size = self.bdm_info.dsc_max_memory_write_size.into(); };
-            
-            self.write_memory_block(memory_space, data.split_off(block_size), address)?;
-            
-            if ((memory_space & memory_space_t::MS_SIZE) == memory_space_t::MS_BYTE) {
-                // Byte currentAddress advanced by count of bytes written
-                address  += block_size as u32;
-            } else {
-                // Address advanced by count of words written
-                address  += (block_size / 2) as u32;
-            }
+            if (block_size > 0x10) {
+                block_size = 0x10; };
+
+            self.write_memory_block(memory_space, data.drain(..block_size).collect(), address)?;
+            address += block_size as u32;
         }
      
         Ok(())
