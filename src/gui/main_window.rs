@@ -114,12 +114,12 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
             .style(back_style); */
 
     let test_test_line   = vec![vec!["test_test1".to_string(), "test_test2".to_string(), "test_test3".to_string(),]; 4500];
-    let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(),]; 4500];
+    let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(), "test_test2".to_string(),]; 4500];
     
 
-    let table_test = table_contents(20.00, _app.buffer.download_string(), || test_buffer_double_click() );
+    let table_test = table_contents(20.00, _app.buffer.download_all_u8(), || test_buffer_double_click() );
      
-    let image_conn = dsc_connection_image(1000);
+    let image_conn = dsc_connection_image(1500);
     
     let test_test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
     
@@ -302,6 +302,10 @@ pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppS
 
 pub fn debug_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(debug_button(label).width(Length::Fill).height(Length::Fill))
+}
+
+pub fn empty_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(empty_labeled_button(label).width(Length::Fill).height(Length::Fill))
 }
 
 pub fn about_buttton<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
@@ -650,11 +654,7 @@ pub fn menu_3<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     let root = MenuTree::with_children(
         debug_button("View"),
         vec![
-            MenuTree::new(
-                labeled_button("Inverse View", Message::Flip)
-                    .width(Length::Fill)
-                    .height(Length::Fill),
-            ),
+  
             MenuTree::new(
                 row![toggler(
                     Some("Dark Mode".into()),
@@ -750,64 +750,10 @@ pub fn menu_4<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     );
 
     let root = MenuTree::with_children(
-        debug_button("Scroll"),
+        debug_button("Target"),
         vec![
-            debug_item("ajrs"), // 0
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            jcsu, // 9
-            debug_item("kaljkahd"),
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"), // 13
-            debug_item("ajrs"), // 14
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"),
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"), // 27
-            debug_item("ajrs"), // 28
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            dekjdaud,
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"),
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"), // 41
-            debug_item("ajrs"), // 42
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"), // 52
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"), // 55
+            empty_item("MC56F8035"), // 0
+         
         ],
     );
 

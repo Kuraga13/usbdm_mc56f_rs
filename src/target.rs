@@ -185,27 +185,29 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 
   let master_id_code = read_master_id_code(true, &self.programmer)?;
   dbg!(master_id_code);
-  enableCoreTAP(&self.programmer); // on second not
-  let core_id_code = read_core_id_code(false, &self.programmer)?;
+  enableCoreTAP(&self.programmer); 
+  let core_id_code = read_core_id_code(false, &self.programmer)?; // on second not
   dbg!(core_id_code);
 
   self.once_status = OnceStatus::UnknownMode;
 
-  //while(self.once_status  != OnceStatus::DebugMode)
-  //{
-   dbg!(&self.once_status);
-   self.once_status = targetDebugRequest(&self.programmer)?;
-  //}
+  for retry in 0..10 
+  {
+    dbg!(&self.once_status);
+    self.once_status = targetDebugRequest(&self.programmer)?;
+    if(self.once_status == OnceStatus::DebugMode)
+    {
+      break;
+    }
+    if(self.once_status == OnceStatus::UnknownMode) 
+    {
+       return Err((Error::TargetNotConnected))
+    }
+  }
 
   self.once_status = enableONCE(&self.programmer)?;
   dbg!("Final status is: ", &self.once_status);
   
-  if(self.once_status == OnceStatus::UnknownMode) 
-  {
-
-     return Err((Error::TargetNotConnected))
-
-  }
 
   Ok(())
     
@@ -214,8 +216,8 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 fn power(&mut self, user_power_query : TargetVddSelect) -> Result<(), Error>
 {
                                                                         
-  self.programmer.set_vdd(user_power_query);                      // If we try double-set power, filter in set_vdd just return ok
-  self.programmer.check_expected_power(user_power_query)?;              // Check power is setted
+  self.programmer.set_vdd(user_power_query);           // If we try double-set power, filter in set_vdd just return ok
+  self.programmer.check_expected_power(user_power_query)?;    // Check power is setted
   Ok(())
 
 }
@@ -231,7 +233,15 @@ fn disconnect(&mut self)
 fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>
 {
 
-  self.connect(power)?;
+
+  let powered = self.programmer.get_power_state()?;
+  self.once_status = enableONCE(&self.programmer)?;
+  
+  if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
+  {
+      self.connect(power)?;
+  }
+ 
   dbg!(&self.once_status);
  
   //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
@@ -263,18 +273,25 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>
    }
    */
   
-  self.programmer.target_power_reset()?;
-  self.programmer.refresh_feedback()?;
-  self.power(TargetVddSelect::VddOff)?;
+   self.programmer.target_power_reset()?;
+   self.programmer.refresh_feedback()?;
+   self.power(TargetVddSelect::VddOff)?;
 
-  Ok(memory_read)
+   Ok(memory_read)
 
 }
 
 fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> Result<(), Error>
 {
+
+  let powered = self.programmer.get_power_state()?;
+  self.once_status = enableONCE(&self.programmer)?;
   
-  self.connect(power)?; 
+  if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
+  {
+      self.connect(power)?;
+  }
+
   dbg!(&self.once_status);
 
    
@@ -294,9 +311,17 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> 
 
 fn erase_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
-    
-    unimplemented!()
-    
+  
+  let powered = self.programmer.get_power_state()?; // base init : check power and status
+  self.once_status = enableONCE(&self.programmer)?;
+  
+  if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
+  {
+      self.connect(power)?;
+  }
+
+  Ok(())
+
 }
 
 
