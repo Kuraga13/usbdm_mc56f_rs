@@ -1,0 +1,48 @@
+@font-face {
+    font-family: 'Courier New';
+    src: url('CourierNewPS-BoldMT.eot');
+    src: local('Courier New Bold'), local('CourierNewPS-BoldMT'),
+        url('CourierNewPS-BoldMT.eot?#iefix') format('embedded-opentype'),
+        url('CourierNewPS-BoldMT.woff2') format('woff2'),
+        url('CourierNewPS-BoldMT.woff') format('woff'),
+        url('CourierNewPS-BoldMT.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Courier New';
+    src: url('CourierNewPS-BoldItalicMT.eot');
+    src: local('Courier New Bold Italic'), local('CourierNewPS-BoldItalicMT'),
+        url('CourierNewPS-BoldItalicMT.eot?#iefix') format('embedded-opentype'),
+        url('CourierNewPS-BoldItalicMT.woff2') format('woff2'),
+        url('CourierNewPS-BoldItalicMT.woff') format('woff'),
+        url('CourierNewPS-BoldItalicMT.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Courier New';
+    src: url('CourierNewPS-ItalicMT.eot');
+    src: local('Courier New Italic'), local('CourierNewPS-ItalicMT'),
+        url('CourierNewPS-ItalicMT.eot?#iefix') format('embedded-opentype'),
+        url('CourierNewPS-ItalicMT.woff2') format('woff2'),
+        url('CourierNewPS-ItalicMT.woff') format('woff'),
+        url('CourierNewPS-ItalicMT.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Courier New';
+    src: url('CourierNewPSMT.eot');
+    src: local('Courier New'), local('CourierNewPSMT'),
+        url('CourierNewPSMT.eot?#iefix') format('embedded-opentype'),
+        url('CourierNewPSMT.woff2') format('woff2'),
+        url('CourierNewPSMT.woff') format('woff'),
+        url('CourierNewPSMT.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+

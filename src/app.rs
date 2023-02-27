@@ -523,7 +523,7 @@ impl Application for App {
               
               let dsc = self.target.as_mut().expect("target lost");
 
-              let write = self.buffer.download_u8();  
+              let write = self.buffer.download_in_one();  
               let write_target = dsc.write_target(self.selected_power, write);
 
               match write_target
