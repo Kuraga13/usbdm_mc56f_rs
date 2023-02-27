@@ -66,7 +66,7 @@ impl MemoryMap
         _ => 
         {
         println!("AddressKey not found!");
-        Err(Error::PowerStateError)
+        Err(Error::MemorySpaceTypeAddress_Out)
         }
      }
   }
@@ -235,10 +235,10 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>
   dbg!(&self.once_status);
  
   //let memory_read = self.programmer.read_memory_block(MS_PWORD, 0x20,  0x7000)?;
-  let test_addr = 0x7000;
+  let test_addr = 0x7f40;
   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
   //let memory_read = self.programmer.read_memory_block(test_mem_access_type, 0x20,  test_addr)?;
-  let memory_read = self.programmer.dsc_read_memory(test_mem_access_type, 0x60,  test_addr)?;
+  let memory_read = self.programmer.dsc_read_memory(MS_PWORD, 0x64,  test_addr)?;
   
   /*
   let mut printed_vec = Vec::new();
@@ -278,9 +278,11 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> 
   dbg!(&self.once_status);
 
    
-   let test_addr = self.memory_map.start_address;
+   let test_addr =  0x0686;//self.memory_map.start_address;
    let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
-   let memory_read = self.programmer.dsc_write_memory(test_mem_access_type, data_to_write,  test_addr)?;
+
+   let test_write = vec![0xAA; 0xEC];
+   let mem_write = self.programmer.write_memory_block(MS_XWORD, test_write, test_addr)?;
 
    self.programmer.target_power_reset()?;
    self.programmer.refresh_feedback()?;

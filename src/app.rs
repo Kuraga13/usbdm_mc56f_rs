@@ -507,13 +507,18 @@ impl Application for App {
                 Ok(read) => 
                 {
 
-                    self.buffer.upload(read);
+                self.buffer.upload(read);
+                self.check_power_state();
+
                 }
                 Err(_e) =>
                 {
+
                 show_error(self, _e);
                 println!("ReadTarget error");
+                self.check_power_state();
                 return iced::Command::none();
+
                }
               }
             }
@@ -522,6 +527,7 @@ impl Application for App {
             {
               
               let dsc = self.target.as_mut().expect("target lost");
+            
 
               let write = self.buffer.download_u8();  
               let write_target = dsc.write_target(self.selected_power, write);
@@ -530,12 +536,14 @@ impl Application for App {
               {
                 Ok(_) => 
                 {
-
-               
+                self.check_power_state();
+                println!("target write ok!");
+    
                 }
                 Err(_e) =>
                 {
                 show_error(self, _e);
+                self.check_power_state();
                 println!("WriteTarget error");
                 return iced::Command::none();
                }

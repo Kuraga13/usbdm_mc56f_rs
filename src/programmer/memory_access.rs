@@ -137,7 +137,7 @@ impl Programmer
     // @note If memory space size is byte size then address is DSC byte pointer address
     // @note Size is limited to dscInfo.maxMemoryWriteSize
     //
-    fn write_memory_block(&self, mut memory_space: u8, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
+    pub fn write_memory_block(&self, mut memory_space: u8, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
         if (memory_space == memory_space_t::MS_PLONG) {
             // Treat as word access
             memory_space = memory_space_t::MS_PWORD;
@@ -192,7 +192,9 @@ impl Programmer
         sequence.push(num_bytes_adjusted);     // 6 Elements
         sequence.push(memory_space);           // 7 Memory space
         sequence.append(&mut data);
-  
+
+        println!("we are on write mem block");
+        println!("{:?}", sequence);
         self.exec_jtag_seq(sequence, 0)?;
         Ok(())
     }

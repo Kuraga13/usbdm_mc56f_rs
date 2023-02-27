@@ -18,6 +18,7 @@ pub enum Error {
    LostConnection,
    TargetNotConnected,
    TargetNotInDebugMode,
+   MemorySpaceTypeAddress_Out,
    Unknown,
    PackerErr(packed_struct::PackingError),
 }
