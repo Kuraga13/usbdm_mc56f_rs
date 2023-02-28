@@ -24,7 +24,7 @@ pub struct HexBuffer
 impl Default for HexBuffer {
     fn default() -> Self {
         Self{
-            buffer     : vec![vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F ]; 0x2001]    
+            buffer     : vec![vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]; 0x2001]    
         }
     }
 }
@@ -217,70 +217,61 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
             adress_bounds.y=offset_fisrt_line_y;
 
             let mut text_bounds=adress_bounds;
-            text_bounds.x = adress_bounds.x * 3.8;
+            text_bounds.x = adress_bounds.x * 3.9;
         
 
             let mut ascii_bounds=text_bounds;
-            ascii_bounds.x = text_bounds.x * 5.6;
+            ascii_bounds.x = text_bounds.x * 5.2;
      
 
             let mut is_new_line = true;
       
             if let Some(itemvec) = contents.get(number_of_element as usize) {
-                
-            text_bounds.width  = 21.0;
-            ascii_bounds.width = 10.0;
+                text_bounds.width  = 21.0;
+                ascii_bounds.width = 10.0;
           
-            for item in itemvec.iter(){;
+                for item in itemvec.iter(){
+                    let ascii = item.clone();
+                    let hex_byte    = item.clone();
+                    let address = number_of_element * 0x10;
 
-                        let ascii = item.clone();
-                        let hex_byte    = item.clone();
-                        let address = number_of_element * 0x10;
-
-                        if(is_new_line)
-                        {
-                            renderer.fill_text(
-                                iced_native::text::Text {
-                                    content: format!("{:05X?}", address).as_str(),
-                                    bounds: adress_bounds,
-                                    size: 15.0,
-                                    color: Color::from_rgb8(8, 54, 191),
-                                    font: Font::External { name : FONT_NAME, bytes : FONT_BYTES},
-                                    horizontal_alignment: Horizontal::Left,
-                                    vertical_alignment: Vertical::Center,
-                                });
-                                is_new_line = false;
-            
-
-                        };
-
+                    if(is_new_line) {
                         renderer.fill_text(
                             iced_native::text::Text {
-                                content:  format!("{:02X?}", hex_byte).as_str(),
-                                bounds: text_bounds,
+                                content: format!("{:05X?}", address).as_str(),
+                                bounds: adress_bounds,
                                 size: 15.0,
-                                color: Color::BLACK,
+                                color: Color::from_rgb8(8, 54, 191),
                                 font: Font::External { name : FONT_NAME, bytes : FONT_BYTES},
                                 horizontal_alignment: Horizontal::Left,
-                                vertical_alignment: Vertical::Center,
-                            });
-                        
+                                vertical_alignment: Vertical::Center,});
+                        is_new_line = false;
+                    };
 
-                            renderer.fill_text(
-                                iced_native::text::Text {
-                                    content: &{if (ascii >= 33 && ascii <= 126) {(ascii as char)} else {'x'}}.to_string(),
-                                    bounds: ascii_bounds,
-                                    size: 13.0,
-                                    color: Color::from_rgb8(8, 54, 191),
-                                    font: Font::External { name : FONT_NAME, bytes : FONT_BYTES},
-                                    horizontal_alignment: Horizontal::Left,
-                                    vertical_alignment: Vertical::Center,
-                                });
+                    renderer.fill_text(
+                        iced_native::text::Text {
+                            content:  format!("{:02X?}", hex_byte).as_str(),
+                            bounds: text_bounds,
+                            size: 15.0,
+                            color: Color::BLACK,
+                            font: Font::External { name : FONT_NAME, bytes : FONT_BYTES},
+                            horizontal_alignment: Horizontal::Left,
+                            vertical_alignment: Vertical::Center,});
+                        
+                    renderer.fill_text(
+                        iced_native::text::Text {
+                            content: &{if (ascii >= 33 && ascii <= 126) {(ascii as char)} else {'.'}}.to_string(),
+                            bounds: ascii_bounds,
+                            size: 13.0,
+                            color: Color::from_rgb8(8, 54, 191),
+                            font: Font::External { name : FONT_NAME, bytes : FONT_BYTES},
+                            horizontal_alignment: Horizontal::Left,
+                            vertical_alignment: Vertical::Center,});
                             
-                        text_bounds.x+=text_bounds.width; // add one element
-                        ascii_bounds.x+=ascii_bounds.width; // add one element
-                    }
-                }        
+                    text_bounds.x+=text_bounds.width; // add one element
+                    ascii_bounds.x+=ascii_bounds.width; // add one element
+                }
+            }        
             
             is_new_line = true;
             element_bounds.y+=element_bounds.height;
