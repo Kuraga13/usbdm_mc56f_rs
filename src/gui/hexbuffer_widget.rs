@@ -235,8 +235,8 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
       
             if let Some(itemvec) = contents.get(number_of_element as usize) {
                 
-            text_bounds.width  /= (itemvec.len() as f32 / 2.0) * 5.00;
-            ascii_bounds.width /= (itemvec.len() as f32 / 2.0) * 8.50;
+            text_bounds.width  = 21.0;
+            ascii_bounds.width = 12.0;
           
 
             for item in itemvec.iter(){;
