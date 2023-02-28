@@ -14,7 +14,6 @@ use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
 use super::styling::{PowerButtonStyle, ButtonStyle, EnablePowerButtonStyle};
-use super::connection_image::{dsc_connection_image};
 
 use super::hexbuffer_widget::{TableContents,table_contents };
 
@@ -118,21 +117,10 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     
 
     let table_test = table_contents(20.00, _app.buffer.download_all_u8(), || test_buffer_double_click() );
-     
-    let image_conn = dsc_connection_image(1500);
     
     let test_test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
     
-    let body =
-    if(_app.show_conn_image)
-    {
-        col![image_conn]
-    }
-    else
-    {
-        
-        col![test_test]
-    };
+    let body = test_test;
 
 
     let c = if _app.flip {

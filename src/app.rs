@@ -16,7 +16,7 @@ use crate::feedback::{PowerStatus};
 use crate::programmer::{Programmer};
 use crate::target::{MC56f80x,TargetFactory, TargetProgramming};
 use crate::gui::{self, main_window};
-use crate::gui::modal_notification::{error_notify_model, about_card};
+use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -602,10 +602,15 @@ impl Application for App {
     {
         about_card(self.about_card_open, main_page.into())
      }
-     else
-     {
+    else if self.show_conn_image
+    {
+
+        connection_image_modal(1300, self.show_conn_image, main_page.into())
+    }
+    else
+    {
         error_notify_model(self.show_error_modal, main_page.into(), err_view) 
-     }
+    }
     
 
    

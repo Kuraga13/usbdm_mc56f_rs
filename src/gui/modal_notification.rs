@@ -6,7 +6,7 @@ use iced::{
 };
 use iced::widget::{
     button, checkbox, container, horizontal_space, pick_list, row, slider, svg, text, text_input,
-    toggler, vertical_slider,scrollable, Tooltip, vertical_space, 
+    toggler, vertical_slider,scrollable, Tooltip, vertical_space, image
 };
 use iced_aw::{Modal};
 use iced_aw::{style::CardStyles, Card};
@@ -131,5 +131,37 @@ pub fn get_button_github() -> Tooltip<'static, Message> {
 
 
 
+pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: Element<'a, Message, iced::Renderer>, )  -> Element<'a, Message>
+{
 
+
+    Modal::new(show_conn_image, content,  move|| { 
+        
+        let handle = image::Handle::from_path(format!(
+            "{}/src/resources/mcu_connection.jpeg",
+            env!("CARGO_MANIFEST_DIR")
+        ));
+        
+        Card::new( 
+    
+        Text::new("Connection MC56F8035").size(25),
+        container(image(handle) .width(width)).center_x()
+       )
+      .foot(
+        Row::new()
+            .spacing(10)
+            .padding(5)
+            .width(Length::Fill)
+      )
+      .on_close(Message::ConnectionImageOpen(false))
+      .max_width(1500.00)
+      //.width(Length::Shrink)
+      .on_close(Message::ConnectionImageOpen(false))
+      .into() })
+    .backdrop(Message::ConnectionImageOpen(false))
+    .on_esc(Message::ConnectionImageOpen(false))
+    .into()
+    
+
+}
 
