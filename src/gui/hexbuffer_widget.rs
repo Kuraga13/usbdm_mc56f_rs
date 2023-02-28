@@ -22,12 +22,9 @@ pub struct HexBuffer
 
 
 impl Default for HexBuffer {
-
-        fn default() -> Self {
-            Self{
-
-                //buffer     : vec![vec![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F ]; 4500]  
-                buffer     : vec![vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F ]; 4500]            
+    fn default() -> Self {
+        Self{
+            buffer     : vec![vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F ]; 0x2001]    
         }
     }
 }
@@ -187,8 +184,7 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
 
 
         let mut end_y=viewport.y + viewport.height;
-        let mut number_of_element = (viewport_layout_y /self.item_height) as i32;
-        let mut test_addr_u32 = 0x00000;
+        let mut number_of_element: u32 = (viewport_layout_y / self.item_height) as u32;
         let mut element_bounds=
         Rectangle
         {
@@ -225,30 +221,27 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
         
 
             let mut ascii_bounds=text_bounds;
-            ascii_bounds.x = text_bounds.x * 5.3;
-
-            let test_ascii = "....abcdegh";
-            let test_addr = "00000";
-           
+            ascii_bounds.x = text_bounds.x * 5.6;
+     
 
             let mut is_new_line = true;
       
             if let Some(itemvec) = contents.get(number_of_element as usize) {
                 
             text_bounds.width  = 21.0;
-            ascii_bounds.width = 12.0;
+            ascii_bounds.width = 10.0;
           
-
             for item in itemvec.iter(){;
 
                         let ascii = item.clone();
                         let hex_byte    = item.clone();
+                        let address = number_of_element * 0x10;
 
                         if(is_new_line)
                         {
                             renderer.fill_text(
                                 iced_native::text::Text {
-                                    content: format!("{:05X?}", test_addr_u32).as_str(),
+                                    content: format!("{:05X?}", address).as_str(),
                                     bounds: adress_bounds,
                                     size: 15.0,
                                     color: Color::from_rgb8(8, 54, 191),
@@ -275,7 +268,7 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
 
                             renderer.fill_text(
                                 iced_native::text::Text {
-                                    content:  format!("{:?}", ascii as char,).as_str(), 
+                                    content: &{if (ascii >= 33 && ascii <= 126) {(ascii as char)} else {'x'}}.to_string(),
                                     bounds: ascii_bounds,
                                     size: 13.0,
                                     color: Color::from_rgb8(8, 54, 191),
@@ -291,7 +284,6 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
             
             is_new_line = true;
             element_bounds.y+=element_bounds.height;
-            test_addr_u32 = test_addr_u32 + 0x0000F;
             number_of_element+=1;
         }
     }
@@ -302,7 +294,7 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
         layout::Node::new(Size{
            
             width: limits.max().width,
-            height:  self.item_height*((self.contents.len()) as f32)
+            height:  (self.item_height*((self.contents.len() + 1)) as f32)
         })
     }
 
