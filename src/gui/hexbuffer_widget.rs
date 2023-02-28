@@ -24,7 +24,7 @@ pub struct HexBuffer
 impl Default for HexBuffer {
     fn default() -> Self {
         Self{
-            buffer     : vec![vec![0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]; 0x2001]    
+            buffer     : vec![vec![0xFF; 16]; 0x2001]    
         }
     }
 }
@@ -221,7 +221,7 @@ impl<Message:std::clone::Clone> Widget<Message, iced::Renderer> for TableContent
         
 
             let mut ascii_bounds=text_bounds;
-            ascii_bounds.x = text_bounds.x * 5.2;
+            ascii_bounds.x = text_bounds.x * 5.5;
      
 
             let mut is_new_line = true;
