@@ -275,6 +275,7 @@ impl From <u8>  for OnceStatus  {
   }
   
 
+    
 
 
     // Read IDCODE from JTAG TAP
@@ -304,7 +305,7 @@ impl From <u8>  for OnceStatus  {
         prg.exec_jtag_seq(sequence, 4)
     }
 
-    pub fn read_master_id_code(resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
+    pub fn read_master_id_code_DSC_JTAG_ID(resetTAP: bool, prg:  &Programmer) -> Result<(Vec<u8>), Error> {
         read_id_code(JTAG_MASTER_COMMAND_LENGTH, resetTAP, prg)
     }
 
@@ -372,3 +373,4 @@ impl From <u8>  for OnceStatus  {
         Ok((OnceStatus::from(once_byte)))
     }
 
+ 

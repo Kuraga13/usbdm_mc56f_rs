@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use std::fmt;
-
+use std::io;
 
 //#[allow(non_camel_case_types)]
 //pub type USBDM_Result = Result<USBDM_RC_OK, USBDMerror>;
@@ -12,15 +12,19 @@ use std::fmt;
 pub enum Error {
 
    USBDM_Errors(USBDM_ErrorCode),
-  // USBDM_ErrorCode,
    Usb(rusb::Error),
    PowerStateError,
    LostConnection,
    TargetNotConnected,
+   TargetSecured,
    TargetNotInDebugMode,
    MemorySpaceTypeAddress_Out,
    Unknown,
    PackerErr(packed_struct::PackingError),
+   RamRWTestFault,
+   //IO_Error(std::io::Error)  // std::io::Error unimpleted copy ?? FTW??
+   IO_Error(std::io::ErrorKind),
+   FileReadErr,
 }
 
 pub fn get_title_message_error_modal(err : Error) -> (String, String)
@@ -95,6 +99,13 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
 impl std::error::Error for Error {}
 
+impl From<std::io::Error> for Error {
+    #[inline]
+    fn from(err: std::io::Error) -> Error {
+       Error::IO_Error(err.kind())
+     
+    }
+}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

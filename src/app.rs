@@ -8,16 +8,22 @@ use iced::{alignment, theme, Application, Color, Element, Length};
 use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
 
+use std::ffi::{OsStr, OsString};
+use std::path::Path;
+use native_dialog::{FileDialog, MessageDialog, MessageType};
+
 
 use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::errors::{Error};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
 use crate::programmer::{Programmer};
-use crate::target::{MC56f80x,TargetFactory, TargetProgramming};
+use crate::target_dsc::target_factory::{TargetFactory, TargetProgramming};
+use crate::target_dsc::mc56f80x::MC56f80x;
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
+use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
@@ -41,22 +47,17 @@ pub enum TargetStatus {
 #[derive(Debug, Clone)]
 pub enum Message {
 
-    Debug(String),
-    ValueChange(u8),
-    CheckChange(bool),
-    ToggleChange(bool),
-    ColorChange(Color),
-    Flip,
-    ThemeChange(bool),
-    TextChange(String),
-    SizeOption(main_window::SizeOption),
-
+    Menu,
+    ColorChange(Color),  // actual!
+    ThemeChange(bool), // actual!
+    TestBufferDoubleClick,
     OpenGithub,
+    OpenFile,
+    SaveFile,
     OkButtonPressed,
     OpenAboutCard,
     CloseAboutCard,
     ConnectionImageOpen(bool),
-
     Connect,
     Disconnect,
     PowerSelect(TargetVddSelect),
@@ -64,8 +65,6 @@ pub enum Message {
     ReadTarget,
     WriteTarget,
     TestFeedback,
-
-
     
 }
 
@@ -73,6 +72,7 @@ pub struct App {
 
            target           : Option<MC56f80x>,
     pub    buffer           : HexBuffer,
+           buffer_path      : String,
     pub    selected_power   : TargetVddSelect,
     pub    status           : UsbdmAppStatus,
     pub    power_status     : PowerStatus,
@@ -81,16 +81,9 @@ pub struct App {
     pub    about_card_open  : bool,
     pub    show_conn_image  : bool,
     pub    error_status     : Option<Error>,
-
-    pub    title: String,
-    pub    value: u8,
-    pub    check: bool,
-    pub    toggle: bool,
     pub    theme: iced::Theme,
-    pub    flip: bool,
     pub    dark_mode: bool,
-    pub    text: String,
-    pub    size_option: main_window::SizeOption,
+
 }
 
 pub fn show_error( app : &mut App, _e : Error) 
@@ -124,10 +117,78 @@ where Error: From<U>, U: std::marker::Copy
 
 impl App 
 {
+    /// Open the file dialog to select a file
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let selected_file_result: Result<Option<String>, OsString> = open_file_dialog()
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// The optional `String` that contains the path of the selected file or an `OsString` error
+    fn open_file_dialog() -> Result<Option<String>, OsString> {
+        let path = FileDialog::new()
+            .add_filter(".bin", &["bin"])
+            .add_filter(".s19_usbdm_format", &["s19"])
+            .add_filter("All files", &["*"])
+            .show_open_single_file()
+            .unwrap();
 
+        let path = match path {
+            Some(path) => path,
+            None => return Ok(None),
+        };
 
- fn check_connection_programmer(&mut self)
- {
+        match path.into_os_string().into_string() {
+            Ok(d) => Ok(Some(d)),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn save_file_dialog() -> Result<Option<String>, OsString> {
+        let path = FileDialog::new()
+            .add_filter(".bin", &["bin"])
+            .add_filter(".s19_usbdm_format", &["s19"])
+            .show_save_single_file()
+            .unwrap();
+
+        let path = match path {
+            Some(path) => path,
+            None => return Ok(None),
+        };
+
+        match path.into_os_string().into_string() {
+            Ok(d) => Ok(Some(d)),
+            Err(e) => Err(e),
+        }
+    }
+
+     /// Display a native alert
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// display_alert("hello", "world", MessageType::Info)
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `title` - The alert title
+    /// * `content` - the content of the alert
+    /// * `message_type` - The `MessageType` for the alert
+    fn display_alert(&self, title: &str, content: &str, message_type: MessageType) {
+        MessageDialog::new()
+            .set_type(message_type)
+            .set_title(title)
+            .set_text(content)
+            .show_alert()
+            .unwrap();
+    }
+
+  fn check_connection_programmer(&mut self)
+  {
     let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
 
     let mut check_connect_usb =  dsc.programmer.refresh_feedback();
@@ -235,17 +296,11 @@ impl Application for App {
 
         (           
             Self {
-                title: "Usbdm_rs".to_string(),
-                value: 0,
-                check: false,
-                toggle: false,
+         
                 theme,
-                flip: false,
-                dark_mode: false,
-                text: "Text Input".into(),
-                size_option: main_window::SizeOption::Static,
-                
+                dark_mode: false,  
                 buffer           : HexBuffer::default(),
+                buffer_path      : "".to_string(),
                 show_error_modal : false,
                 show_conn_image  : false,
                 about_card_open  : false,
@@ -266,7 +321,7 @@ impl Application for App {
     }
 
     fn title(&self) -> String {
-        self.title.clone()
+       "Usbdm_rs".to_string()
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
@@ -289,31 +344,17 @@ impl Application for App {
      
             }
 
-            Message::Debug(s) => {
-                self.title = s.clone();
-            }
+            Message::Menu => {}
 
-
-            Message::ValueChange(v) => {
-                self.value = v;
-                self.title = v.to_string();
-            }
-            Message::CheckChange(c) => {
-                self.check = c;
-                self.title = c.to_string();
-            }
-            Message::ToggleChange(t) => {
-                self.toggle = t;
-                self.title = t.to_string();
-            }
+  
             Message::ColorChange(c) => {
                 self.theme = iced::Theme::custom(theme::Palette {
                     primary: c,
                     ..self.theme.palette()
                 });
-                self.title = format!("[{:.2}, {:.2}, {:.2}]", c.r, c.g, c.b);
+        
             }
-            Message::Flip => self.flip = !self.flip,
+
             Message::ThemeChange(b) => {
                 self.dark_mode = b;
                 let primary = self.theme.palette().primary;
@@ -329,14 +370,106 @@ impl Application for App {
                     })
                 }
             }
-            Message::TextChange(s) => {
-                self.text = s.clone();
-                self.title = s;
+    
+         
+
+            Message::TestBufferDoubleClick =>
+            {
+
+            } 
+
+            Message::OpenFile => 
+            {
+
+            let path = match App::open_file_dialog() {
+            
+            Ok(res) => match res {
+                            Some(d) => d,
+                            None => return iced::Command::none(),},
+
+            Err(e) => {
+                App::display_alert(
+                                &self,
+                                "usbdm_mc56f_rs",
+                                &format!("Error while selecting file!\n{:?}", e),
+                                MessageType::Error,);
+                                return iced::Command::none();  }  };
+    
+           
+
+            let mut start_addr : u32;
+            let mut size : usize;
+    
+              match &self.target 
+              {
+                None => 
+                {
+
+                start_addr  = 0x0;
+                size  = 0xFFFF;
+
+                }
+                Some(dsc) =>
+                {
+
+                 start_addr = dsc.memory_map.memory_start_address();
+                 size = dsc.memory_map.memory_size();
+
+                 }
+              }
+
+            self.buffer_path = path;
+
+            load_buffer_from_file(self.buffer_path.clone(), start_addr, size,self);
+
+            
+
             }
-            Message::SizeOption(so) => {
-                self.size_option = so;
-                self.title = self.size_option.to_string();
+
+            Message::SaveFile => 
+            {
+
+             let path = match App::save_file_dialog() {
+            
+                    Ok(res) => match res {
+                                    Some(d) => d,
+                                    None => return iced::Command::none(),},
+        
+                    Err(e) => {
+                        App::display_alert(
+                                        &self,
+                                        "usbdm_mc56f_rs",
+                                        &format!("Error while save file!\n{:?}", e),
+                                        MessageType::Error,);
+                                        return iced::Command::none();  }  };
+            
+                   
+        
+            let mut start_addr : u32;
+            let mut size : usize;
+            
+             match &self.target 
+             {
+                None => 
+                {
+                start_addr  = 0x0;
+                size  = 0xFFFF;
+                }
+
+                Some(dsc) =>
+                {
+                         start_addr = dsc.memory_map.memory_start_address();
+                         size = dsc.memory_map.memory_size();
+        
+                }
+              }
+        
+            self.buffer_path = path;
+        
+            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self);
+
             }
+    
 
             Message::CloseAboutCard | Message::OpenAboutCard => {
                 self.about_card_open = !self.about_card_open;
@@ -553,20 +686,9 @@ impl Application for App {
 
             Message::TestFeedback =>
             {
-                println!("Reset");
-                self.target.as_mut().expect("target lost").programmer.target_power_reset();
-            
-              //let mcu =  self.target.as_mut().expect("");
-              //mcu.power(TargetVddSelect::VddOff);
-              //if let Err(_e) = mcu.programmer.refresh_feedback() { self.status = UsbdmAppStatus::Errored};
-             // mcu.power(TargetVddSelect::VddDisable);
-              //mcu.programmer.set_bdm_options();
-              // usbdm.programmer.set_bdm_options();
-              // usbdm.programmer.set_target_mc56f();
-              // usbdm.dsc_connect().expect("Dsc target connect error");
-               //let target = init(jtag);
-               //target.dsc_connect();
-    
+                
+                println!("TestFeedback");
+     
             } 
 
         }

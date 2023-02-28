@@ -13,7 +13,7 @@ use crate::enums::{bdm_commands};
 use std::{thread, time};
 
 
-use crate::target::{MC56f80x};
+use crate::target_dsc::mc56f80x::{MC56f80x};
 
 
 

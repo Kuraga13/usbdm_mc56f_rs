@@ -27,27 +27,6 @@ impl TargetVddSelect {
 
 
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SizeOption {
-    Uniform,
-    Static,
-}
-impl SizeOption {
-    pub  const ALL: [SizeOption; 2] = [SizeOption::Uniform, SizeOption::Static];
-}
-impl std::fmt::Display for SizeOption {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Uniform => "Uniform",
-                Self::Static => "Static",
-            }
-        )
-    }
-}
-
 
 
 pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
@@ -61,35 +40,19 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     let set_power_button =  power_button(&_app.status, &_app.power_status);
     
 
-
-    let pick_size_option = pick_list(
-        &SizeOption::ALL[..],
-        Some(_app.size_option),
-        Message::SizeOption,
-    );
-
-    let mb = match _app.size_option {
-        SizeOption::Uniform => {
-            MenuBar::new(vec![menu_1_1(_app), menu_1(_app), menu_2(_app), menu_3(_app), menu_4(_app)])
-                .item_width(ItemWidth::Uniform(180))
-                .item_height(ItemHeight::Uniform(25))
-        }
-        SizeOption::Static => MenuBar::new(vec![
-            menu_1_1(_app),
-            menu_1(_app),
-            menu_2(_app),
-            menu_3(_app),
-            menu_4(_app),
-            menu_5(_app),
+    let mb = MenuBar::new(vec![
+            file_system_menu(_app),
+            programmer_actions_menu(_app),
+            information_menu(_app),
+            view_customization_menu(_app),
         ])
         .item_width(ItemWidth::Static(180))
-        .item_height(ItemHeight::Static(25)),
-    }
+        .item_height(ItemHeight::Static(25))
     .spacing(4.0)
     .bounds_expand(30)
     .path_highlight(Some(PathHighlight::MenuActive));
 
-    let r = row!(mb, horizontal_space(Length::Fill), pick_size_option, horizontal_space(Length::Fixed(3.0)), pick_list_power, horizontal_space(Length::Fixed(3.0)), set_power_button)
+    let r = row!(mb, horizontal_space(Length::Fill),  pick_list_power, horizontal_space(Length::Fixed(3.0)), set_power_button)
         .padding([2, 8])
         .align_items(alignment::Alignment::Center);
   
@@ -102,15 +65,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
 
     let top_bar = container(r).width(Length::Fill).style(top_bar_style);
 
-    let back_style: fn(&iced::Theme) -> container::Appearance = |theme| container::Appearance {
-            background: Some(theme.extended_palette().primary.base.color.into()),
-            ..Default::default()
-        };
-     /* 
-     let back = container(col![])
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(back_style); */
+
 
     let test_test_line   = vec![vec!["test_test1".to_string(), "test_test2".to_string(), "test_test3".to_string(),]; 4500];
     let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(), "test_test2".to_string(),]; 4500];
@@ -123,13 +78,8 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     let body = test_test;
 
 
-    let c = if _app.flip {
-            col![body, top_bar]
-    } 
-    else 
-    {
-            col![top_bar, body]
-    };
+    let c = col![top_bar, body];
+    
 
     c        
 
@@ -143,7 +93,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
 pub fn test_buffer_double_click() ->  Message
 {
 
-Message::TestFeedback
+Message::TestBufferDoubleClick
 
 }
 
@@ -239,8 +189,8 @@ pub fn empty_labeled_button<'a>(label: &str) -> button::Button<'a, Message, iced
 
 }
 
-pub fn debug_button<'a>(label: &str) -> button::Button<'a, Message, iced::Renderer> {
-    labeled_button(label, Message::Debug(label.into()))
+pub fn menu_button<'a>(label: &str) -> button::Button<'a, Message, iced::Renderer> {
+    labeled_button(label, Message::Menu)
 }
 
 pub fn about_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
@@ -248,6 +198,10 @@ pub fn about_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message
 }
 
 pub fn connect_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+}
+
+pub fn file_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
 }
 
@@ -288,17 +242,14 @@ pub fn programmer_button_item<'a>(label: &str, msg : Message, state : &UsbdmAppS
     
 }
 
-pub fn debug_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
-    MenuTree::new(debug_button(label).width(Length::Fill).height(Length::Fill))
+pub fn menu_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(menu_button(label).width(Length::Fill).height(Length::Fill))
 }
 
 pub fn empty_item<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(empty_labeled_button(label).width(Length::Fill).height(Length::Fill))
 }
 
-pub fn about_buttton<'a>(label: &str) -> MenuTree<'a, Message, iced::Renderer> {
-    MenuTree::new(debug_button(label).width(Length::Fill).height(Length::Fill))
-}
 
 pub fn color_item<'a>(color: impl Into<Color>) -> MenuTree<'a, Message, iced::Renderer> {
     let color = color.into();
@@ -337,12 +288,7 @@ pub fn sub_menu<'a>(
     )
 }
 
-pub fn debug_sub_menu<'a>(
-    label: &str,
-    children: Vec<MenuTree<'a, Message, iced::Renderer>>,
-) -> MenuTree<'a, Message, iced::Renderer> {
-    sub_menu(label, Message::Debug(label.into()), children)
-}
+
 
 pub fn separator<'a>() -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(quad::Quad {
@@ -398,66 +344,11 @@ pub fn circle<'a>(color: Color) -> quad::Quad {
     }
 }
 
-pub fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
-    let sub_5 = debug_sub_menu(
-        "SUB",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    );
-    let sub_4 = debug_sub_menu(
-        "SUB",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    )
-    .width(180);
-    let sub_3 = debug_sub_menu(
-        "More sub menus",
-        vec![
-            debug_item("You can"),
-            debug_item("nest menus"),
-            sub_4,
-            debug_item("how ever"),
-            debug_item("You like"),
-            sub_5,
-        ],
-    );
-    let sub_2 = debug_sub_menu(
-        "Another sub menu",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            sub_3,
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    )
-    .width(140);
-    let sub_1 = debug_sub_menu(
-        "A sub menu",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            sub_2,
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    )
-    .width(220);
+pub fn programmer_actions_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
+   
 
     let root = MenuTree::with_children(
-        debug_button("Programmer"),
+        menu_button("Programmer"),
         vec![
             connect_button_item("Connect", Message::Connect),
             programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
@@ -471,71 +362,15 @@ pub fn menu_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
 }
 
 
-pub fn menu_1_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
-    let sub_5 = debug_sub_menu(
-        "SUB",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    );
-    let sub_4 = debug_sub_menu(
-        "SUB",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    )
-    .width(180);
-    let sub_3 = debug_sub_menu(
-        "More sub menus",
-        vec![
-            debug_item("You can"),
-            debug_item("nest menus"),
-            sub_4,
-            debug_item("how ever"),
-            debug_item("You like"),
-            sub_5,
-        ],
-    );
-    let sub_2 = debug_sub_menu(
-        "Another sub menu",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            sub_3,
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    )
-    .width(140);
-    let sub_1 = debug_sub_menu(
-        "A sub menu",
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            sub_2,
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    )
-    .width(220);
+pub fn file_system_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
 
     let root = MenuTree::with_children(
-        debug_button("File"),
+        menu_button("File"),
         vec![
-            connect_button_item("Open", Message::Connect),
-            programmer_button_item("Save", Message::TestFeedback, &_app.status, &_app.target_status),
-            programmer_button_item("Save As", Message::TestFeedback, &_app.status, &_app.target_status),
-            programmer_button_item("Erase", Message::TestFeedback, &_app.status, &_app.target_status),
+            file_button_item("Open", Message::OpenFile),
+            file_button_item("Save", Message::SaveFile),
+            //file_button_item("Save As", Message::TestFeedback),
+    
         ],
     )
     .width(110);
@@ -543,44 +378,8 @@ pub fn menu_1_1<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     root
 }
 
-pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
-    let sub_1 = MenuTree::with_children(
-        container(toggler(
-            Some("Or as a sub menu item".to_string()),
-            app.toggle,
-            Message::ToggleChange,
-        ))
-        .padding([0, 8])
-        .height(Length::Fill)
-        .align_y(alignment::Vertical::Center),
-        vec![
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-            debug_item("Item"),
-        ],
-    );
+pub fn information_menu<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
 
-    let bt = MenuTree::new(
-        button(
-            text("Button")
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .vertical_alignment(alignment::Vertical::Center),
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .on_press(Message::Debug("Button".into())),
-    );
-
-    let cb =
-        MenuTree::new(checkbox("Checkbox", app.check, Message::CheckChange).width(Length::Fill));
-
-    let sld = MenuTree::new(row![
-        "Slider",
-        horizontal_space(Length::Fixed(8.0)),
-        slider(0..=255, app.value, Message::ValueChange)
-    ]);
 
     let connection_image_item = MenuTree::new(
         container(toggler(
@@ -593,39 +392,26 @@ pub fn menu_2<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         .align_y(alignment::Vertical::Center),
     );
 
-    let txn = MenuTree::new(text_input("", &app.text, Message::TextChange));
 
     let root = MenuTree::with_children(
-        debug_button("Info"),
+        menu_button("Info"),
         vec![
             about_button_item("About", Message::OpenAboutCard),
-            programmer_button_item("Test_Feedback", Message::TestFeedback, &app.status, &app.target_status),
-            connection_image_item,
-            debug_item("as a menu item"),
-            bt,
-            cb,
-            sld,
-            txn,
-            sub_1,
-            separator(),
-            debug_item("Seperators are also widgets"),
-            labeled_separator("Separator"),
-            debug_item("Item"),
-            debug_item("Item"),
             dot_separator(),
-            debug_item("Item"),
-            debug_item("Item"),
+            connection_image_item,
+            dot_separator(),
         ],
     );
 
     root
 }
 
-pub fn menu_3<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
+pub fn view_customization_menu<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
     let [r, g, b, _] = app.theme.palette().primary.into_rgba8();
 
-    let primary = debug_sub_menu(
-        "Primary",
+    let primary = sub_menu(
+        "Adjust Theme",
+        Message::Menu,
         vec![
             MenuTree::new(slider(0..=255, r, move |x| {
                 Message::ColorChange(Color::from_rgb8(x, g, b))
@@ -639,8 +425,20 @@ pub fn menu_3<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
         ],
     );
 
+    let back_style: fn(&iced::Theme) -> container::Appearance = |theme| container::Appearance {
+        background: Some(theme.extended_palette().primary.base.color.into()),
+        ..Default::default()
+    };
+   
+   let back = container(col![])
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(back_style); 
+
+    let back_ = MenuTree::new(back);
+
     let root = MenuTree::with_children(
-        debug_button("View"),
+        menu_button("View"),
         vec![
   
             MenuTree::new(
@@ -651,134 +449,14 @@ pub fn menu_3<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
                 )]
                 .padding([0, 8]),
             ),
-            color_item([0.45, 0.25, 0.57]),
-            color_item([0.15, 0.59, 0.64]),
-            color_item([0.76, 0.82, 0.20]),
-            color_item([0.17, 0.27, 0.33]),
+            color_item([0.28, 0.36, 0.37]),
+            color_item([0.32, 0.32, 0.4]),
+            color_item([0.56, 0.55, 0.39]),
             primary,
+            back_,
         ],
     );
 
     root
 }
 
-pub fn menu_4<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
-    let dekjdaud = debug_sub_menu(
-        "dekjdaud",
-        vec![
-            debug_item("ajrs"),
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"),
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"),
-            debug_item("ajrs"),
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"),
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"),
-        ],
-    );
-
-    let luyortp = debug_sub_menu(
-        "luyortp",
-        vec![
-            debug_item("ajrs"), // 0
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"),
-            debug_item("luyortp"),
-            debug_item("mmdyrc"),
-            debug_item("nquc"), // 13
-        ],
-    );
-
-    let jcsu = debug_sub_menu(
-        "jcsu",
-        vec![
-            debug_item("ajrs"), // 0
-            debug_item("bsdfho"),
-            debug_item("clkjhbf"),
-            debug_item("dekjdaud"),
-            debug_item("ecsh"),
-            debug_item("fweiu"),
-            debug_item("giwe"),
-            debug_item("heruyv"),
-            debug_item("isabe"),
-            debug_item("jcsu"),
-            debug_item("kaljkahd"),
-            luyortp, // 11
-            debug_item("mmdyrc"),
-            debug_item("nquc"), // 13
-        ],
-    );
-
-    let root = MenuTree::with_children(
-        debug_button("Target"),
-        vec![
-            empty_item("MC56F8035"), // 0
-         
-        ],
-    );
-
-    root
-}
-
-pub fn menu_5<'a>(app: &App) -> MenuTree<'a, Message, iced::Renderer> {
-    let slider_count = 3;
-    let slider_width = 30;
-    let spacing = 4;
-
-    let [r, g, b, _] = app.theme.palette().primary.into_rgba8();
-
-    let sliders = MenuTree::new(
-        row![
-            vertical_slider(0..=255, r, move |x| Message::ColorChange(Color::from_rgb8(
-                x, g, b
-            )))
-            .width(30),
-            vertical_slider(0..=255, g, move |x| Message::ColorChange(Color::from_rgb8(
-                r, x, b
-            )))
-            .width(30),
-            vertical_slider(0..=255, b, move |x| Message::ColorChange(Color::from_rgb8(
-                r, g, x
-            )))
-            .width(30),
-        ]
-        .spacing(4),
-    )
-    .height(100);
-
-    let root = MenuTree::with_children(
-        debug_button("Static"),
-        vec![labeled_separator("Primary"), sliders],
-    )
-    .width(slider_width * slider_count + (slider_count - 1) * spacing);
-
-    root
-}

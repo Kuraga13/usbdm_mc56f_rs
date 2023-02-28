@@ -66,7 +66,7 @@ pub fn about_card<'a>(show_about_card : bool, content: Element<'a, Message, iced
             .push(vertical_space(5.0))
             .push(Text::new("License: GPL v2").size(15))
             .push(vertical_space(5.0))
-            .push( Text::new("Author Kuraga").size(15))
+            .push( Text::new("Author Kuraga - htttp://kuraga-remont.ru").size(15))
             .push(vertical_space(5.0))
             .push(Row::new()
              .spacing(10)

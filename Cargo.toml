@@ -17,6 +17,7 @@ iced_wgpu  = "0.9"
 iced_native = "0.9.0"
 iced_graphics = "0.7.0"
 image = "0.24.5"
+native-dialog = { git = "https://github.com/balthild/native-dialog-rs" }
 
 [dependencies.rusb] 
 git = "https://github.com/a1ien/rusb"

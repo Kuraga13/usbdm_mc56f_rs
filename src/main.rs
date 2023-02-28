@@ -7,7 +7,8 @@ mod enums;
 mod feedback;
 mod programmer;
 mod settings;
-mod target;
+mod target_dsc;
+mod file_buffer;
 
 use std::vec;
 use iced::window::Icon;
