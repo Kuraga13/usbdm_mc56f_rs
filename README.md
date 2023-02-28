@@ -3,6 +3,9 @@
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time I am and my friend  practicing writing in Rust
  [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 
+![screen](https://user-images.githubusercontent.com/81683023/221999257-ebcfb0e4-84c3-4446-b51d-bdb6df5c6dc3.png)
+
+
 ###  Motivation
 The original project does not support reading the controller. This is the underlying reason. Little things associated with the inconvenience of management.
 Initially, the goal is to work comfortably with the mc56f in Rust. Working via USBDM on mc56f dsp controllers is rather inconvenient, and original the project itself is too large to simply fix something.
@@ -10,6 +13,7 @@ Initially, the goal is to work comfortably with the mc56f in Rust. Working via U
 Target - USBDM/CF version, supporting DSC.
  
  ###  On test now
+
 * Concrete mc56f (target) commands - read
 
 ###  In work
