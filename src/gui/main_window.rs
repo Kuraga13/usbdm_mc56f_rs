@@ -45,6 +45,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
             programmer_actions_menu(_app),
             information_menu(_app),
             view_customization_menu(_app),
+            target_selection_menu(_app),
         ])
         .item_width(ItemWidth::Static(180))
         .item_height(ItemHeight::Static(25))
@@ -352,8 +353,8 @@ pub fn programmer_actions_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Re
         vec![
             connect_button_item("Connect", Message::Connect),
             programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
-            programmer_button_item("Write", Message::WriteTarget, &_app.status, &_app.target_status),
-            programmer_button_item("Erase", Message::TestFeedback, &_app.status, &_app.target_status),
+            empty_item("Write"),
+            empty_item("Erase"),
         ],
     )
     .width(110);
@@ -460,3 +461,17 @@ pub fn view_customization_menu<'a>(app: &App) -> MenuTree<'a, Message, iced::Ren
     root
 }
 
+pub fn target_selection_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
+
+    let root = MenuTree::with_children(
+        menu_button("Target"),
+        vec![
+            empty_item("MC56F8035",),
+           
+            //file_button_item("Save As", Message::TestFeedback),
+        ],
+    )
+    .width(110);
+
+    root
+}

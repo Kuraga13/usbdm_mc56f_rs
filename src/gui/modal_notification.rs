@@ -144,7 +144,7 @@ pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: E
         
         Card::new( 
     
-        Text::new("Connection MC56F8035").size(25),
+        Text::new("Connection of MC56F8035").size(25),
         container(image(handle) .width(width)).center_x()
        )
       .foot(
