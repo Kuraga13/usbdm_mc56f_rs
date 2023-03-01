@@ -151,8 +151,8 @@ impl App
     fn open_file_dialog() -> Result<Option<String>, OsString> {
         let path = FileDialog::new()
             .add_filter(".bin", &["bin"])
-            .add_filter(".s19_usbdm_format", &["s19"])
-            .add_filter("All files", &["*"])
+            //.add_filter(".s19_usbdm_format", &["s19"])
+            //.add_filter("All files", &["*"])
             .show_open_single_file()
             .unwrap();
 
