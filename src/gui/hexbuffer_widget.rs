@@ -38,6 +38,31 @@ impl HexBuffer
     }
   }
 
+ pub fn upload_packed(&mut self, new_buff : Vec<Vec<u8>>) -> Result<(), Error> {
+
+
+    self.buffer.clear();
+
+    let mut one_line_vec = Vec::new();
+
+    for line_input in new_buff.iter() {
+
+        for byte in line_input.iter()
+        {
+            one_line_vec.push(*byte);
+
+            if(one_line_vec.len() == 16) {
+
+                self.buffer.push(one_line_vec.clone());
+                one_line_vec.clear(); 
+          
+            }  
+        }
+   } 
+
+  
+      Ok(())
+  }
 
  pub fn upload(&mut self, new_buff : Vec<u8>) -> Result<(), Error> {
 

@@ -148,7 +148,7 @@ fn check_usbm_return_code(&self, return_byte : &Vec<u8>) -> Result<(), Error>{
 
        else {
       
-       println!("OK Status from BDM RC : {}!", return_from_bdm);
+       //println!("OK Status from BDM RC : {}!", return_from_bdm);
        Ok (())
 
       }
@@ -202,7 +202,7 @@ pub fn control_transfer(
         let answer = self.read(3)?;                   //  read status from bdm and save buffer to answer -
                                                      
         let feedback_slice = [answer[1],answer[2]];      // two bytes for status feedback (in answer [1] use only 2 bits... for VPP bits)
-        println!("FeedBack is: {:02X?}", feedback_slice);
+       // println!("FeedBack is: {:02X?}", feedback_slice);
         let unpack = FeedBack::unpack(&feedback_slice)?;
     
         Ok(unpack)

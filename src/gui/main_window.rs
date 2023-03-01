@@ -369,7 +369,8 @@ pub fn file_system_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer>
         menu_button("File"),
         vec![
             file_button_item("Open", Message::OpenFile),
-            file_button_item("Save", Message::SaveFile),
+            file_button_item("Save_S19", Message::SaveFileS19),
+            file_button_item("Save_Bin", Message::SaveFileBin),
             //file_button_item("Save As", Message::TestFeedback),
     
         ],

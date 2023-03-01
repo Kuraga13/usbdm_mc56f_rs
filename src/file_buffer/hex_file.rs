@@ -4,13 +4,35 @@ use std::{
 };
 use crate::app::{App};
 use crate::errors::Error;
+use super::bdm_s19::{to_bdm_s19_325};
+use std::ffi::{OsStr, OsString};
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum FileFormat {
+    
+    S19,
+    Bin,
+    UnknownFormat
+
+}
+
+impl From <&str>  for FileFormat  {
+    fn from(extension : &str) -> FileFormat {
+      match extension {
+       "s19"   => FileFormat::Bin,          
+       "bin"   => FileFormat::S19,               
+        _      => FileFormat::UnknownFormat,      
+      }    
+    }
+  }
+
 
 pub fn load_buffer_from_file(path : String, start_addr : u32, size : usize, app : &mut App ) -> Result<(), Error>
 {
-
+    
      let mut file_hex = match  File::open(path) {
         Ok(file) => file,
-        Err(e) => return Err(Error::FileReadErr),
+        Err(e) => return Err(Error::from(e)),
     };
  
    /*  match format {
@@ -28,13 +50,9 @@ pub fn load_buffer_from_file(path : String, start_addr : u32, size : usize, app 
 
 }
 
-pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: &mut App ) -> Result<(), Error>
+pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: &mut App, format : FileFormat) -> Result<(), Error>
 {
-    /*  match format {
-        Format::Bin(options) => loader.load_bin_data(&mut file, options),
-        Format::S19 => loader.load_elf_data(&mut file),
-    }?; // for future
-    */
+
     
 
     // TODO:
@@ -50,8 +68,16 @@ pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: 
     // get buffer   
     let mut data_to_file = app.buffer.download_in_one();
 
+    let formatted = match format {
+        FileFormat::Bin => { data_to_file},
+        FileFormat::S19 => {to_bdm_s19_325(data_to_file)},
+        FileFormat::UnknownFormat => { data_to_file},
+        _ => {return Err(Error::FileReadErr)}
+    }; 
+    
+
     // write it to file
-    save_file.write(data_to_file.as_slice())?;
+    save_file.write(formatted.as_slice())?;
  
 
  

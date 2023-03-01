@@ -3,7 +3,7 @@ use iced::widget::{
     button, checkbox, container, horizontal_space, pick_list, row, slider, svg, text, text_input,
     toggler, vertical_slider,
 };
-use iced::{alignment, theme, Application, Color, Element, Length};
+use iced::{alignment, theme, Application, Color, Element, Length, Subscription};
 
 use iced_aw::menu::{ItemHeight, ItemWidth, MenuBar, MenuTree, PathHighlight};
 use iced_aw::quad;
@@ -21,9 +21,9 @@ use crate::programmer::{Programmer};
 use crate::target_dsc::target_factory::{TargetFactory, TargetProgramming};
 use crate::target_dsc::mc56f80x::MC56f80x;
 use crate::gui::{self, main_window};
-use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal};
+use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
-use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file};
+use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file, FileFormat};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
@@ -39,8 +39,10 @@ pub enum TargetStatus {
     
     NotConnected,
     Connected,
+    Programming,
 
 }
+
 
 
 
@@ -48,15 +50,19 @@ pub enum TargetStatus {
 pub enum Message {
 
     Menu,
-    ColorChange(Color),  // actual!
-    ThemeChange(bool), // actual!
+    ProgrammingInProgress(f32),
+    TargetProgramminEnd,
+    ColorChange(Color),  
+    ThemeChange(bool), 
     TestBufferDoubleClick,
     OpenGithub,
     OpenFile,
-    SaveFile,
+    SaveFileBin,
+    SaveFileS19,
     OkButtonPressed,
     OpenAboutCard,
     CloseAboutCard,
+ 
     ConnectionImageOpen(bool),
     Connect,
     Disconnect,
@@ -70,19 +76,21 @@ pub enum Message {
 
 pub struct App {
 
-           target           : Option<MC56f80x>,
-    pub    buffer           : HexBuffer,
-           buffer_path      : String,
-    pub    selected_power   : TargetVddSelect,
-    pub    status           : UsbdmAppStatus,
-    pub    power_status     : PowerStatus,
-    pub    target_status    : TargetStatus,
-    pub    show_error_modal : bool,
-    pub    about_card_open  : bool,
-    pub    show_conn_image  : bool,
-    pub    error_status     : Option<Error>,
-    pub    theme: iced::Theme,
-    pub    dark_mode: bool,
+           target             : Option<MC56f80x>,
+    pub    buffer             : HexBuffer,
+           buffer_path        : String,
+    pub    selected_power     : TargetVddSelect,
+    pub    status             : UsbdmAppStatus,
+    pub    power_status       : PowerStatus,
+    pub    target_status      : TargetStatus,
+    pub    show_error_modal   : bool,
+    pub    about_card_open    : bool,
+    pub    show_conn_image    : bool,
+    pub    show_p_progress    : bool,
+    pub    error_status       : Option<Error>,
+    pub    theme              : iced::Theme,
+    pub    dark_mode          : bool,
+    pub    progress_bar_value : f32,
 
 }
 
@@ -147,23 +155,40 @@ impl App
         }
     }
 
-    fn save_file_dialog() -> Result<Option<String>, OsString> {
-        let path = FileDialog::new()
-            .add_filter(".bin", &["bin"])
-            .add_filter(".s19_usbdm_format", &["s19"])
-            .show_save_single_file()
-            .unwrap();
+      fn save_file_dialog(file_format : FileFormat) -> Result<Option<String>, OsString> {
+        
+       let path  =  FileDialog::new();
 
-        let path = match path {
-            Some(path) => path,
+       let path_configured = if(file_format == FileFormat::Bin)
+       {
+        path
+        .add_filter(".bin", &["bin"])
+        .show_save_single_file()
+        .unwrap()
+       }
+
+       else 
+       {
+         path
+        .add_filter(".s19_usbdm_format", &["s19"])
+        .show_save_single_file()
+        .unwrap()
+
+       };
+
+
+        let path_configured = match path_configured {
+            Some(path_configured) => path_configured,
             None => return Ok(None),
         };
+    
 
-        match path.into_os_string().into_string() {
+        match path_configured.into_os_string().into_string() {
             Ok(d) => Ok(Some(d)),
             Err(e) => Err(e),
         }
     }
+    
 
      /// Display a native alert
     ///
@@ -298,18 +323,20 @@ impl Application for App {
             Self {
          
                 theme,
-                dark_mode: false,  
-                buffer           : HexBuffer::default(),
-                buffer_path      : "".to_string(),
-                show_error_modal : false,
-                show_conn_image  : false,
-                about_card_open  : false,
-                error_status     : None,     
-                selected_power   : TargetVddSelect::Vdd3V3,
-                target           : None,
-                status           : UsbdmAppStatus::NotConnected,
-                target_status    : TargetStatus::NotConnected,
-                power_status     : PowerStatus::PowerOff,
+                dark_mode          : false,  
+                buffer             : HexBuffer::default(),
+                buffer_path        : "".to_string(),
+                show_error_modal   : false,
+                show_conn_image    : false,
+                about_card_open    : false,
+                show_p_progress    : false,
+                error_status       : None,     
+                selected_power     : TargetVddSelect::Vdd3V3,
+                target             : None,
+                status             : UsbdmAppStatus::NotConnected,
+                target_status      : TargetStatus::NotConnected,
+                power_status       : PowerStatus::PowerOff,
+                progress_bar_value : 0.0,
 
             },
             iced::Command::none(),
@@ -327,7 +354,9 @@ impl Application for App {
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
         match message {
 
-
+          
+            Message::ProgrammingInProgress(x) => self.progress_bar_value = x,
+            
             Message::OpenGithub => {
                 #[cfg(target_os = "windows")]
                 std::process::Command::new("explorer")
@@ -426,10 +455,10 @@ impl Application for App {
 
             }
 
-            Message::SaveFile => 
+            Message::SaveFileBin => 
             {
 
-             let path = match App::save_file_dialog() {
+             let path = match App::save_file_dialog(FileFormat::Bin) {
             
                     Ok(res) => match res {
                                     Some(d) => d,
@@ -466,7 +495,51 @@ impl Application for App {
         
             self.buffer_path = path;
         
-            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self);
+            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self, FileFormat::Bin);
+
+            }
+
+            Message::SaveFileS19 => 
+            {
+
+             let path = match App::save_file_dialog(FileFormat::S19) {
+            
+                    Ok(res) => match res {
+                                    Some(d) => d,
+                                    None => return iced::Command::none(),},
+        
+                    Err(e) => {
+                        App::display_alert(
+                                        &self,
+                                        "usbdm_mc56f_rs",
+                                        &format!("Error while save file!\n{:?}", e),
+                                        MessageType::Error,);
+                                        return iced::Command::none();  }  };
+            
+                   
+        
+            let mut start_addr : u32;
+            let mut size : usize;
+            
+             match &self.target 
+             {
+                None => 
+                {
+                start_addr  = 0x0;
+                size  = 0xFFFF;
+                }
+
+                Some(dsc) =>
+                {
+                         start_addr = dsc.memory_map.memory_start_address();
+                         size = dsc.memory_map.memory_size();
+        
+                }
+              }
+        
+            self.buffer_path = path;
+        
+            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self, FileFormat::S19);
 
             }
     
@@ -517,7 +590,7 @@ impl Application for App {
                                 {
                                 
             
-                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target( programmer, 0x7FFF, 0x000, "MC56f8035".to_string()));
+                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target( programmer, 0x8000, 0x0000, "MC56f8035".to_string()));
                                   self.target = dsc;
                                 
                                 }
@@ -631,29 +704,45 @@ impl Application for App {
 
             Message::ReadTarget  => 
             {
-              
+              self.show_p_progress = true;
+
+              self.target_status = TargetStatus::Programming;
+
               let dsc = self.target.as_mut().expect("target lost");
-              let read = dsc.read_target(self.selected_power);
+            
+              let mut address = dsc.memory_map.memory_start_address();
+              let size = dsc.memory_map.memory_size();
+              let end_addr = address + size as u32;
+              let mut buffer = Vec::new();
 
-              match read
+              let number_of_reads = end_addr / 64;
+              dbg!(number_of_reads);
+              let counter = 0;
+              for counter in counter..number_of_reads 
               {
-                Ok(read) => 
-                {
+                let read = dsc.read_target(self.selected_power, address);
+                  match read
+                  {
+                    Ok(read) => 
+                    {
+                    buffer.push(read);
+                    }
+                    Err(_e) =>
+                    {
+                    show_error(self, _e);
+                    println!("ReadTarget error");
+                    self.check_power_state();
+                    return iced::Command::none();
+                    }
+                  }
+                address += 0x40;  
+                self.progress_bar_value = ((counter as f32 / number_of_reads as f32) * 100.00) as f32;
+            
+              };
 
-                self.buffer.upload(read);
-                self.check_power_state();
-
-                }
-                Err(_e) =>
-                {
-
-                show_error(self, _e);
-                println!("ReadTarget error");
-                self.check_power_state();
-                return iced::Command::none();
-
-               }
-              }
+                self.buffer.upload_packed(buffer);
+                self.check_power_state();    
+              
             }
 
             Message::WriteTarget  => 
@@ -691,13 +780,28 @@ impl Application for App {
      
             } 
 
+            Message::TargetProgramminEnd =>
+            {
+                
+                self.show_p_progress = false;
+     
+            } 
+
+
         }
         iced::Command::none()
     }
 
-
-
-
+/* 
+    fn subscription(&self) -> Subscription<Message> {
+        match self.target_status {
+            _ => Subscription::none(),
+            TargetStatus::Programming { .. } => {
+                time::every(Duration::from_millis(10)).map(Message::Tick)
+            }
+        }
+    }
+*/
 
     fn view(&self) -> iced::Element<'_, Self::Message, iced::Renderer<Self::Theme>> {
     
@@ -720,7 +824,11 @@ impl Application for App {
     // this function captutre content in c and return
     // if not errors. if error - modal window on view
     //error_notify_model(self.show_error_modal, main_page.into(), err_view) 
-    if self.about_card_open 
+    if self.show_p_progress 
+    {
+        progress_bar_modal(self.show_p_progress, main_page.into(), self.progress_bar_value)
+    }
+    else if self.about_card_open 
     {
         about_card(self.about_card_open, main_page.into())
      }

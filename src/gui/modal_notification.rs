@@ -6,7 +6,7 @@ use iced::{
 };
 use iced::widget::{
     button, checkbox, container, horizontal_space, pick_list, row, slider, svg, text, text_input,
-    toggler, vertical_slider,scrollable, Tooltip, vertical_space, image
+    toggler, vertical_slider,scrollable, Tooltip, vertical_space, image, progress_bar
 };
 use iced_aw::{Modal};
 use iced_aw::{style::CardStyles, Card};
@@ -66,7 +66,7 @@ pub fn about_card<'a>(show_about_card : bool, content: Element<'a, Message, iced
             .push(vertical_space(5.0))
             .push(Text::new("License: GPL v2").size(15))
             .push(vertical_space(5.0))
-            .push( Text::new("Author Kuraga - htttp://kuraga-remont.ru").size(15))
+            .push( Text::new("Author Kuraga ").size(15))
             .push(vertical_space(5.0))
             .push(Row::new()
              .spacing(10)
@@ -102,12 +102,6 @@ pub fn about_card<'a>(show_about_card : bool, content: Element<'a, Message, iced
 
 
 
- /* 
-pub const ICONS: Font = Font::External {
-    name: "icons",
-    bytes: include_bytes!("../../resources/icons.ttf"),
-};
-*/
 
 pub fn get_button_github() -> Tooltip<'static, Message> {
     let content = button(
@@ -122,6 +116,24 @@ pub fn get_button_github() -> Tooltip<'static, Message> {
     .on_press(Message::OpenGithub);
 
     let tool_tip = Tooltip::new(content, "Github", Position::Right);
+
+    tool_tip
+
+}
+
+pub fn get_kuraga_remont_ru() -> Tooltip<'static, Message> {
+    let content = button(
+        Text::new("Site".to_string())
+           // .font(ICONS)
+            .size(15)
+           .horizontal_alignment(Horizontal::Center)
+           .vertical_alignment(Vertical::Center),
+    )
+   // .height(Length::Fixed(45.0))
+    .width(Length::Fixed(50.0))
+    .on_press(Message::OpenGithub);
+
+    let tool_tip = Tooltip::new(content, "kuraga-remont.ru", Position::Right);
 
     tool_tip
 
@@ -165,3 +177,33 @@ pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: E
 
 }
 
+pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Message, iced::Renderer>, prg_value : f32  )  -> Element<'a, Message>
+{
+
+
+    Modal::new(target_programming, content,  move|| { 
+        let progress_bar = progress_bar(0.0..=100.0, prg_value);
+        Card::new(
+        Text::new("Read Target").size(15).horizontal_alignment(Horizontal::Center),
+        Row::new()
+        .spacing(10)
+        .padding(10)
+        .align_items(Alignment::Center)
+        .push(progress_bar)
+    )   
+      .foot(
+        Row::new()
+            .spacing(10)
+            .padding(5)
+            .width(Length::Fill),
+      )
+      .on_close(Message::TargetProgramminEnd)
+      .max_width(300.00)
+      //.width(Length::Shrink)
+      .on_close(Message::TargetProgramminEnd)
+      .into() })
+    .backdrop(Message::TargetProgramminEnd)
+    .on_esc(Message::TargetProgramminEnd)
+    .into()
+
+}

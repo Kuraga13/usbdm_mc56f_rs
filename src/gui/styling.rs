@@ -7,7 +7,7 @@ use iced::widget::rule::{Appearance, FillMode, StyleSheet};
 use iced::widget::rule;
 use iced_native::widget;
 use iced_native::widget::scrollable::style::Scrollbar;
-
+use iced_native::widget::progress_bar;
 use iced::alignment::{self, Alignment};
 use iced::{
      Application, Background,  Command, Element, Length, Settings, Subscription,
@@ -215,3 +215,22 @@ impl rule::StyleSheet for LineStyle {
         
 }
 
+
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct ProgressBar {
+   pub percentage_of_h: f32,
+}
+pub struct ProgressBarStyle;
+
+impl progress_bar::StyleSheet for ProgressBarStyle {
+   type Style = ProgressBar;
+
+   fn appearance(&self, style: &Self::Style) -> progress_bar::Appearance {
+
+      progress_bar::Appearance {
+         background: Background::Color(Color::from_rgb8(0xCE, 0xCE, 0xCE)),
+         bar: Background::Color(Color::from_rgb8(0x77, 0xC6, 0x0F)),
+         border_radius: 3.0,
+      }
+   }
+}

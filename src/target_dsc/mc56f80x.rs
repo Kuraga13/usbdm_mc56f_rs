@@ -5,11 +5,13 @@ use crate::programmer::jtag::{OnceStatus};
 use crate::programmer::{Programmer};
 use crate::settings::{TargetVddSelect};
 use crate::feedback::{PowerStatus};
+use iced_native::subscription;
 
 use std::collections::HashMap;
 type AddressKey       = u32;
 type MemorySpaceType  = u8;
 type HexMap = HashMap<AddressKey, MemorySpaceType>; 
+
 
 impl TargetFactory for MC56f80x {
 
@@ -159,10 +161,8 @@ pub struct MC56f80x {
       }
 
     }
-    
 
  }
- 
  
  impl Drop for MC56f80x{
  
@@ -246,7 +246,7 @@ fn disconnect(&mut self)
   
 }
 
-fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>
+fn read_target(&mut self, power : TargetVddSelect, address : u32) -> Result<Vec<u8>, Error>
 {
 
   let powered = self.programmer.get_power_state()?;
@@ -262,15 +262,14 @@ fn read_target(&mut self, power : TargetVddSelect) -> Result<Vec<u8>, Error>
     return Err(Error::TargetSecured)
   }
  
- 
-  let test_addr = 0x7f40;
-  let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
-  let memory_read = self.programmer.dsc_read_memory(MS_PWORD, 0x64,  test_addr)?;
+ // let test_addr = 0x7f40;
+ // let test_mem_access_type =  *self.memory_map.get_memory_space_type(address)?;
+  let memory_read = self.programmer.dsc_read_memory(MS_PWORD, 0x40,  address)?;
   
 
-  self.programmer.target_power_reset()?;
-  self.programmer.refresh_feedback()?;
-  self.power(TargetVddSelect::VddOff)?;
+  //self.programmer.target_power_reset()?;
+ // self.programmer.refresh_feedback()?;
+  //self.power(TargetVddSelect::VddOff)?;
 
   Ok(memory_read)
 
@@ -330,3 +329,4 @@ fn erase_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
 
 
 }
+
