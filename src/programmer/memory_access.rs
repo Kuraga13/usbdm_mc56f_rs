@@ -116,13 +116,17 @@ impl Programmer
         while (bytes_done < num_bytes) {
             let mut block_size: u32 = num_bytes - bytes_done;
             
-            if (block_size > 0x10) {
-                block_size = 0x10; }
+            if (block_size > 0x20) {
+                block_size = 0x20; }
             
             let mut data = self.read_memory_block(memory_space, block_size as u8, current_address)?;
             output.append(&mut data);
             bytes_done += block_size;
-            current_address  += block_size;
+            if memory_space_t::MS_BYTE {
+                current_address += block_size; // Byte currentAddress advanced by count of bytes written
+            } else {
+                current_address += block_size / 2; // Address advanced by count of words written
+            }
         }
         Ok(output)
     }

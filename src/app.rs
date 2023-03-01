@@ -715,7 +715,7 @@ impl Application for App {
               let end_addr = address + size as u32;
               let mut buffer = Vec::new();
 
-              let number_of_reads = end_addr / 64;
+              let number_of_reads = end_addr * 2 / 64;
               dbg!(number_of_reads);
               let counter = 0;
               for counter in counter..number_of_reads 
@@ -735,7 +735,7 @@ impl Application for App {
                     return iced::Command::none();
                     }
                   }
-                address += 0x40;  
+                address += 0x40 / 2;  
                 self.progress_bar_value = ((counter as f32 / number_of_reads as f32) * 100.00) as f32;
             
               };
