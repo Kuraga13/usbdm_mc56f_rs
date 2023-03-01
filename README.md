@@ -23,7 +23,7 @@ Target - USBDM/CF version, supporting DSC.
 ### In plan
 * Made HexBuffer interactive, copying data, addressing etc.
 * Make target_factory from yaml file with parameters
-
+* Big refactor TargetProgramming, usb and programmer - made it async (async trait?) and bind with iced subscribtion
 
 ###  Done now
 * low level USB interface
