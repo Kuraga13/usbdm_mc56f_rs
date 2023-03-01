@@ -122,7 +122,7 @@ impl Programmer
             let mut data = self.read_memory_block(memory_space, block_size as u8, current_address)?;
             output.append(&mut data);
             bytes_done += block_size;
-            if memory_space_t::MS_BYTE {
+            if element_size == memory_space_t::MS_BYTE {
                 current_address += block_size; // Byte currentAddress advanced by count of bytes written
             } else {
                 current_address += block_size / 2; // Address advanced by count of words written
