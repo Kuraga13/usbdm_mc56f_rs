@@ -14,7 +14,7 @@ Target - USBDM/CF version, supporting DSC.
  
  ###  On test now
 
-* Concrete mc56f (target) commands - read
+
 
 ###  In work
 * Concrete mc56f (target) commands - write, erase 
@@ -32,6 +32,7 @@ Target - USBDM/CF version, supporting DSC.
 * Feedback module (Get status and parse bits)
 * Capabilites (Get BDM Information, like JTAG buffer size etc, parse bytes & save)
 * Jtag Command Builder
+* Concrete mc56f (target) commands - read
 * Concrete mc56f (target) command: - Connect, tested
 * GUI - hex-buffer, download-upload binary
 
