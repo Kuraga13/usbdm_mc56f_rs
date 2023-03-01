@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![windows_subsystem = "windows"]
 mod usb_interface;
 mod gui;
 mod app;
@@ -16,6 +17,7 @@ use iced::window;
 use image::GenericImageView;
 use iced::{ Application, Settings, };
 use crate::app::{App};
+
 
 pub fn main() -> iced::Result {
     

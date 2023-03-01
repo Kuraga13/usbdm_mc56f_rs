@@ -39,18 +39,22 @@ pub enum TargetStatus {
     
     NotConnected,
     Connected,
-    Programming,
+    InProgramming,
+    EndProgramming,
 
 }
-
-
+// just for test! In work verstion need implement async trait in programmer + subscribe method on iced app side
+pub async fn handle_progress(val : f32) -> f32
+{
+    val
+}
 
 
 #[derive(Debug, Clone)]
 pub enum Message {
 
     Menu,
-    ProgrammingInProgress(f32),
+    
     TargetProgramminEnd,
     ColorChange(Color),  
     ThemeChange(bool), 
@@ -69,6 +73,8 @@ pub enum Message {
     PowerSelect(TargetVddSelect),
     PowerToggle,
     ReadTarget,
+    ProgrammingInProgress(f32),
+    ReadTargetProgress(f32),
     WriteTarget,
     TestFeedback,
     
@@ -91,6 +97,12 @@ pub struct App {
     pub    theme              : iced::Theme,
     pub    dark_mode          : bool,
     pub    progress_bar_value : f32,
+    
+    pub    number_to_read     : u32,            // for debug
+    pub    counter            : u32,            // for debug
+           read_buff          : Vec<Vec<u8>>,   // for debug
+           read_adddress      : u32,            // for debug
+
 
 }
 
@@ -337,6 +349,11 @@ impl Application for App {
                 target_status      : TargetStatus::NotConnected,
                 power_status       : PowerStatus::PowerOff,
                 progress_bar_value : 0.0,
+                
+                number_to_read     : 0,
+                counter            : 0,
+                read_buff          : vec![vec![0;0]],
+                read_adddress      : 0,
 
             },
             iced::Command::none(),
@@ -355,7 +372,13 @@ impl Application for App {
         match message {
 
           
-            Message::ProgrammingInProgress(x) => self.progress_bar_value = x,
+            Message::ProgrammingInProgress(x) => 
+            {
+                
+                self.progress_bar_value = x;
+                return iced::Command::perform(handle_progress(x), Message::ReadTargetProgress);
+
+            }
             
             Message::OpenGithub => {
                 #[cfg(target_os = "windows")]
@@ -704,45 +727,68 @@ impl Application for App {
 
             Message::ReadTarget  => 
             {
+
               self.show_p_progress = true;
 
-              self.target_status = TargetStatus::Programming;
+              self.target_status = TargetStatus::InProgramming;
+
+              self.progress_bar_value = 0.0;
 
               let dsc = self.target.as_mut().expect("target lost");
             
-              let mut address = dsc.memory_map.memory_start_address();
+              self.read_adddress = dsc.memory_map.memory_start_address();
               let size = dsc.memory_map.memory_size();
-              let end_addr = address + size as u32;
-              let mut buffer = Vec::new();
+              let end_addr = self.read_adddress + size as u32;
 
-              let number_of_reads = end_addr * 2 / 64;
-              dbg!(number_of_reads);
-              let counter = 0;
-              for counter in counter..number_of_reads 
-              {
-                let read = dsc.read_target(self.selected_power, address);
-                  match read
-                  {
-                    Ok(read) => 
-                    {
-                    buffer.push(read);
-                    }
-                    Err(_e) =>
-                    {
-                    show_error(self, _e);
-                    println!("ReadTarget error");
-                    self.check_power_state();
-                    return iced::Command::none();
-                    }
-                  }
-                address += 0x40 / 2;  
-                self.progress_bar_value = ((counter as f32 / number_of_reads as f32) * 100.00) as f32;
-            
-              };
+              self.read_buff.clear();
 
-                self.buffer.upload_packed(buffer);
-                self.check_power_state();    
+              self.number_to_read = end_addr * 2 / 64;
+              dbg!(&self.number_to_read);
+              self.counter = 0;
+              return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ProgrammingInProgress);
               
+            }
+
+            Message::ReadTargetProgress(x)  => 
+            {
+                
+                //self.show_p_progress = true;
+
+                self.target_status = TargetStatus::InProgramming;
+                let dsc = self.target.as_mut().expect("target lost");
+  
+                let counter = self.counter;
+                //dbg!(counter);
+                //dbg!(self.number_to_read );
+
+                for counter in counter..self.number_to_read 
+                {
+                  let read = dsc.read_target(self.selected_power, self.read_adddress);
+                    match read
+                    {
+                      Ok(read) => 
+                      {
+                      self.read_buff.push(read);
+                      self.progress_bar_value = ((counter as f32 / self.number_to_read  as f32) * 100.00) as f32;
+                      self.read_adddress += 0x40 / 2; 
+                      self.counter = counter + 1;
+                      return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ProgrammingInProgress);
+                      }
+                      Err(_e) =>
+                      {
+                      show_error(self, _e);
+                      println!("ReadTarget error");
+                      self.check_power_state();
+                      return iced::Command::none();
+                      }
+                    }
+                }
+                    
+              dbg!("Read Target End!");
+              self.buffer.upload_packed(self.read_buff.clone());
+              self.show_p_progress = false;
+              self.target_status = TargetStatus::Connected;
+              return iced::Command::none();
             }
 
             Message::WriteTarget  => 
@@ -783,7 +829,12 @@ impl Application for App {
             Message::TargetProgramminEnd =>
             {
                 
-                self.show_p_progress = false;
+               // self.show_p_progress = false;
+              //  self.target_status = TargetStatus::Connected;
+              //  let dsc =  self.target.as_mut().expect("");
+              //  dsc.power(TargetVddSelect::VddOff);
+              //  self.check_power_state();
+                //return  iced::Command::none();
      
             } 
 

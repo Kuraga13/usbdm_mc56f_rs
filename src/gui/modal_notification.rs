@@ -12,7 +12,7 @@ use iced_aw::{Modal};
 use iced_aw::{style::CardStyles, Card};
 
 use iced_native::widget::tooltip::Position;
-
+use super::styling::{ProgressBarMy, ProgressBarStyle};
 use crate::app::{Message, App};
 use crate::errors::{Error, get_title_message_error_modal};
 
@@ -182,20 +182,19 @@ pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Me
 
 
     Modal::new(target_programming, content,  move|| { 
-        let progress_bar = progress_bar(0.0..=100.0, prg_value);
+        let progress_bar = progress_bar(0.0..=100.0, prg_value).height(Length::Fixed(20.0));
         Card::new(
         Text::new("Read Target").size(15).horizontal_alignment(Horizontal::Center),
         Row::new()
         .spacing(10)
         .padding(10)
         .align_items(Alignment::Center)
+        .push(text(format!("reading target... {prg_value:.2}%")))
         .push(progress_bar)
     )   
       .foot(
         Row::new()
-            .spacing(10)
-            .padding(5)
-            .width(Length::Fill),
+            .width(Length::Shrink),
       )
       .on_close(Message::TargetProgramminEnd)
       .max_width(300.00)

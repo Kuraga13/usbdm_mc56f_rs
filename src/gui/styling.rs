@@ -217,13 +217,13 @@ impl rule::StyleSheet for LineStyle {
 
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
-pub struct ProgressBar {
+pub struct ProgressBarMy {
    pub percentage_of_h: f32,
 }
 pub struct ProgressBarStyle;
 
 impl progress_bar::StyleSheet for ProgressBarStyle {
-   type Style = ProgressBar;
+   type Style = ProgressBarMy;
 
    fn appearance(&self, style: &Self::Style) -> progress_bar::Appearance {
 
