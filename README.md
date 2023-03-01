@@ -1,4 +1,4 @@
-# usbdm_mc56f_rs
+# usbdm_mc56f_rs not finished, in work!
 
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time I am and my friend  practicing writing in Rust
  [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
