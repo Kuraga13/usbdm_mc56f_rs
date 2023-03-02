@@ -12,8 +12,8 @@ edition = "2021"
 byteorder = {version = "1", features = ["i128"]}
 # Public
 packed_struct = "0.10.0"
-iced = { version = "0.8", features = ["debug", "svg", "iced_wgpu", "iced_glow", "iced_glutin", "image"] }
-iced_wgpu  = "0.9"
+iced = { version = "0.8", features = ["debug", "svg", "glow", "iced_glutin", "image"] }
+iced_glow = "0.7.0"
 iced_native = "0.9.0"
 iced_graphics = "0.7.0"
 image = "0.24.5"
@@ -22,12 +22,13 @@ async-trait ="0.1.64"
 
 [dependencies.rusb] 
 git = "https://github.com/a1ien/rusb"
+rev = "df483fa" #latest commit as of 02.03.2023 v0.9.1
 
 [dependencies.iced_aw] 
 git = "https://github.com/iced-rs/iced_aw"
-rev = "f2b1bbb" #latest commit as of 18.02.2023 v0.3.0
+rev = "e100ee0" #latest commit as of 02.03.2023 v0.4.1
 default-features = false 
-features = [ "menu", "quad", "icon_text", "tabs", "grid", "card", "modal"]
+features = ["menu", "quad", "icon_text", "tabs", "grid", "card", "modal"]
 
 [build-dependencies]
 winresource = "0.1.14"
