@@ -138,26 +138,20 @@ pub fn get_kuraga_remont_ru() -> Tooltip<'static, Message> {
     tool_tip
 
 }
-
-
-
-
+static DSC_IMAGE: &[u8] = include_bytes!("../resources/mcu_connection.jpeg");
 
 pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: Element<'a, Message, iced::Renderer>, )  -> Element<'a, Message>
 {
 
 
     Modal::new(show_conn_image, content,  move|| { 
-        
-        let handle = image::Handle::from_path(format!(
-            "{}/src/resources/mcu_connection.jpeg",
-            env!("CARGO_MANIFEST_DIR")
-        ));
-        
+
+        let handle = image::Handle::from_memory(DSC_IMAGE);
+
         Card::new( 
     
         Text::new("Connection of MC56F8035").size(25),
-        container(image(handle) .width(width)).center_x()
+        container(image(handle).width(width)).center_x()
        )
       .foot(
         Row::new()
