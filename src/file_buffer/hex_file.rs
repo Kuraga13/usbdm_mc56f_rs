@@ -15,12 +15,12 @@ pub enum FileFormat {
     UnknownFormat
 
 }
-
+// parse extestion now NOT IMPLEMENTED... in plan
 impl From <&str>  for FileFormat  {
     fn from(extension : &str) -> FileFormat {
       match extension {
-       "s19"   => FileFormat::Bin,          
-       "bin"   => FileFormat::S19,               
+       "bin"   => FileFormat::Bin,          
+       "s19"   => FileFormat::S19,               
         _      => FileFormat::UnknownFormat,      
       }    
     }
