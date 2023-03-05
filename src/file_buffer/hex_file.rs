@@ -4,7 +4,7 @@ use std::{
 };
 use crate::app::{App};
 use crate::errors::Error;
-use super::bdm_s19::{to_bdm_s19_325};
+use super::data_parser::{to_bdm_s19_325};
 use std::ffi::{OsStr, OsString};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -70,7 +70,7 @@ pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: 
 
     let formatted = match format {
         FileFormat::Bin => { data_to_file},
-        FileFormat::S19 => {to_bdm_s19_325(data_to_file)},
+        FileFormat::S19 => { to_bdm_s19_325(data_to_file).unwrap() },
         FileFormat::UnknownFormat => { data_to_file},
         _ => {return Err(Error::FileReadErr)}
     }; 
