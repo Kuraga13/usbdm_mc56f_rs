@@ -8,7 +8,7 @@ use std::io;
 
 
 #[allow(non_camel_case_types)]
-#[derive(Debug,Copy, Clone)]
+#[derive(Debug,Clone)]
 pub enum Error {
 
    USBDM_Errors(USBDM_ErrorCode),
@@ -22,9 +22,10 @@ pub enum Error {
    Unknown,
    PackerErr(packed_struct::PackingError),
    RamRWTestFault,
-   //IO_Error(std::io::Error)  // std::io::Error unimpleted copy ?? FTW??
    IO_Error(std::io::ErrorKind),
    FileReadErr,
+   FileFormatErr,
+   FileParserError(String),
 }
 
 pub fn get_title_message_error_modal(err : Error) -> (String, String)
@@ -82,6 +83,22 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
 
          }
+         Error::FileFormatErr =>
+         {
+
+          title   = "File Format not recongnized".to_string();
+          message = "Check firmware file, is right format(s19, bin..)? Is valid file?\n".to_string();
+
+
+         }
+         Error::FileParserError(_) =>
+         {
+
+          title   = "Can't Parse File".to_string();
+          message = "Check firmware file. Is valid?\n".to_string();
+
+
+         }
          _ =>
          {
 
@@ -98,6 +115,15 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
 
 impl std::error::Error for Error {}
+
+
+impl From<String> for Error {
+
+    fn from(err: String) -> Error {
+       Error::FileParserError(err)
+     
+    }
+}
 
 impl From<std::io::Error> for Error {
     #[inline]

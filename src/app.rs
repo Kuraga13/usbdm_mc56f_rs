@@ -116,7 +116,7 @@ pub fn show_error( app : &mut App, _e : Error)
 }
 
 pub fn ok_or_show_error<T, U>( app : &mut App, value : Result<T, U>) ->  Result<T, U>
-where Error: From<U>, U: std::marker::Copy
+where Error: From<U>, U: std::clone::Clone
 {
   match value
   {
@@ -127,8 +127,8 @@ where Error: From<U>, U: std::marker::Copy
     Err(err) =>
     {
         app.show_error_modal = true;
-        app.error_status     = Some(Error::from(err));
-        Err(err)
+        app.error_status     = Some(Error::from(err.clone()));
+        Err(err.clone())
     }
   }
 }
@@ -151,7 +151,7 @@ impl App
     fn open_file_dialog() -> Result<Option<String>, OsString> {
         let path = FileDialog::new()
             .add_filter(".bin", &["bin"])
-            //.add_filter(".s19_usbdm_format", &["s19"])
+            .add_filter(".s19_usbdm_format", &["s19"])
             //.add_filter("All files", &["*"])
             .show_open_single_file()
             .unwrap();
@@ -229,7 +229,7 @@ impl App
     let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
 
     let mut check_connect_usb =  dsc.programmer.refresh_feedback();
-    ok_or_show_error(self, check_connect_usb);
+    ok_or_show_error(self, check_connect_usb.clone());
     match check_connect_usb
     {
         Ok(_) =>
@@ -262,7 +262,7 @@ impl App
 
     let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
     let mut check_connect_dsc =  dsc.connect(self.selected_power);
-    ok_or_show_error(self, check_connect_dsc);
+    ok_or_show_error(self, check_connect_dsc.clone());
     match check_connect_dsc
     {
 
@@ -472,9 +472,19 @@ impl Application for App {
 
             self.buffer_path = path;
 
-            load_buffer_from_file(self.buffer_path.clone(), start_addr, size,self);
-
-            
+            let result = load_buffer_from_file(self.buffer_path.clone(), start_addr, size,self);
+             match result
+             {
+                Ok(_) =>
+                {
+                return iced::Command::none();
+                }
+                Err(_e) =>
+                {
+                show_error(  self, _e);
+                return iced::Command::none();
+                }
+             }
 
             }
 
@@ -859,7 +869,7 @@ impl Application for App {
     let main_page = main_window::main_page(self);
         
     
-    let err_view = match self.error_status
+    let err_view = match self.error_status.clone()
     {
       Some(err)    =>  
       {

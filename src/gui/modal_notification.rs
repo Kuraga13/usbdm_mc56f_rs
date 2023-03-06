@@ -21,10 +21,10 @@ pub fn error_notify_model<'a>(show_error_modal : bool, content: Element<'a, Mess
 
 
 
-        let mut error_string =  get_title_message_error_modal(err);
+        let mut error_string =  get_title_message_error_modal(err.clone());
 
         let title = error_string.0;
-        let error_entry = err.to_string();
+        let error_entry = err.to_string().clone();
         let message = error_string.1 + &error_entry;
         
 

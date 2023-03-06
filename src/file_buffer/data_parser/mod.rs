@@ -5,6 +5,12 @@ mod to_bin;
 
 pub use s19_encoder::to_bdm_s19_325;
 
+pub fn s19_to_bin (input: Vec<u8>) -> Result<Vec<u8>, String> {
+    let parsed_data = ParsedData::parse_s19(input)?;
+    let output = parsed_data.to_bin()?;
+    Ok(output)
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct ParsedData {
     valid: bool,
