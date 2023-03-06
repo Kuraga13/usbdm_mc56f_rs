@@ -83,6 +83,9 @@ fn parse_one_string(data_string: &mut Vec<u8>, address_length: &mut u8, address:
 fn verify_remove_checksum(data: &mut Vec<Vec<u8>>) -> Result<(), String> {
     for n in 0..data.len() {
         let data_length = data[n][1];
+        if data[n].len() < (data_length + 2) as usize {
+            return Err("Checksum Error".to_string());
+        }
         let mut checksum: u32 = 0;
         for i in 1..(1 + data_length) {
             checksum += (data[n][i as usize]) as u32; // & 0xFF;
