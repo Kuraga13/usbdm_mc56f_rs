@@ -81,13 +81,22 @@ pub fn load_buffer_from_file(path : String, start_addr : u32, size : usize, app 
 }
 
 
-pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: &mut App, format : FileFormat) -> Result<(), Error>
+pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: &mut App) -> Result<(), Error>
 {
 
     // TODO:
     // check buffer size of target MemoryMap
     // check start address + size of target MemoryMap
     // and then save bin file
+
+    let binding = path.clone();
+    let ext = 
+    match Path::new(&binding).extension() {
+        None                        => return Err(Error::FileReadErr),
+        Some(ext_str)       => ext_str};
+
+    let format = FileFormat::from(ext);
+   
 
      let mut save_file = match   File::create(path) {
         Ok(save_file) => save_file,
@@ -97,20 +106,29 @@ pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: 
     // get buffer   
     let mut data_to_file = app.buffer.download_in_one();
 
-    let formatted = match format {
-        FileFormat::Bin => { data_to_file},
-        FileFormat::S19 => { to_bdm_s19_325(data_to_file).unwrap() },
-        FileFormat::UnknownFormat => { data_to_file},
-        _ => {return Err(Error::FileReadErr)}
-    }; 
-    
+    match format {
 
-    // write it to file
-    save_file.write(formatted.as_slice())?;
- 
+        FileFormat::Bin => 
+        {
 
- 
+          save_file.write(data_to_file.as_slice())?;
+          return Ok(())
 
-    Ok(())
+        }
+        FileFormat::S19 => 
+        {
+
+          data_to_file = to_bdm_s19_325(data_to_file)?;
+          save_file.write(data_to_file.as_slice())?;
+          return Ok(())
+      
+        }
+        FileFormat::UnknownFormat => 
+        {
+
+         return Err(Error::FileFormatErr)
+
+        }
+    };
 
 }

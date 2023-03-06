@@ -61,8 +61,9 @@ pub enum Message {
     TestBufferDoubleClick,
     OpenGithub,
     OpenFile,
-    SaveFileBin,
-    SaveFileS19,
+    SaveFile,
+
+
     OkButtonPressed,
     OpenAboutCard,
     CloseAboutCard,
@@ -167,26 +168,17 @@ impl App
         }
     }
 
-      fn save_file_dialog(file_format : FileFormat) -> Result<Option<String>, OsString> {
+      fn save_file_dialog() -> Result<Option<String>, OsString> {
         
        let path  =  FileDialog::new();
 
-       let path_configured = if(file_format == FileFormat::Bin)
-       {
+       let path_configured = 
         path
         .add_filter(".bin", &["bin"])
-        .show_save_single_file()
-        .unwrap()
-       }
-
-       else 
-       {
-         path
         .add_filter(".s19_usbdm_format", &["s19"])
         .show_save_single_file()
-        .unwrap()
+        .unwrap();
 
-       };
 
 
         let path_configured = match path_configured {
@@ -488,10 +480,10 @@ impl Application for App {
 
             }
 
-            Message::SaveFileBin => 
+            Message::SaveFile => 
             {
 
-             let path = match App::save_file_dialog(FileFormat::Bin) {
+             let path = match App::save_file_dialog() {
             
                     Ok(res) => match res {
                                     Some(d) => d,
@@ -528,53 +520,11 @@ impl Application for App {
         
             self.buffer_path = path;
         
-            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self, FileFormat::Bin);
+            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self);
 
             }
 
-            Message::SaveFileS19 => 
-            {
-
-             let path = match App::save_file_dialog(FileFormat::S19) {
-            
-                    Ok(res) => match res {
-                                    Some(d) => d,
-                                    None => return iced::Command::none(),},
-        
-                    Err(e) => {
-                        App::display_alert(
-                                        &self,
-                                        "usbdm_mc56f_rs",
-                                        &format!("Error while save file!\n{:?}", e),
-                                        MessageType::Error,);
-                                        return iced::Command::none();  }  };
-            
-                   
-        
-            let mut start_addr : u32;
-            let mut size : usize;
-            
-             match &self.target 
-             {
-                None => 
-                {
-                start_addr  = 0x0;
-                size  = 0xFFFF;
-                }
-
-                Some(dsc) =>
-                {
-                         start_addr = dsc.memory_map.memory_start_address();
-                         size = dsc.memory_map.memory_size();
-        
-                }
-              }
-        
-            self.buffer_path = path;
-        
-            save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self, FileFormat::S19);
-
-            }
+           
     
 
             Message::CloseAboutCard | Message::OpenAboutCard => {
@@ -590,7 +540,6 @@ impl Application for App {
             } 
 
             
-
             Message::Connect => 
             {  
 
