@@ -118,7 +118,8 @@ pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: 
         FileFormat::S19 => 
         {
 
-          data_to_file = to_bdm_s19_325(data_to_file)?;
+          //data_to_file = to_bdm_s19_325(data_to_file)?;
+          data_to_file = to_bdm_s19_325(data_to_file).unwrap();
           save_file.write(data_to_file.as_slice())?;
           return Ok(())
       

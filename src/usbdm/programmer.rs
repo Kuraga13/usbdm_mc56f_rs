@@ -1,21 +1,15 @@
 #![allow(unused)]
 
-mod memory_access;
-pub mod jtag;
-mod bdm_info;
-use bdm_info::BdmInfo;
-
-use crate::usb_interface::{UsbInterface};
 use crate::errors::{Error};
-use crate::feedback::{FeedBack, PowerState, PowerStatus};
-use crate::settings::{BdmSettings, TargetVddSelect, TargetType};
-use crate::enums::{bdm_commands};
-use std::{thread, time};
-
-
+use crate::usbdm::usb_interface::{UsbInterface};
+use crate::usbdm::feedback::{FeedBack, PowerState, PowerStatus};
+use crate::usbdm::settings::{BdmSettings, TargetVddSelect, TargetType};
+use crate::usbdm::constants::{bdm_commands};
+use crate::usbdm::bdm_info::BdmInfo;
+use crate::usbdm::jtag::*;
 use crate::target_dsc::mc56f80x::{MC56f80x};
-
-
+use std::{thread, time};
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct Programmer {
@@ -287,6 +281,82 @@ pub fn target_power_reset(&mut self) -> Result<(), Error>{
     //thread::sleep(time::Duration::from_millis(self.settings.reset_release_interval));
     //self.bdm_control_pins(PIN_RELEASE)?;
     thread::sleep(time::Duration::from_millis(self.settings.reset_recovery_interval));
+    Ok(())
+}
+
+pub fn get_bdm_info(&mut self) -> Result<(), Error> {
+    self.get_bdm_version()?;
+    self.get_bdm_capabilities()?;
+    Ok(())
+}
+
+fn get_bdm_version(&mut self) -> Result<(), Error>{
+    let request_type = 64; //LIBUSB_REQUEST_TYPE_VENDOR
+    let request_type = request_type| &self.usb_device.read_ep;
+    
+    let request  = bdm_commands::CMD_USBDM_GET_VER; // command
+    let value    = 100;
+    let index    = 0;
+    let timeout  = Duration::from_millis(2500);
+    let mut usb_buf  = [0; 10];
+     
+    let version = self.usb_device.control_transfer(
+        request_type,
+        request,
+        value,
+        index,
+        &mut usb_buf,
+        timeout)?;                                    
+
+    let raw_bdm_software_version = u32::from (version[1]);
+    let calculation = ((raw_bdm_software_version&0xF0)<<12) + ((raw_bdm_software_version&0x0F)<<8);
+
+    self.bdm_info.bdm_software_version = calculation;
+    self.bdm_info.bdm_hardware_version  = version[2];
+    self.bdm_info.icp_software_version  = version[3];
+    self.bdm_info.icp_hardware_version  = version[4];
+    Ok(())
+}
+
+fn get_bdm_capabilities(&mut self) -> Result<(), Error>{
+    let mut usb_buf = [0; 2];
+    usb_buf[0] = 2;  // lenght
+    usb_buf[1] = bdm_commands::CMD_USBDM_GET_CAPABILITIES;
+    let command = "CMD_USBDM_GET_CAPABILITIES".to_string();
+
+    let bit = 0x80;
+    let bitter = usb_buf[1] | bit;
+    usb_buf[1] = bitter;
+
+    self.usb_device.write(&usb_buf,1500)?;        // write command
+    let answer: Vec<u8> = self.usb_device.read(8)?;                   //  read
+
+    if answer.len() >= 3 {
+        let capabilities: u16 = ((answer[1] as u16) << 8) | answer[2] as u16 ^ ((1<<5) | (1<<6));
+        self.bdm_info.capabilities.parse(capabilities);
+    }
+
+    if answer.len() >= 5 {
+        let mut buffer_size: u16 = ((answer[3] as u16) << 8) + answer[4] as u16;
+        let max_packet_size: u16 = 255;
+        if buffer_size > max_packet_size {
+            buffer_size = max_packet_size;
+        }
+        let jtag_header_size: u16 = 5;
+        self.bdm_info.command_buffer_size = buffer_size;
+        self.bdm_info.jtag_buffer_size = buffer_size - jtag_header_size;
+    }
+
+    if answer.len() >= 8 {
+        // Newer BDMs report extended software version
+        self.bdm_info.bdm_software_version = ((answer[5] as u32) << 16)+((answer[6] as u32) << 8)+answer[7] as u32;
+    }
+
+    // Calculate permitted read & write length in bytes
+    // Allow for JTAG header + USB header (5 bytes) & make multiple of 4
+    self.bdm_info.dsc_max_memory_read_size  = (self.bdm_info.jtag_buffer_size - JTAG_READ_MEMORY_HEADER_SIZE  - 5) & !3;
+    self.bdm_info.dsc_max_memory_write_size = (self.bdm_info.jtag_buffer_size - JTAG_WRITE_MEMORY_HEADER_SIZE - 5) & !3;
+                                        
     Ok(())
 }
   

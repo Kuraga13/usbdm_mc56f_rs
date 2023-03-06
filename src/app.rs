@@ -13,17 +13,17 @@ use std::path::Path;
 use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 
-use crate::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
-use crate::errors::{Error};
-use crate::settings::{TargetVddSelect};
-use crate::feedback::{PowerStatus};
-use crate::programmer::{Programmer};
+use crate::usbdm::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
+use crate::usbdm::settings::{TargetVddSelect};
+use crate::usbdm::feedback::{PowerStatus};
+use crate::usbdm::programmer::{Programmer};
 use crate::target_dsc::target_factory::{TargetFactory, TargetProgramming};
 use crate::target_dsc::mc56f80x::MC56f80x;
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
 use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file, FileFormat};
+use crate::errors::{Error};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {

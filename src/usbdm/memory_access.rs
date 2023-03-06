@@ -1,6 +1,7 @@
 use crate::errors::{Error, USBDM_ErrorCode};
 use super::*;
 use super::jtag::*;
+use crate::usbdm::programmer::{Programmer};
 
 mod memory_space_t {
     // Memory space indicator - includes element size

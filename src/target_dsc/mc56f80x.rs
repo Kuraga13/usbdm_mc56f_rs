@@ -1,10 +1,10 @@
 use super::target_factory::{TargetFactory,TargetProgramming, MemoryMap, memory_space_type::*};
 use crate::errors::Error;
-use crate::programmer::jtag::*;
-use crate::programmer::jtag::{OnceStatus};
-use crate::programmer::{Programmer};
-use crate::settings::{TargetVddSelect};
-use crate::feedback::{PowerStatus};
+use crate::usbdm::jtag::*;
+use crate::usbdm::jtag::{OnceStatus};
+use crate::usbdm::programmer::{Programmer};
+use crate::usbdm::settings::{TargetVddSelect};
+use crate::usbdm::feedback::{PowerStatus};
 use iced_native::subscription;
 
 use std::collections::HashMap;

@@ -11,8 +11,8 @@ use iced_aw::quad;
 
 use crate::errors::{Error};
 use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
-use crate::settings::{TargetVddSelect};
-use crate::feedback::{PowerStatus};
+use crate::usbdm::settings::{TargetVddSelect};
+use crate::usbdm::feedback::{PowerStatus};
 use super::styling::{PowerButtonStyle, ButtonStyle, EnablePowerButtonStyle};
 
 use super::hexbuffer_widget::{TableContents,table_contents };

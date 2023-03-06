@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::programmer::Programmer;
+use crate::usbdm::programmer::Programmer;
 use crate::errors::{Error, USBDM_ErrorCode};
     
 pub const JTAG_COMMAND_MASK         : u8 = 0x7<<5;

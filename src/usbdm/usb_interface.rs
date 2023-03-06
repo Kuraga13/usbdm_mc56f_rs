@@ -3,8 +3,8 @@
 //use rusb::{UsbContext};
 use std::time::Duration;
 use crate::errors::{Error, USBDM_ErrorCode};
-use crate::enums::{bdm_commands};
-use crate::feedback::{FeedBack};
+use crate::usbdm::constants::{bdm_commands};
+use crate::usbdm::feedback::{FeedBack};
 use packed_struct::prelude::*;
 use std::fmt;
 

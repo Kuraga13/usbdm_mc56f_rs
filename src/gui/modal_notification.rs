@@ -138,7 +138,7 @@ pub fn get_kuraga_remont_ru() -> Tooltip<'static, Message> {
     tool_tip
 
 }
-static DSC_IMAGE: &[u8] = include_bytes!("../resources/mcu_connection.jpeg");
+static DSC_IMAGE: &[u8] = include_bytes!("../gui/resources/mcu_connection.jpeg");
 
 pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: Element<'a, Message, iced::Renderer>, )  -> Element<'a, Message>
 {

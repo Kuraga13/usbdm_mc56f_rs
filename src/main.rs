@@ -1,13 +1,10 @@
 #![allow(unused)]
 #![windows_subsystem = "windows"]
-mod usb_interface;
+
 mod gui;
 mod app;
 mod errors;
-mod enums;
-mod feedback;
-mod programmer;
-mod settings;
+mod usbdm;
 mod target_dsc;
 mod file_buffer;
 
@@ -22,7 +19,7 @@ use crate::app::{App};
 pub fn main() -> iced::Result {
     
         
-    let bytes = include_bytes!("resources/icon.png");
+    let bytes = include_bytes!("gui/resources/icon.png");
     let img = image::load_from_memory(bytes).unwrap();
     let img_dims = img.dimensions();
     let img_raw = img.into_rgba8().into_raw();
