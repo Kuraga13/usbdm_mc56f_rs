@@ -1,9 +1,9 @@
 use super::*;
 
 impl ParsedData {
-    pub fn to_bin(&self) -> Result<Vec<u8>, String> {
-        if self.data_vec.len() == 0 { return Err("No Input Data".to_string()) } // check data exists
-        if self.valid == false { return Err("Data not valid".to_string()) } // check data is valid
+    pub fn to_bin(&self) -> Result<Vec<u8>, Error> {
+        if self.data_vec.len() == 0 { return Err(Error::DataParserError("No Input Data".to_string())) } // check data exists
+        if self.valid == false { return Err(Error::DataParserError("Data not valid".to_string())) } // check data is valid
         
         let mut output: Vec<u8> = vec![];
         let mut next_address: u32 = 0;
@@ -48,7 +48,7 @@ mod tests {
     fn no_input_data() {
         let mut test: ParsedData = ParsedData::default();
         let output = test.to_bin();
-        assert_eq!(output.is_err() && output.unwrap_err() == "No Input Data", true);
+        assert_eq!(output.is_err() && output.unwrap_err() == Error::DataParserError("No Input Data".to_string()), true);
     }
 
     #[test]
@@ -56,7 +56,7 @@ mod tests {
         let mut test: ParsedData = ParsedData::default();
         test.data_vec.push(DataBlock::default());
         let output = test.to_bin();
-        assert_eq!(output.is_err() && output.unwrap_err() == "Data not valid", true);
+        assert_eq!(output.is_err() && output.unwrap_err() == Error::DataParserError("Data not valid".to_string()), true);
     }
 
 }

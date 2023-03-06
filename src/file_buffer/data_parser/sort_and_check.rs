@@ -1,10 +1,11 @@
 use super::*;
 
 impl ParsedData {
-    pub fn sort_and_check(&mut self) -> Result<(), String> {
+    pub fn sort_and_check(&mut self) -> Result<(), Error> {
         
         // check data exists
-        if self.data_vec.len() == 0 { return Err("No Input Data".to_string()) }
+        if self.data_vec.len() == 0 { 
+            return Err(Error::DataParserError("No Input Data".to_string())) }
         
         // sort data
         let mut sorted = 1;
@@ -27,8 +28,7 @@ impl ParsedData {
             let end_of_previous_block =
                self.data_vec[i - 1].address + ((self.data_vec[i - 1].data_blob.len() as u32) / self.word_length as u32);
             if address < end_of_previous_block {
-                return Err("Data is Overlapping".to_string())
-            }
+                return Err(Error::DataParserError("Data is Overlapping".to_string())) }
         }
         
         Ok(())  
@@ -71,13 +71,13 @@ mod tests {
 
         let mut test = sorted.clone();
         let result = test.sort_and_check();  
-        assert_eq!(result.is_err() && result.unwrap_err() == "Data is Overlapping", true);
+        assert_eq!(result.is_err() && result.unwrap_err() == Error::DataParserError("Data is Overlapping".to_string()), true);
     } 
  
     #[test]
     fn no_data_error() {
         let mut test: ParsedData = ParsedData::default();
         let result = test.sort_and_check();  
-        assert_eq!(result.is_err() && result.unwrap_err() == "No Input Data", true);
+        assert_eq!(result.is_err() && result.unwrap_err() == Error::DataParserError("No Input Data".to_string()), true);
     } 
 }
