@@ -118,11 +118,9 @@ impl std::error::Error for Error {}
 
 
 impl From<String> for Error {
-
     fn from(err: String) -> Error {
-       Error::FileParserError(err)
-     
-    }
+       Error::FileParserError(err) 
+  }
 }
 
 impl From<std::io::Error> for Error {

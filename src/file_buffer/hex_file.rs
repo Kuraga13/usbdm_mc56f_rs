@@ -20,9 +20,10 @@ pub enum FileFormat {
 impl From <&OsStr>  for FileFormat  {
     fn from(ext : &OsStr) -> FileFormat {
          match ext.to_str() {
-         Some("bin")   => FileFormat::Bin,          
+         Some("bin")   => FileFormat::Bin, 
+         Some("Bin")   => FileFormat::Bin,  
+         Some("BIN")   => FileFormat::Bin,          
          Some("s19")   => FileFormat::S19,
-         Some("BIN")   => FileFormat::S19,   
          Some("S19")   => FileFormat::S19,                  
          Some(_)       => FileFormat::UnknownFormat,
          None          => FileFormat::UnknownFormat,
