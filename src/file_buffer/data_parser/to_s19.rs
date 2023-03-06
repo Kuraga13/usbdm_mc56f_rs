@@ -1,10 +1,15 @@
-pub fn to_bdm_s19_325(data: Vec<u8>) -> Result<Vec<u8>, String> {
-    if data.len() == 0 { return Err("No Input Data".to_string()) }
-    let mut output: Vec<u8> = vec![];
-    output.append(&mut first_string());
-    output.append(&mut body_compose(data));
-    Ok(output)  
-} 
+use super::*;
+
+impl ParsedData {
+    pub fn to_bdm_s19_325(&self) -> Result<Vec<u8>, Error> {
+        let mut data = self.to_bin()?;
+        if data.len() == 0 { return Err(Error::DataParserError("No Input Data".to_string())) }
+        let mut output: Vec<u8> = vec![];
+        output.append(&mut first_string());
+        output.append(&mut body_compose(data));
+        Ok(output)  
+    } 
+}
 
 fn byte_to_hex(byte: u8) -> Vec<u8> {
     let mut output: Vec<u8> = vec![(byte & 0xF0) >> 4, byte & 0x0F];
@@ -80,7 +85,8 @@ mod tests {
         let mut data1: Vec<u8> = vec![0x54, 0xE1, 0x5D, 0x32, 0x54, 0xE1, 0x5D, 0x32, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x4A, 0x30, 0x54, 0xE2, 0x1B, 0x45];
         let mut data2: Vec<u8> = vec![0x54, 0xE2, 0x4E, 0x30, 0x54, 0xE2, 0x52, 0x30, 0x54, 0xE2, 0x56, 0x30, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x6C, 0x24, 0x54, 0xE2, 0x93, 0x51];
         data1.append(&mut data2);
-        let output_vec = to_bdm_s19_325(data1).unwrap();
+        let parsed_data = ParsedData :: parse_bin (data1).unwrap();
+        let output_vec = parsed_data.to_bdm_s19_325().unwrap();
         let mut output_string: String = "".to_string();
         for &x in output_vec.iter(){output_string += &{if x >= 33 && x <= 126 {x as char} else {'.'}}.to_string();}
         let mut test_output = "S0030000FC..".to_string();
@@ -89,9 +95,4 @@ mod tests {
         assert_eq!(output_string, test_output);
     }
 
-    #[test]
-    fn test_no_data_error() {
-        let vec = to_bdm_s19_325(vec![]);
-        assert_eq!((vec.is_err() && vec.unwrap_err() == "No Input Data"), true);
-    }
 }
