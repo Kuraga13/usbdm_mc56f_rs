@@ -2,12 +2,12 @@ use super::*;
 
 impl ParsedData {
 
-    pub fn parse_s19(input: Vec<u8>) -> Result<ParsedData, String> {
+    pub fn parse_s19(input: Vec<u8>) -> Result<ParsedData, Error> {
         let mut parsed_data: ParsedData = ParsedData::default();
-        if input.len() == 0 { return Err("No Input Data".to_string()) }
+        if input.len() == 0 { return Err(Error::DataParserError("No Input Data".to_string())) }
         let mut data_strings: Vec<Vec<u8>> = split_strings(input);
         check_remove_s(&mut data_strings);
-        if data_strings.len() == 0 { return Err("No Valid Data".to_string()) }
+        if data_strings.len() == 0 { return Err(Error::DataParserError("No Valid Data".to_string())) }
         hex_string_to_byte(&mut data_strings);
         verify_remove_checksum(&mut data_strings)?;
         parse_strings(&mut data_strings, &mut parsed_data)?;
@@ -17,7 +17,7 @@ impl ParsedData {
     }
 }
 
-fn parse_strings(data: &mut Vec<Vec<u8>>, output: &mut ParsedData) -> Result<(), String> {
+fn parse_strings(data: &mut Vec<Vec<u8>>, output: &mut ParsedData) -> Result<(), Error> {
     let mut data_block = DataBlock::default();
     let mut string_number: u32 = 1;
     let mut next_address: u32 = 0;
@@ -57,8 +57,8 @@ fn parse_strings(data: &mut Vec<Vec<u8>>, output: &mut ParsedData) -> Result<(),
     Ok(())
 }
 
-fn parse_one_string(data_string: &mut Vec<u8>, address_length: &mut u8, address: &mut u32, data: &mut Vec<u8>) -> Result<(), String> {
-    if data_string.len() < 1 { return Err("Parse Address Error".to_string()) }
+fn parse_one_string(data_string: &mut Vec<u8>, address_length: &mut u8, address: &mut u32, data: &mut Vec<u8>) -> Result<(), Error> {
+    if data_string.len() < 1 { return Err(Error::DataParserError("Parse Address Error".to_string())) }
     *address_length = match data_string[0] {
         1 => 2,
         2 => 3,
@@ -67,7 +67,7 @@ fn parse_one_string(data_string: &mut Vec<u8>, address_length: &mut u8, address:
     };
 
     if *address_length == 0 { return Ok(()) }
-    if data_string.len() < (3 + *address_length).into() { return Err("Parse Address Error".to_string()) }
+    if data_string.len() < (3 + *address_length).into() { return Err(Error::DataParserError("Parse Address Error".to_string())) }
     if *address_length == 2 {
         *address = ((data_string[2] as u32) <<  8) +   data_string[3] as u32; 
     } else if *address_length == 3 {
@@ -80,11 +80,11 @@ fn parse_one_string(data_string: &mut Vec<u8>, address_length: &mut u8, address:
     Ok(())
 }
 
-fn verify_remove_checksum(data: &mut Vec<Vec<u8>>) -> Result<(), String> {
+fn verify_remove_checksum(data: &mut Vec<Vec<u8>>) -> Result<(), Error> {
     for n in 0..data.len() {
         let data_length = data[n][1];
         if data[n].len() < (data_length + 2) as usize {
-            return Err("Checksum Error".to_string());
+            return Err(Error::DataParserError("Checksum Error".to_string()));
         }
         let mut checksum: u32 = 0;
         for i in 1..(1 + data_length) {
@@ -92,7 +92,7 @@ fn verify_remove_checksum(data: &mut Vec<Vec<u8>>) -> Result<(), String> {
         }
         let checksum_u8: u8 = checksum as u8;
         if data[n][(data_length + 1) as usize] != !checksum_u8 {
-            return Err("Checksum Error".to_string());
+            return Err(Error::DataParserError("Checksum Error".to_string()));
         }
         data[n].drain(data_length as usize + 1..);
     }
@@ -167,7 +167,7 @@ mod tests {
     #[test]
     fn test_no_data_error() {
         let vec = ParsedData::parse_s19(vec![]);
-        assert_eq!((vec.is_err() && vec.unwrap_err() == "No Input Data"), true);
+        assert_eq!((vec.is_err() && vec.unwrap_err() == Error::DataParserError("No Input Data".to_string())), true);
     }
 
     #[test]
