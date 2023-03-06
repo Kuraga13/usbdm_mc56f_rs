@@ -5,7 +5,7 @@ use std::{
 };
 use crate::app::{App};
 use crate::errors::Error;
-use super::data_parser::{to_bdm_s19_325, ParsedData, s19_to_bin};
+use super::data_parser::{to_bdm_s19_325, ParsedData};
 use std::ffi::{OsStr, OsString};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -57,24 +57,24 @@ pub fn load_buffer_from_file(path : String, start_addr : u32, size : usize, app 
         FileFormat::Bin => 
         {
 
-          file_hex.seek(SeekFrom::Start(u64::from(start_addr)))?;
-          file_hex.read_to_end(&mut buffer_vec);
-          app.buffer.upload(buffer_vec);
-          return Ok(())
+            file_hex.seek(SeekFrom::Start(u64::from(start_addr)))?;
+            file_hex.read_to_end(&mut buffer_vec);
+            app.buffer.upload(buffer_vec);
+            return Ok(())
 
         }
         FileFormat::S19 => 
         {
-
-         file_hex.read_to_end(&mut buffer_vec);
-         let mut s19 = s19_to_bin(buffer_vec)?;
-         return Ok(())
+            file_hex.read_to_end(&mut buffer_vec);
+            let parsed_data = ParsedData::parse_s19(buffer_vec)?;
+            app.buffer.upload(parsed_data.to_bin()?);
+            return Ok(())
       
         }
         FileFormat::UnknownFormat => 
         {
 
-         return Err(Error::FileFormatErr)
+            return Err(Error::FileFormatErr)
 
         }
     };

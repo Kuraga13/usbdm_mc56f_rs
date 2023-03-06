@@ -2,6 +2,7 @@
 
 use std::fmt;
 use std::io;
+use crate::file_buffer::data_parser;
 
 //#[allow(non_camel_case_types)]
 //pub type USBDM_Result = Result<USBDM_RC_OK, USBDMerror>;
@@ -116,11 +117,13 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
 impl std::error::Error for Error {}
 
-
-impl From<String> for Error {
-    fn from(err: String) -> Error {
-       Error::FileParserError(err) 
-  }
+impl From<data_parser::Error> for Error {
+    fn from(err: data_parser::Error) -> Error{
+        match err{
+            data_parser::Error::DataParserError(x) => Error::FileParserError(x),
+            _ => Error::FileParserError("Generic File Parser Error". to_string()),
+        }
+    }
 }
 
 impl From<std::io::Error> for Error {
