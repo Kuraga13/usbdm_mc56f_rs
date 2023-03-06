@@ -15,7 +15,7 @@ use iced_native::widget::tooltip::Position;
 use super::styling::{ProgressBarMy, ProgressBarStyle};
 use crate::app::{Message, App};
 use crate::errors::{Error, get_title_message_error_modal};
-
+use crate::VERSION;
 
 pub fn error_notify_model<'a>(show_error_modal : bool, content: Element<'a, Message, iced::Renderer>, err :  Error) -> Element<'a, Message> {
 
@@ -65,6 +65,8 @@ pub fn about_card<'a>(show_about_card : bool, content: Element<'a, Message, iced
             .push(Text::new("DSC (mc56f80xx) programmer").size(15))
             .push(vertical_space(5.0))
             .push(Text::new("License: GPL v2").size(15))
+            .push(vertical_space(5.0))
+            .push(Row::new().push(Text::new("Version: ").size(15)).push(Text::new(VERSION.to_string())))
             .push(vertical_space(5.0))
             .push( Text::new("Author Kuraga ").size(15))
             .push(vertical_space(5.0))
