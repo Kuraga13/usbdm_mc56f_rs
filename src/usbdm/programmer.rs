@@ -41,6 +41,7 @@ impl Programmer
             settings        : BdmSettings::default(), };
         prog.get_bdm_info()?;
         prog.bdm_info.check_version()?;
+        prog.bdm_info.capabilities.check_dsc_supported()?;
         prog.feedback = prog.usb_device.get_bdm_status()?;
         prog.force_vdd_off()?;
         prog.bdm_info.print_version2();

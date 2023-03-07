@@ -14,6 +14,7 @@ pub enum Error {
 
    USBDM_Errors(USBDM_ErrorCode),
    UsbdmFWVersionUnsupported,
+   UsbdmUnsuited,
    Usb(rusb::Error),
    PowerStateError,
    PowerErrorInFeedback, //Target Vdd error Possible overload !
@@ -115,6 +116,14 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
           title   = "Firmware Verstion unsupported!".to_string();
           message =   "Minimal version is 4.12.1.\n Update Usbdm with new firmare.\n".to_string();
+
+
+         }
+         Error::UsbdmUnsuited =>
+         {
+
+          title   = "USBDM not support DSC!".to_string();
+          message =  "You need JMxx Usbdm (full, CF)\n to work with DSC.\n".to_string();
 
 
          }

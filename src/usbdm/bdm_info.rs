@@ -140,5 +140,20 @@ impl Capabilities {
         if (capabilities & (1<<13)) != 0 { self.arm_swd = true; }
         if (capabilities & (1<<14)) != 0 { self.s12z = true; }
     }
+
+    pub fn check_dsc_supported(&self) -> Result<(), Error> {
+
+        if(self.dsc == true)
+        {
+            Ok(())
+        }
+        else
+        {
+            return       Err(Error::UsbdmUnsuited)
+
+        }
+
+
+   }
 }
 
