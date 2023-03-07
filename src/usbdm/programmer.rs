@@ -45,6 +45,7 @@ impl Programmer
         prog.feedback = prog.usb_device.get_bdm_status()?;
         prog.force_vdd_off()?;
         prog.bdm_info.print_version2();
+        prog.bdm_info.print_capabilities();
         Ok(prog)
     }
 

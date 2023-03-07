@@ -107,6 +107,24 @@ impl BdmInfo {
         println!("icp_hardware_version: {:#02X}",  &self.icp_hardware_version);
     }
 
+    pub fn print_capabilities(&self) {
+        println!("Capabilities: ");
+        println!("hcs12: {}",  &self.capabilities.hcs12);
+        println!("rs08: {}",  &self.capabilities.rs08);
+        println!("vddcontrol: {}",  &self.capabilities.vddcontrol);
+        println!("vddsense: {}",  &self.capabilities.vddsense);
+        println!("cfv_x: {}",  &self.capabilities.cfv_x);
+        println!("hcs08: {}",  &self.capabilities.hcs08);
+        println!("cfv1: {}",  &self.capabilities.cfv1);
+        println!("jtag: {}",  &self.capabilities.jtag);
+        println!("dsc: {}",  &self.capabilities.dsc);
+        println!("rst: {}",  &self.capabilities.rst);
+        println!("pst: {}",  &self.capabilities.pst);
+        println!("cdc: {}",  &self.capabilities.cdc);
+        println!("arm_swd: {}",  &self.capabilities.arm_swd);
+        println!("s12z: {}",  &self.capabilities.s12z);
+    }
+
     pub fn check_version(&self) -> Result<(), Error> {
         if &self.bdm_hardware_version != &self.icp_hardware_version { 
             Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_WRONG_BDM_REVISION))
