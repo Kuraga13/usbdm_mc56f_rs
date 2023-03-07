@@ -12,13 +12,9 @@ Initially, the goal is to work comfortably with the mc56f in Rust. Working via U
  
 Target - USBDM/CF version, supporting DSC.
  
- ###  On test now
-
-
 
 ###  In work
 * Concrete mc56f (target) commands - write, erase 
-* S19 loader, parser, we do specifically for format s19 from usbdm, s325
 
 ### In plan
 * Made HexBuffer interactive, copying data, addressing etc.
@@ -35,6 +31,7 @@ Target - USBDM/CF version, supporting DSC.
 * Concrete mc56f (target) commands - read
 * Concrete mc56f (target) command: - Connect, tested
 * GUI - hex-buffer, download-upload binary
+* S19 loader, parser, converter from bin (open) and to bin (open & save as binary) we do specifically for format s19 from usbdm, s325
 
  ###  Acknowledgements
 
