@@ -1,3 +1,5 @@
+use std::default;
+
 use super::*;
 
 impl ParsedData {
@@ -15,6 +17,18 @@ impl ParsedData {
             next_address = output.len() as u32 / self.word_length as u32;
         }
         Ok(output)
+    }
+
+    pub fn parse_bin(input: Vec<u8>) -> Result<ParsedData, Error> {
+        let mut parsed_data: ParsedData = ParsedData::default();
+        if input.len() == 0 { return Err(Error::DataParserError("No Input Data".to_string())) }
+        parsed_data.word_length = 1;
+        let mut data_block: DataBlock = DataBlock::default();
+        data_block.address = 0;
+        data_block.data_blob.append(&mut input.clone());
+        parsed_data.data_vec.push(data_block);
+        parsed_data.valid = true;
+        Ok(parsed_data)
     }
 }
 

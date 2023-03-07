@@ -1,9 +1,7 @@
-mod s19_encoder;
+mod to_s19;
 mod parse_s19;
 mod sort_and_check;
-mod to_bin;
-
-pub use s19_encoder::to_bdm_s19_325;
+mod bin_utils;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ParsedData {

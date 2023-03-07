@@ -98,6 +98,7 @@ pub struct App {
     pub    theme              : iced::Theme,
     pub    dark_mode          : bool,
     pub    progress_bar_value : f32,
+    pub    title              : String,
     
     pub    number_to_read     : u32,            // for debug
     pub    counter            : u32,            // for debug
@@ -233,6 +234,7 @@ impl App
 
         Err(_) =>
         {
+            self.title =  "usbdm_mc56f_rs ".to_string() + &"not connected ".to_string();
             self.status = UsbdmAppStatus::NotConnected;
 
         }
@@ -341,7 +343,7 @@ impl Application for App {
                 target_status      : TargetStatus::NotConnected,
                 power_status       : PowerStatus::PowerOff,
                 progress_bar_value : 0.0,
-                
+                title              : "usbdm_mc56f_rs ".to_string() + &"not connected ".to_string(),
                 number_to_read     : 0,
                 counter            : 0,
                 read_buff          : vec![vec![0;0]],
@@ -357,7 +359,7 @@ impl Application for App {
     }
 
     fn title(&self) -> String {
-       "Usbdm_rs".to_string()
+       self.title.clone()
     }
 
     fn update(&mut self, message: Self::Message) -> iced::Command<Self::Message> {
@@ -574,6 +576,8 @@ impl Application for App {
             
                                   let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target( programmer, 0x8000, 0x0000, "MC56f8035".to_string()));
                                   self.target = dsc;
+                                  let handle =  self.target.as_mut().expect("");
+                                  self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.programmer.get_string_version().clone();
                                 
                                 }
 

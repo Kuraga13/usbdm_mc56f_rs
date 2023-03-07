@@ -5,7 +5,7 @@ use std::{
 };
 use crate::app::{App};
 use crate::errors::Error;
-use super::data_parser::{to_bdm_s19_325, ParsedData};
+use super::data_parser::ParsedData;
 use std::ffi::{OsStr, OsString};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -118,8 +118,7 @@ pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: 
         FileFormat::S19 => 
         {
 
-          //data_to_file = to_bdm_s19_325(data_to_file)?;
-          data_to_file = to_bdm_s19_325(data_to_file).unwrap();
+          data_to_file = ParsedData::parse_bin(data_to_file)?.to_bdm_s19_325()?;
           save_file.write(data_to_file.as_slice())?;
           return Ok(())
       

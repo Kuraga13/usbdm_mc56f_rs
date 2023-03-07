@@ -13,8 +13,11 @@ use crate::file_buffer::data_parser;
 pub enum Error {
 
    USBDM_Errors(USBDM_ErrorCode),
+   UsbdmFWVersionUnsupported,
+   UsbdmUnsuited,
    Usb(rusb::Error),
    PowerStateError,
+   PowerErrorInFeedback, //Target Vdd error Possible overload !
    LostConnection,
    TargetNotConnected,
    TargetSecured,
@@ -60,6 +63,13 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
          message = "Check power circuit on target\n".to_string();
 
          }
+         Error::PowerErrorInFeedback =>
+         {  
+
+         title   = "Power Overloaded!".to_string();
+         message = "Usbdm power sensor detect VDD less 2v .\n".to_string();
+
+         }
          Error::LostConnection =>
          {
             
@@ -97,6 +107,23 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
           title   = "Can't Parse File".to_string();
           message = "Check firmware file. Is valid?\n".to_string();
+
+
+         }
+
+         Error::UsbdmFWVersionUnsupported =>
+         {
+
+          title   = "Firmware Verstion unsupported!".to_string();
+          message =   "Minimal version is 4.12.1.\n Update Usbdm with new firmare.\n".to_string();
+
+
+         }
+         Error::UsbdmUnsuited =>
+         {
+
+          title   = "USBDM not support DSC!".to_string();
+          message =  "You need JMxx Usbdm (full, CF)\n to work with DSC.\n".to_string();
 
 
          }
