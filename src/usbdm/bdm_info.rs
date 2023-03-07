@@ -97,15 +97,27 @@ impl BdmInfo {
         println!("icp_hardware_version: {:#02}",  &self.icp_hardware_version);
     }
 
+    pub fn print_version2(&self) {
+        let v1: u8 = ((&self.bdm_software_version & 0x00FF0000) >> 16) as u8;
+        let v2: u8 = ((&self.bdm_software_version & 0x0000FF00) >> 8) as u8;
+        let v3: u8 = ((&self.bdm_software_version & 0x000000FF)) as u8;
+        println!("bdm_software_version: {}.{}.{}",  v1, v2 ,v3);
+        println!("bdm_hardware_version: {:#02X}",  &self.bdm_hardware_version);
+        println!("icp_software_version: {:#02X}",  &self.icp_software_version);
+        println!("icp_hardware_version: {:#02X}",  &self.icp_hardware_version);
+    }
+
     pub fn check_version(&self) -> Result<(), Error> {
         if &self.bdm_hardware_version != &self.icp_hardware_version { 
             Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_WRONG_BDM_REVISION))
-        } else if &self.bdm_software_version < &0x40905 {
-            Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_WRONG_BDM_REVISION))
+        } else if &self.bdm_software_version < &0x040C01 {
+            Err(Error::UsbdmFWVersionUnsupported)
         } else {
             Ok(())
         }
     }
+
+
 }
 
 

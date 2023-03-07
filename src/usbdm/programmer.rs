@@ -40,9 +40,10 @@ impl Programmer
             feedback        : FeedBack::default(),
             settings        : BdmSettings::default(), };
         prog.get_bdm_info()?;
+        prog.bdm_info.check_version()?;
         prog.feedback = prog.usb_device.get_bdm_status()?;
         prog.force_vdd_off()?;
-        prog.bdm_info.print_version();
+        prog.bdm_info.print_version2();
         Ok(prog)
     }
 
@@ -396,7 +397,14 @@ fn get_bdm_capabilities(&mut self) -> Result<(), Error>{
                                         
     Ok(())
 }
-  
+
+pub fn get_string_version(&self) -> String {
+    let v1: u8 = ((&self.bdm_info.bdm_software_version & 0x00FF0000) >> 16) as u8;
+    let v2: u8 = ((&self.bdm_info.bdm_software_version & 0x0000FF00) >> 8) as u8;
+    let v3: u8 = ((&self.bdm_info.bdm_software_version & 0x000000FF)) as u8;
+    let str_ver = format!("BDM Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
+    str_ver
+} 
 }
 
 
