@@ -293,7 +293,7 @@ pub fn get_bdm_info(&mut self) -> Result<(), Error> {
 fn get_bdm_version(&mut self) -> Result<(), Error>{
     let request_type = 64; //LIBUSB_REQUEST_TYPE_VENDOR
     let request_type = request_type| &self.usb_device.read_ep;
-    
+       
     let request  = bdm_commands::CMD_USBDM_GET_VER; // command
     let value    = 100;
     let index    = 0;
@@ -317,6 +317,36 @@ fn get_bdm_version(&mut self) -> Result<(), Error>{
     self.bdm_info.icp_hardware_version  = version[4];
     Ok(())
 }
+
+fn get_bdm_string_descripton(&mut self) -> Result<(), Error>{
+    const DT_STRING: u16 = 3;
+    let some_index: u16 = 3; // 3 - should check device descriptor.
+    let request_type = 00; // LIBUSB_REQUEST_TYPE_STANDARD
+    let request_type = request_type| &self.usb_device.read_ep;
+    let request: u8 = 0x06; // LIBUSB_REQUEST_GET_DESCRIPTOR
+    let value: u16 = (DT_STRING << 8) + some_index;
+    let index: u16 = 0;
+    let timeout  = Duration::from_millis(2500);
+    let mut usb_buf  = [0; 50];
+
+    let mut description = self.usb_device.control_transfer(
+        request_type,
+        request,
+        value,
+        index,
+        &mut usb_buf,
+        timeout)?;  
+
+    if description[1] != DT_STRING as u8 {
+        println!("Get Description Error");
+    }
+
+    description.drain(..2);
+    let string_description: String = std::str::from_utf8(&description).unwrap().to_string();;
+    println!("String description : {}", string_description);
+    Ok(())
+}
+
 
 fn get_bdm_capabilities(&mut self) -> Result<(), Error>{
     let mut usb_buf = [0; 2];

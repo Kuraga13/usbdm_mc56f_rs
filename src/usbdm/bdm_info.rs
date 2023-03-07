@@ -91,7 +91,10 @@ impl fmt::Display for BdmInfo {
 
 impl BdmInfo {
     pub fn print_version(&self) {
-        println!("bdm_software_version: {:#02X}",  &self.bdm_software_version);
+        let v1: u8 = ((&self.bdm_software_version & 0x00FF0000) >> 16) as u8;
+        let v2: u8 = ((&self.bdm_software_version & 0x0000FF00) >> 8) as u8;
+        let v3: u8 = ((&self.bdm_software_version & 0x000000FF)) as u8;
+        println!("bdm_software_version: {}.{}.{}",  v1, v2 ,v3);
         println!("bdm_hardware_version: {:#02X}",  &self.bdm_hardware_version);
         println!("icp_software_version: {:#02X}",  &self.icp_software_version);
         println!("icp_hardware_version: {:#02X}",  &self.icp_hardware_version);
