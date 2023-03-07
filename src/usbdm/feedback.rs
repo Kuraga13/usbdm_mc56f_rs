@@ -101,9 +101,9 @@ impl FeedBack{
    fn from(power_from_bdm : PowerState) -> Result<PowerStatus, Error> {
      match power_from_bdm {
             PowerState::None         => Ok(PowerStatus::PowerOff),    // Target Vdd not detected
-            PowerState::External     => Ok(PowerStatus::PowerOff),    // Target Vdd external (in real life - when you on and off power, power state is External)
+            PowerState::External     => Ok(PowerStatus::PowerOn),    // Target Vdd external (in real life - when you on and off power, power state is External)
             PowerState::Internal     => Ok(PowerStatus::PowerOn),     // Target Vdd internal - On State checked
-            PowerState::Error        => Err(Error::PowerStateError),  // Target Vdd error
+            PowerState::Error        => Err(Error::PowerErrorInFeedback),  // Target Vdd error Possible overload !
      }    
    }
  }

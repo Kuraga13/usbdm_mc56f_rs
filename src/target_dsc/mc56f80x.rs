@@ -180,9 +180,8 @@ impl TargetProgramming for MC56f80x
 
 fn init(&mut self) -> Result<(), Error>
 {
-
-  self.programmer.refresh_feedback()?;
   self.programmer.set_bdm_options()?;
+  self.programmer.refresh_feedback()?;
   self.programmer.set_target_mc56f()?;
 
   Ok(())  
@@ -193,7 +192,7 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 {
 
   self.programmer.target_power_reset()?;
-  self.power(power);
+  self.power(power)?;
 
   let dsc_jtag_id_code = read_master_id_code_DSC_JTAG_ID(true, &self.programmer)?;
 
@@ -232,7 +231,7 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
 fn power(&mut self, user_power_query : TargetVddSelect) -> Result<(), Error>
 {
                                                                         
-  self.programmer.set_vdd(user_power_query);           // If we try double-set power, filter in set_vdd just return ok
+  self.programmer.set_vdd(user_power_query)?;           // If we try double-set power, filter in set_vdd just return ok
   self.programmer.check_expected_power(user_power_query)?;    // Check power is setted
   Ok(())
 

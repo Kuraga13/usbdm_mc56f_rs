@@ -15,6 +15,7 @@ pub enum Error {
    USBDM_Errors(USBDM_ErrorCode),
    Usb(rusb::Error),
    PowerStateError,
+   PowerErrorInFeedback, //Target Vdd error Possible overload !
    LostConnection,
    TargetNotConnected,
    TargetSecured,
@@ -58,6 +59,13 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
          title   = "Power Error".to_string();
          message = "Check power circuit on target\n".to_string();
+
+         }
+         Error::PowerErrorInFeedback =>
+         {  
+
+         title   = "Power Overloaded!".to_string();
+         message = "Usbdm power sensor detect VDD less 2v .\n".to_string();
 
          }
          Error::LostConnection =>

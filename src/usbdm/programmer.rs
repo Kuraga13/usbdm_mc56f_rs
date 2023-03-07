@@ -41,6 +41,7 @@ impl Programmer
             settings        : BdmSettings::default(), };
         prog.get_bdm_info()?;
         prog.feedback = prog.usb_device.get_bdm_status()?;
+        prog.force_vdd_off()?;
         Ok(prog)
     }
 
@@ -75,15 +76,40 @@ pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
   
 }
 
+pub fn force_vdd_off(&mut self ) -> Result<(), Error>{
+    
+    println!("force vdd_off");
+    let mut usb_buf  = [0; 4];
+    let command = "CMD_USBDM_SET_VDD".to_string();
+    
+
+    usb_buf[0] = 4;
+    usb_buf[1] = bdm_commands::CMD_USBDM_SET_VDD;
+    usb_buf[2] = u8::from(TargetVddSelect::VddOff);  
+    usb_buf[3] = u8::from(TargetVddSelect::VddOff);  
+  
+    let bit = 0x80;
+    let bitter = usb_buf[1] | bit;
+    usb_buf[1] = bitter;
+  
+    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    let answer = self.usb_device.read(1)?;
+    self.settings.target_voltage = TargetVddSelect::VddOff;
+    Ok(())
+  
+}
 
 
 
 pub fn get_power_state(&mut self) -> Result<PowerStatus, Error>
 {
-    
+   
     self.refresh_feedback()?;
 
+    dbg!(self.feedback.power_state);
+
     let power_status =   Result::from(self.feedback.power_state)?;
+    dbg!(&power_status);
 
     Ok(power_status) 
 
@@ -105,7 +131,7 @@ pub fn expected_power_status(&mut self, user_power_query : TargetVddSelect) -> P
 }
 
 
-pub fn check_expected_power(&mut self, user_power_query : TargetVddSelect) -> Result<(), Error>
+pub fn check_expected_power(&mut self, user_power_query : TargetVddSelect) -> Result<PowerStatus, Error>
 {
     
 
@@ -114,11 +140,21 @@ pub fn check_expected_power(&mut self, user_power_query : TargetVddSelect) -> Re
     
     if(current_power_status == expected_power)
     {
-        Ok(())
+        Ok(current_power_status)
     }
     else
     {
-       Err(Error::PowerStateError)
+       dbg!("check_expected_power retry sleep");
+       thread::sleep(time::Duration::from_millis(50));
+       let retry_power_status =   self.get_power_state()?;
+       if(retry_power_status == expected_power)
+       {
+           Ok(retry_power_status)
+       }
+       else
+       {
+        Err(Error::PowerStateError)
+       }
     }
 }
 
@@ -274,10 +310,10 @@ pub fn target_power_reset(&mut self) -> Result<(), Error>{
     const PIN_RESET_LOW : u16 = 2<<2;   // Set Reset low
     const PIN_RELEASE   : u16 = 0xffff; // Release all pins (go to default for current target)
     let previous_power = self.settings.target_voltage;
-    self.set_vdd(TargetVddSelect::VddOff);
+    self.set_vdd(TargetVddSelect::VddOff)?;
     thread::sleep(time::Duration::from_millis(self.settings.reset_duration));
     //self.bdm_control_pins(PIN_RESET_LOW)?;
-    self.set_vdd(previous_power);
+    self.set_vdd(previous_power)?;
     //thread::sleep(time::Duration::from_millis(self.settings.reset_release_interval));
     //self.bdm_control_pins(PIN_RELEASE)?;
     thread::sleep(time::Duration::from_millis(self.settings.reset_recovery_interval));
