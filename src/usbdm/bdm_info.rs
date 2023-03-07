@@ -91,10 +91,10 @@ impl fmt::Display for BdmInfo {
 
 impl BdmInfo {
     pub fn print_version(&self) {
-        println!("bdm_software_version: {:#02X}",  &self.bdm_software_version);
-        println!("bdm_hardware_version: {:#02X}",  &self.bdm_hardware_version);
-        println!("icp_software_version: {:#02X}",  &self.icp_software_version);
-        println!("icp_hardware_version: {:#02X}",  &self.icp_hardware_version);
+        println!("bdm_software_version: {:#02}",  &self.bdm_software_version);
+        println!("bdm_hardware_version: {:#02}",  &self.bdm_hardware_version);
+        println!("icp_software_version: {:#02}",  &self.icp_software_version);
+        println!("icp_hardware_version: {:#02}",  &self.icp_hardware_version);
     }
 
     pub fn check_version(&self) -> Result<(), Error> {
