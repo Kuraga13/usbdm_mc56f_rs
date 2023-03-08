@@ -129,11 +129,19 @@ impl BdmInfo {
         if &self.bdm_hardware_version != &self.icp_hardware_version { 
             Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_WRONG_BDM_REVISION))
         } else if &self.bdm_software_version < &0x040C01 {
-            Err(Error::UsbdmFWVersionUnsupported)
+            Err(Error::UsbdmFWVersionUnsupported(self.version_in_string().clone(), "4.12.1".to_string()))
         } else {
             Ok(())
         }
     }
+
+    pub fn version_in_string(&self) -> String {
+        let v1: u8 = ((&self.bdm_software_version & 0x00FF0000) >> 16) as u8;
+        let v2: u8 = ((&self.bdm_software_version & 0x0000FF00) >> 8) as u8;
+        let v3: u8 = ((&self.bdm_software_version & 0x000000FF)) as u8;
+        let str_ver = format!("BDM Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
+        str_ver
+    } 
 
 
 }

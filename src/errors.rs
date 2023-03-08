@@ -13,7 +13,7 @@ use crate::file_buffer::data_parser;
 pub enum Error {
 
    USBDM_Errors(USBDM_ErrorCode),
-   UsbdmFWVersionUnsupported,
+   UsbdmFWVersionUnsupported(String, String),
    UsbdmUnsuited,
    Usb(rusb::Error),
    PowerStateError,
@@ -111,11 +111,11 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
          }
 
-         Error::UsbdmFWVersionUnsupported =>
+         Error::UsbdmFWVersionUnsupported(current_ver, expected_ver) =>
          {
 
-          title   = "Firmware Verstion unsupported!".to_string();
-          message =   "Minimal version is 4.12.1.\n Update Usbdm with new firmare.\n".to_string();
+          title   = "Firmware Version unsupported!".to_string();
+          message = "Minimal version is: ".to_string() + &expected_ver + &"\nYour version :".to_string() + &current_ver + &"\nUpdate Usbdm with new firmare.\n".to_string();
 
 
          }
