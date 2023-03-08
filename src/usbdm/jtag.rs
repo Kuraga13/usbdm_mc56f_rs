@@ -336,13 +336,20 @@ impl From <u8>  for OnceStatus  {
         Ok(())
     }
 
-     // Enable ONCE in JTAG chain & obtain target status
-     //
-     // @param status - Target status from JTAG command
-     //
-     // @note Assumes Core TAP is active & in RUN-TEST/IDLE
-     // @note Leaves Core TAP in RUN-TEST/IDLE
-    pub fn enableONCE(prg:  &Programmer) -> Result<(OnceStatus), Error> {
+     /// `enableONCE` in JTAG chain & obtain target status
+     ///
+     /// `return` OnceStatus from JTAG command
+     ///
+     /// `brief` Assumes Core TAP is active & in RUN-TEST/IDLE
+     /// 
+     /// `note` Leaves Core TAP in RUN-TEST/IDLE
+     /// ### Usage
+     /// 
+     /// ```
+     /// let once_status = enableONCE(&programmer)?;
+     /// 
+     /// ```
+     pub fn enableONCE(prg:  &Programmer) -> Result<(OnceStatus), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
         sequence.push(JTAG_SET_EXIT_IDLE); 
@@ -354,11 +361,12 @@ impl From <u8>  for OnceStatus  {
         Ok((OnceStatus::from(once_byte)))
     }
 
-    // Set Core JTAG-IR to DebugRequest
-    //
-    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
-    // @note Leaves Core TAP in RUN-TEST/IDLE
-    //
+    /// `targetDebugRequest` set Core JTAG-IR to DebugRequest
+    ///
+    /// `note` Assumes Core TAP is active & in RUN-TEST/IDLE
+    /// 
+    /// `note` Leaves Core TAP in RUN-TEST/IDLE
+    ///
       pub fn targetDebugRequest(prg:  &Programmer) -> Result<(OnceStatus), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
@@ -370,6 +378,27 @@ impl From <u8>  for OnceStatus  {
         let once_byte = answer[0]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
         dbg!(&answer);
         Ok((OnceStatus::from(once_byte)))
+    }
+
+
+    /// `DSC_WriteRegister` set Core JTAG-IR to DebugRequest
+    /// 
+    /// `register_number` dsc register number
+    /// 
+    /// `value` value to write
+    ///
+    /// `note` Assumes Core TAP is active & in RUN-TEST/IDLE
+    /// 
+    /// `note` Leaves Core TAP in RUN-TEST/IDLE
+    ///
+    pub fn DSC_WriteRegister(prg:  &Programmer, register_number : u8, value : u32) -> Result<(), Error> {
+        unimplemented!();
+        let mut sequence: Vec<u8> = Vec::new();
+        sequence.push(JTAG_CALL_SUBA);                // Write enable EONCE command to IR
+        sequence.push(JTAG_END);
+        prg.exec_jtag_seq(sequence, 0)?;
+    
+        Ok(())
     }
 
  

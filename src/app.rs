@@ -786,7 +786,25 @@ impl Application for App {
             {
                 
                 println!("TestFeedback");
-     
+                let dsc =  self.target.as_mut().expect("");
+                let test_ram = dsc.test_ram_rw(0x008000, self.selected_power);
+
+                match test_ram
+                {
+                  Ok(_) => 
+                  {
+                  self.check_power_state();
+                  println!("test_ram ok!");
+      
+                  }
+                  Err(_e) =>
+                  {
+                  show_error(self, _e);
+                  self.check_power_state();
+                  println!("test_ram error");
+                  return iced::Command::none();
+                 }
+                }
             } 
 
             Message::TargetProgramminEnd =>

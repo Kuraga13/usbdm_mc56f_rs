@@ -7,6 +7,9 @@ use crate::errors::{Error, USBDM_ErrorCode};
 use std::fmt;
 use std::time::Duration;
 
+pub const MINIMAL_VERSION : u32 = 0x040C01;
+
+
 ///`BdmInfo`
 ///The idea is to group a huge number of USBDM structures, enumerations and settings into three abstractions.
 /// 
@@ -128,8 +131,8 @@ impl BdmInfo {
     pub fn check_version(&self) -> Result<(), Error> {
         if &self.bdm_hardware_version != &self.icp_hardware_version { 
             Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_WRONG_BDM_REVISION))
-        } else if &self.bdm_software_version < &0x040C01 {
-            Err(Error::UsbdmFWVersionUnsupported(self.version_in_string().clone(), "4.12.1".to_string()))
+        } else if &self.bdm_software_version < & MINIMAL_VERSION {
+            Err(Error::UsbdmFWVersionUnsupported(self.version_in_string().clone(), self.version_in_string_from_u32(MINIMAL_VERSION)))
         } else {
             Ok(())
         }
@@ -139,6 +142,14 @@ impl BdmInfo {
         let v1: u8 = ((&self.bdm_software_version & 0x00FF0000) >> 16) as u8;
         let v2: u8 = ((&self.bdm_software_version & 0x0000FF00) >> 8) as u8;
         let v3: u8 = ((&self.bdm_software_version & 0x000000FF)) as u8;
+        let str_ver = format!("BDM Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
+        str_ver
+    }
+
+    fn version_in_string_from_u32(&self, ver : u32) -> String {
+        let v1: u8 = ((ver & 0x00FF0000) >> 16) as u8;
+        let v2: u8 = ((ver & 0x0000FF00) >> 8) as u8;
+        let v3: u8 = ((ver & 0x000000FF)) as u8;
         let str_ver = format!("BDM Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
         str_ver
     } 

@@ -144,21 +144,38 @@ pub struct MC56f80x {
 
     //fn load
 
-    fn test_ram_rw(&mut self, ram_start_add: u32) -> Result<(), Error>
+    pub fn test_ram_rw(&mut self, ram_start_add: u32, power: TargetVddSelect) -> Result<(), Error>
     {
-      let ram_test_data = vec![0x55, 0x55, 0xAA, 0xAA];
-      self.programmer.write_memory_block(MS_XWORD, ram_test_data.clone(), ram_start_add)?;
 
-      let compare = self.programmer.dsc_read_memory(MS_XWORD, ram_test_data.len() as u32,  ram_start_add)?;
-
-      if (compare != ram_test_data)
+      let powered = self.programmer.get_power_state()?;
+      self.once_status = enableONCE(&self.programmer)?;
+      
+      if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
       {
-        return Err(Error::RamRWTestFault)
+          self.connect(power)?;
       }
-      else
+    
+      if (self.security == SecurityStatus::Secured)
       {
+        return Err(Error::TargetSecured)
+      }
+
+      let ram_test_data = vec![0x55, 0x55, 0xAA, 0xAA, 0xFF, 0x2A, 0x5C, 0x23, 0x21, 0x11];
+      let mut ram_addr = ram_start_add;
+      for retry_test_ram in 0..10
+      {
+        self.programmer.write_memory_block(MS_XWORD, ram_test_data.clone(), ram_addr)?;
+
+        let compare = self.programmer.dsc_read_memory(MS_XWORD, ram_test_data.len() as u32,  ram_addr)?;
+  
+        if (compare != ram_test_data)
+        {
+          return Err(Error::RamRWTestFault)
+        }
+        ram_addr += 0x20;
+      }
+   
         Ok(())
-      }
 
     }
 
@@ -293,7 +310,7 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> 
 
   dbg!(&self.once_status);
   
-  let check_ram = self.test_ram_rw(0x008000)?; // Algo implementation ... now here
+  //let check_ram = self.test_ram_rw(0x008000)?; // Algo implementation ... now here
    
   let test_addr =  0x0686;//self.memory_map.start_address;
   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;

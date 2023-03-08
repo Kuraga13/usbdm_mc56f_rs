@@ -123,7 +123,7 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
          {
 
           title   = "USBDM not support DSC!".to_string();
-          message =  "You need JMxx Usbdm (full, CF)\n to work with DSC.\n".to_string();
+          message =  "You need JMxx Usbdm (full, CF) to work with DSC.\n".to_string();
 
 
          }

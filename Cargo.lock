@@ -2768,6 +2768,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
+name = "usbdm_rs"
+version = "0.3.1"
+dependencies = [
+ "async-trait",
+ "byteorder",
+ "iced",
+ "iced_aw",
+ "iced_graphics",
+ "iced_native",
+ "iced_wgpu",
+ "image",
+ "native-dialog",
+ "packed_struct",
+ "rusb",
+ "static_vcruntime",
+ "winresource",
+]
+
+[[package]]
 name = "usvg"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2811,25 +2830,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "veseliy_pjt_usb"
-version = "0.3.1"
-dependencies = [
- "async-trait",
- "byteorder",
- "iced",
- "iced_aw",
- "iced_graphics",
- "iced_native",
- "iced_wgpu",
- "image",
- "native-dialog",
- "packed_struct",
- "rusb",
- "static_vcruntime",
- "winresource",
-]
 
 [[package]]
 name = "wasi"
