@@ -46,6 +46,7 @@ impl Programmer
         prog.force_vdd_off()?;
         prog.bdm_info.print_version2();
         prog.bdm_info.print_capabilities();
+        //prog.get_bdm_string_descripton()?;
         Ok(prog)
     }
 
@@ -376,6 +377,8 @@ fn get_bdm_string_descripton(&mut self) -> Result<(), Error>{
         index,
         &mut usb_buf,
         timeout)?;  
+
+    dbg!(&description);
 
     if description[1] != DT_STRING as u8 {
         println!("Get Description Error");

@@ -1,5 +1,5 @@
 #![allow(unused)]
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
