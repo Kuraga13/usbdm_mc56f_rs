@@ -1161,7 +1161,7 @@ dependencies = [
 [[package]]
 name = "iced_aw"
 version = "0.4.1"
-source = "git+https://github.com/iced-rs/iced_aw?rev=e100ee0#e100ee0f707dcefe0e21a9728ae599ed47ced963"
+source = "git+https://github.com/iced-rs/iced_aw?rev=8fc1eed#8fc1eed1aa418edaf99425a965bc21a8905ed119"
 dependencies = [
  "iced_graphics",
  "iced_native",
@@ -1616,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "native-dialog"
 version = "0.6.3"
-source = "git+https://github.com/balthild/native-dialog-rs#d2ddd443f8c01e92dc22cc8132159c1b9598eaca"
+source = "git+https://github.com/balthild/native-dialog-rs?rev=d2ddd44#d2ddd443f8c01e92dc22cc8132159c1b9598eaca"
 dependencies = [
  "block",
  "cocoa",
@@ -2768,6 +2768,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
+name = "usbdm_rs"
+version = "0.3.1"
+dependencies = [
+ "async-trait",
+ "byteorder",
+ "iced",
+ "iced_aw",
+ "iced_graphics",
+ "iced_native",
+ "iced_wgpu",
+ "image",
+ "native-dialog",
+ "packed_struct",
+ "rusb",
+ "static_vcruntime",
+ "winresource",
+]
+
+[[package]]
 name = "usvg"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2811,25 +2830,6 @@ name = "version_check"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
-
-[[package]]
-name = "veseliy_pjt_usb"
-version = "0.3.1"
-dependencies = [
- "async-trait",
- "byteorder",
- "iced",
- "iced_aw",
- "iced_graphics",
- "iced_native",
- "iced_wgpu",
- "image",
- "native-dialog",
- "packed_struct",
- "rusb",
- "static_vcruntime",
- "winresource",
-]
 
 [[package]]
 name = "wasi"
