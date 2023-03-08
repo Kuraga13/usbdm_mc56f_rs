@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::usbdm::programmer::Programmer;
+use super::*;
 use crate::errors::{Error, USBDM_ErrorCode};
     
 pub const JTAG_COMMAND_MASK         : u8 = 0x7<<5;
@@ -401,4 +401,209 @@ impl From <u8>  for OnceStatus  {
         Ok(())
     }
 
- 
+
+ impl Programmer
+{
+    // Read X/P memory via ONCE & target execution
+    //
+    // @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+    // @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+    // @param address     - Memory address
+    // @param buffer      - Where to obtain the data
+    //
+    // @note If memory space size is word or long size then address is DSC word address
+    // @note If memory space size is byte size then address is DSC byte pointer address
+    // @note Size is limited to dscInfo.maxMemoryReadSize
+    //
+    pub fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
+        if (memory_space == memory_space_t::MS_PLONG) {
+            // Treat as word access
+            memory_space = memory_space_t::MS_PWORD;
+        };
+
+        let mut num_bytes_adjusted = num_bytes;
+        match (memory_space & memory_space_t::MS_SIZE) {
+            memory_space_t::MS_LONG => {
+                if ((address & 0x01) == 0) {
+                    num_bytes_adjusted /= 4;
+                } else {
+                    return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS))
+                };},
+            memory_space_t::MS_WORD => { num_bytes_adjusted /= 2; },
+            memory_space_t::MS_BYTE => { num_bytes_adjusted /= 1; },
+            other => return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS)),
+        };
+
+        /*
+         *    +-----------------------+
+         *    |    JTAG_READ_MEM      |
+         *    +-----------------------+
+         *    |    JTAG_END           |
+         *    +-----------------------+
+         *    |                       |
+         *    +--                   --+
+         *    |                       |
+         *    +--  Memory Address   --+
+         *    |                       |
+         *    +--                  ---+
+         *    |                       |
+         *    +-----------------------+
+         *    |  # of memory elements |
+         *    +-----------------------+
+         *    |   Memory Space        |
+         *    +-----------------------+
+         */
+
+        let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE.into());
+        sequence.push(JTAG_READ_MEM);          // 0
+        sequence.push(JTAG_END);               // 1
+        sequence.push((address >> 24) as u8);  // 2 Address
+        sequence.push((address >> 16) as u8);  // 3
+        sequence.push((address >> 8) as u8);   // 4
+        sequence.push(address as u8);          // 5
+        sequence.push(num_bytes_adjusted);     // 6 Elements
+        sequence.push(memory_space);           // 7 Memory space
+
+        let block = self.exec_jtag_seq(sequence, num_bytes)?;
+
+        Ok(block)
+    }
+
+
+    //================================================================================
+    // Read X/P memory via ONCE & target execution
+    //
+    // @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+    // @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+    // @param address     - Memory address (byte = byte address, word/long = word address)
+    // @param buffer      - Where to obtain the data
+    //
+    // @note If memory space size is word or long size then address is DSC word address
+    // @note If memory space size is byte size then address is DSC byte pointer address
+    //
+    pub fn dsc_read_memory (&self, memory_space: u8, num_bytes: u32, address: u32) -> Result<(Vec<u8>), Error> {
+        let element_size: u8 = memory_space & memory_space_t::MS_SIZE;
+        let mut bytes_done: u32 = 0;
+        let mut current_address: u32 = address;
+        let mut output: Vec<u8> = Vec::new();
+
+        while (bytes_done < num_bytes) {
+            let mut block_size: u32 = num_bytes - bytes_done;
+            
+            if (block_size > 0x20) {
+                block_size = 0x20; }
+            
+            let mut data = self.read_memory_block(memory_space, block_size as u8, current_address)?;
+            output.append(&mut data);
+            bytes_done += block_size;
+            if element_size == memory_space_t::MS_BYTE {
+                current_address += block_size; // Byte currentAddress advanced by count of bytes written
+            } else {
+                current_address += block_size / 2; // Address advanced by count of words written
+            }
+        }
+        Ok(output)
+    }
+
+    //================================================================================
+    // Write X/P memory via ONCE & target execution
+    //
+    // @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+    // @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+    // @param address     - Memory address
+    // @param buffer      - Where to obtain the data
+    //
+    // @note If memory space size is word or long size then address is DSC word address
+    // @note If memory space size is byte size then address is DSC byte pointer address
+    // @note Size is limited to dscInfo.maxMemoryWriteSize
+    //
+    pub fn write_memory_block(&self, mut memory_space: u8, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
+        if (memory_space == memory_space_t::MS_PLONG) {
+            // Treat as word access
+            memory_space = memory_space_t::MS_PWORD;
+        };
+
+        if data.len() > u8::MAX.into() {return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS))}; 
+        let num_bytes:u8 = data.len() as u8;
+        let mut num_bytes_adjusted = num_bytes;
+        match (memory_space & memory_space_t::MS_SIZE) {
+            memory_space_t::MS_LONG => {
+                if ((address & 0x01) == 0) {
+                    num_bytes_adjusted /= 4;
+                } else {
+                    return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS))
+                };},
+            memory_space_t::MS_WORD => { num_bytes_adjusted /= 2; },
+            memory_space_t::MS_BYTE => { num_bytes_adjusted /= 1; },
+            other => return Err(Error::USBDM_Errors(USBDM_ErrorCode::BDM_RC_ILLEGAL_PARAMS)),
+        };
+
+        /*
+         *    +-----------------------+
+         *    |    JTAG_WRITE_MEM     |
+         *    +-----------------------+
+         *    |    JTAG_END           |
+         *    +-----------------------+
+         *    |                       |
+         *    +--                   --+
+         *    |                       |
+         *    +--  Memory Address   --+
+         *    |                       |
+         *    +--                  ---+
+         *    |                       |
+         *    +-----------------------+
+         *    |  # of memory elements |
+         *    +-----------------------+
+         *    |   Memory Space        |
+         *    +-----------------------+
+         *    | ..................... |
+         *    = ...... data ......... =
+         *    | ..................... |
+         *    +-----------------------+
+         */
+
+        let mut sequence: Vec<u8> = Vec::with_capacity(JTAG_READ_MEMORY_HEADER_SIZE.into());
+        sequence.push(JTAG_WRITE_MEM);          // 0
+        sequence.push(JTAG_END);               // 1
+        sequence.push((address >> 24) as u8);  // 2 Address
+        sequence.push((address >> 16) as u8);  // 3
+        sequence.push((address >> 8) as u8);   // 4
+        sequence.push(address as u8);          // 5
+        sequence.push(num_bytes_adjusted);     // 6 Elements
+        sequence.push(memory_space);           // 7 Memory space
+        sequence.append(&mut data);
+
+        println!("we are on write mem block");
+        println!("{:?}", sequence);
+        self.exec_jtag_seq(sequence, 0)?;
+        Ok(())
+    }
+
+    //================================================================================
+    // Write X/P memory via ONCE & target execution
+    //
+    // @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
+    // @param numBytes    - Number of bytes to read (must be a multiple of elementSize)
+    // @param address     - Memory address
+    // @param buffer      - Where to obtain the data
+    //
+    // @note If memory space size is word or long size then address is DSC word address
+    // @note If memory space size is byte size then address is DSC byte pointer address
+    //
+    pub fn dsc_write_memory(&self, mut memory_space: u8, mut data: Vec<u8>, mut address: u32) -> Result<(), Error> {
+    
+        while (data.len() > 0) {
+            let mut block_size = data.len();
+            
+            if (block_size > 0x10) {
+                block_size = 0x10; };
+
+            self.write_memory_block(memory_space, data.drain(..block_size).collect(), address)?;
+            address += block_size as u32;
+        }
+     
+        Ok(())
+    }
+}
+
+

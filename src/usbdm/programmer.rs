@@ -14,10 +14,10 @@ use std::time::Duration;
 #[derive(Debug)]
 pub struct Programmer {
 
-    usb_device     : UsbInterface,
-    bdm_info       : BdmInfo,
-    feedback       : FeedBack,
-    settings       : BdmSettings,      
+    pub usb_device     : UsbInterface,
+    pub bdm_info       : BdmInfo,
+    pub feedback       : FeedBack,
+    pub settings       : BdmSettings,      
 }
 
 
@@ -42,7 +42,7 @@ impl Programmer
         prog.get_bdm_info()?;
         prog.bdm_info.check_version()?;
         prog.bdm_info.capabilities.check_dsc_supported()?;
-        prog.feedback = prog.usb_device.get_bdm_status()?;
+        prog.feedback = prog.get_bdm_feedback()?;
         prog.force_vdd_off()?;
         prog.bdm_info.print_version2();
         prog.bdm_info.print_capabilities();
@@ -74,7 +74,7 @@ pub fn set_vdd(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
   
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    self.usb_device.write(&usb_buf)?;                                    // write command
     let answer = self.usb_device.read(1)?;
     self.settings.target_voltage = power;
     Ok(())
@@ -97,7 +97,7 @@ pub fn force_vdd_off(&mut self ) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
   
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    self.usb_device.write(&usb_buf)?;                                    // write command
     let answer = self.usb_device.read(1)?;
     self.settings.target_voltage = TargetVddSelect::VddOff;
     Ok(())
@@ -179,7 +179,7 @@ pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
         let bitter = usb_buf[1] | bit;
         usb_buf[1] = bitter;
   
-        self.usb_device.write(&usb_buf,1500)?;                                    // write command
+        self.usb_device.write(&usb_buf)?;                                    // write command
         let answer = self.usb_device.read(1)?;         // read status from bdm
 
         self.settings.target_voltage = power;
@@ -189,9 +189,7 @@ pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
 
 pub fn refresh_feedback(&mut self) -> Result<(), Error>
 {
-    self.feedback = self.usb_device.get_bdm_status()?;
-
-    //println!("{}", self.feedback);
+    self.feedback = self.get_bdm_feedback()?;
     Ok(())
 }
 
@@ -223,7 +221,7 @@ pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
 
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    self.usb_device.write(&usb_buf)?;                                    // write command
     let answer = self.usb_device.read(1)?;        // read status from bdm
     self.settings.target_type = TargetType::MC56F80xx;
 
@@ -259,7 +257,7 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     usb_buf[4] = self.settings.bdm_clock_source as u8;
     usb_buf[5] = self.settings.auto_reconnect as u8;
 
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    self.usb_device.write(&usb_buf)?;                                    // write command
     let answer = self.usb_device.read(1)?;         // read status from bdm
     Ok(())
 }
@@ -281,7 +279,7 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     full_command.append(&mut jtag_seq);
 
 
-    self.usb_device.write(&full_command.as_slice(),1500)?;   // write command
+    self.usb_device.write(&full_command.as_slice())?;   // write command
     let mut answer: Vec<u8> = self.usb_device.read((answer_lenght + 1).into())?;         // read status from bdm 
     answer.remove(0);
     Ok((answer))
@@ -296,7 +294,7 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     usb_buf[2] = (control>>8) as u8;  
     usb_buf[3] = control as u8;
 
-    self.usb_device.write(&usb_buf,1500)?;                                    // write command
+    self.usb_device.write(&usb_buf)?;                                    // write command
     let answer = self.usb_device.read(1)?;      // read status from bdm
     Ok(())
 }
@@ -339,15 +337,14 @@ fn get_bdm_version(&mut self) -> Result<(), Error>{
     let value    = 100;
     let index    = 0;
     let timeout  = Duration::from_millis(2500);
-    let mut usb_buf  = [0; 10];
+    let rx_size  = 10;
      
     let version = self.usb_device.control_transfer(
         request_type,
         request,
         value,
         index,
-        &mut usb_buf,
-        timeout)?;                                    
+        rx_size)?;                                    
 
     let raw_bdm_software_version = u32::from (version[1]);
     let calculation = ((raw_bdm_software_version&0xF0)<<12) + ((raw_bdm_software_version&0x0F)<<8);
@@ -356,37 +353,6 @@ fn get_bdm_version(&mut self) -> Result<(), Error>{
     self.bdm_info.bdm_hardware_version  = version[2];
     self.bdm_info.icp_software_version  = version[3];
     self.bdm_info.icp_hardware_version  = version[4];
-    Ok(())
-}
-
-fn get_bdm_string_descripton(&mut self) -> Result<(), Error>{
-    const DT_STRING: u16 = 3;
-    let some_index: u16 = 3; // 3 - should check device descriptor.
-    let request_type = 00; // LIBUSB_REQUEST_TYPE_STANDARD
-    let request_type = request_type| &self.usb_device.read_ep;
-    let request: u8 = 0x06; // LIBUSB_REQUEST_GET_DESCRIPTOR
-    let value: u16 = (DT_STRING << 8) + some_index;
-    let index: u16 = 0;
-    let timeout  = Duration::from_millis(2500);
-    let mut usb_buf  = [0; 50];
-
-    let mut description = self.usb_device.control_transfer(
-        request_type,
-        request,
-        value,
-        index,
-        &mut usb_buf,
-        timeout)?;  
-
-    dbg!(&description);
-
-    if description[1] != DT_STRING as u8 {
-        println!("Get Description Error");
-    }
-
-    description.drain(..2);
-    let string_description: String = std::str::from_utf8(&description).unwrap().to_string();;
-    println!("String description : {}", string_description);
     Ok(())
 }
 
@@ -400,7 +366,7 @@ fn get_bdm_capabilities(&mut self) -> Result<(), Error>{
     let bitter = usb_buf[1] | bit;
     usb_buf[1] = bitter;
 
-    self.usb_device.write(&usb_buf,1500)?;        // write command
+    self.usb_device.write(&usb_buf)?;        // write command
     let answer: Vec<u8> = self.usb_device.read(8)?;                   //  read
 
     if answer.len() >= 3 {
