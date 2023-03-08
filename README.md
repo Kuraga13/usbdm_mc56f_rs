@@ -10,7 +10,7 @@
 The original project does not support reading the controller. This is the underlying reason. Little things associated with the inconvenience of management.
 Initially, the goal is to work comfortably with the mc56f in Rust. Working via USBDM on mc56f dsp controllers is rather inconvenient, and original the project itself is too large to simply fix something.
  
-Target - USBDM/CF version, supporting DSC.
+Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firmware Ver)
  
 
 ###  In work
