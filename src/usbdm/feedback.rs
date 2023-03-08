@@ -1,3 +1,4 @@
+use super::*;
 use packed_struct::prelude::*;
 use crate::errors::{Error};
 
@@ -117,4 +118,32 @@ impl FeedBack{
     On        = 2,   // Target Vpp On
     Error     = 3,   // Target Vpp ??
  } 
- 
+
+
+impl Programmer
+{
+   /// `get_bdm_feedback` - get status byte from USBDM by rusb read_bulk 
+   ///  Return packed-struct (bits-field) `FeebBack` with currently status of USBDM 
+   pub fn get_bdm_feedback(&self) -> Result<FeedBack, Error>{
+      
+      let mut usb_buf = [0; 2];
+      usb_buf[0] = 2;  // lenght
+      usb_buf[1] = bdm_commands::CMD_USBDM_GET_BDM_STATUS;
+      let command = "CMD_USBDM_GET_BDM_STATUS".to_string();
+
+      let bit = 0x80;
+      let bitter = usb_buf[1] | bit;
+      usb_buf[1] = bitter;
+
+      self.usb_device.write(&usb_buf)?;       // write command
+      let answer = self.usb_device.read(3)?;       // read status from bdm and save buffer to answer -
+                                                   
+      let feedback_slice = [answer[1],answer[2]];      // two bytes for status feedback (in answer [1] use only 2 bits... for VPP bits)
+     // println!("FeedBack is: {:02X?}", feedback_slice);
+      let unpack = FeedBack::unpack(&feedback_slice)?;
+  
+      Ok(unpack)
+
+    }
+
+}
