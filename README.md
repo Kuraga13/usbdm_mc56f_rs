@@ -23,7 +23,7 @@ Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firm
 
 ###  Done now
 * low level USB interface
-* few command's to work with USBDM
+* base USBDM commands (set_target, set_vdd etc.)
 * Settings module (Set Usbdm Options)
 * Feedback module (Get status and parse bits)
 * Capabilites (Get BDM Information, like JTAG buffer size etc, parse bytes & save)
