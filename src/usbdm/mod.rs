@@ -8,6 +8,7 @@ pub mod usb_interface;
 mod registers;
 
 use constants::{memory_space_t, bdm_commands};
+use crate::errors::Error;
 pub use programmer::Programmer;
 
 
