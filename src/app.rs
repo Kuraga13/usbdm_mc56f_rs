@@ -577,7 +577,7 @@ impl Application for App {
                                   let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target( programmer, 0x8000, 0x0000, "MC56f8035".to_string()));
                                   self.target = dsc;
                                   let handle =  self.target.as_mut().expect("");
-                                  self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.programmer.get_string_version().clone();
+                                  self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.programmer.name.clone() +  &handle.programmer.get_string_version().clone();
                                 
                                 }
 

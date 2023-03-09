@@ -142,7 +142,7 @@ impl BdmInfo {
         let v1: u8 = ((&self.bdm_software_version & 0x00FF0000) >> 16) as u8;
         let v2: u8 = ((&self.bdm_software_version & 0x0000FF00) >> 8) as u8;
         let v3: u8 = ((&self.bdm_software_version & 0x000000FF)) as u8;
-        let str_ver = format!("BDM Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
+        let str_ver = format!(" Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
         str_ver
     }
 
@@ -150,7 +150,7 @@ impl BdmInfo {
         let v1: u8 = ((ver & 0x00FF0000) >> 16) as u8;
         let v2: u8 = ((ver & 0x0000FF00) >> 8) as u8;
         let v3: u8 = ((ver & 0x000000FF)) as u8;
-        let str_ver = format!("BDM Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
+        let str_ver = format!(" Firmware Ver: {}.{}.{}",  v1, v2 ,v3);
         str_ver
     } 
 

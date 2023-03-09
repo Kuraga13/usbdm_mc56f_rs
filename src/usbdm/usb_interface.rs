@@ -53,7 +53,7 @@ pub struct UsbInterface
     handle: rusb::DeviceHandle<rusb::GlobalContext>,
     pub read_ep: u8,
     write_ep: u8,
-    model: String,
+    pub model: String,
     serial_number: String,
     interface_n  : u8,
 

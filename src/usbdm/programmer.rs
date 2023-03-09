@@ -15,6 +15,7 @@ use std::time::Duration;
 pub struct Programmer {
 
     pub usb_device     : UsbInterface,
+    pub name           : String,
     pub bdm_info       : BdmInfo,
     pub feedback       : FeedBack,
     pub settings       : BdmSettings,      
@@ -36,12 +37,14 @@ impl Programmer
     pub fn new(mut device : UsbInterface) -> Result<Self, Error> {
         let mut prog = Self {
             usb_device      : device,
+            name            : "?".to_string(),
             bdm_info        : BdmInfo::default(),
             feedback        : FeedBack::default(),
             settings        : BdmSettings::default(), };
         prog.get_bdm_info()?;
         prog.bdm_info.check_version()?;
         prog.bdm_info.capabilities.check_dsc_supported()?;
+        prog.name = prog.usb_device.model.clone();
         prog.feedback = prog.get_bdm_feedback()?;
         prog.force_vdd_off()?;
         prog.bdm_info.print_version2();
