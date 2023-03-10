@@ -4,34 +4,93 @@ use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
-use std::borrow::BorrowMut;
+use crate::usbdm::constants::{memory_space_t};
+use super::flash_routine::{FlashRoutine};
 
-pub mod memory_space_type   
-{ 
-    // Memory space indicator - includes element size
-    // One of the following
-    pub const MS_BYTE    : u8  = 1;        // Byte (8-bit) access
-    pub const MS_WORD    : u8  = 2;        // Word (16-bit) access
-    pub const MS_LONG    : u8  = 4;        // Long (32-bit) access
-    // One of the following
-    pub const MS_NONE    : u8  = 0<<4;     // Memory space unused/undifferentiated
-    pub const MS_PROGRAM : u8  = 1<<4;     // Program memory space (e.g. P: on DSC)
-    pub const MS_DATA    : u8  = 2<<4;     // Data memory space (e.g. X: on DSC)
-  //  pub const MS_GLOBAL  : u8  = 3<<4;     // HCS12 Global addresses (Using BDMPPR register)
-    // Fast memory access for HCS08/HCS12 (stopped target, regs. are modified
-   // pub const MS_FAST    : u8  = 1<<7;
-    // Masks for above
-   pub const MS_SIZE    : u8  = 0x7<<0;   // Size
-    //pub const MS_SPACE   : u8  = 0x7<<4;   // Memory space
-    // For convenience (DSC)
-    pub const MS_PWORD   : u8  = MS_WORD + MS_PROGRAM;
-    pub const MS_PLONG   : u8  = MS_LONG + MS_PROGRAM;
-    pub const MS_XBYTE   : u8  = MS_LONG + MS_DATA;
-    pub const MS_XWORD   : u8  = MS_WORD + MS_DATA;
-    pub const MS_XLONG   : u8  = MS_LONG + MS_DATA;
+use std::borrow::BorrowMut;
+use core::ops::Range;
+
+// new variant -> in Work, is draft! 
+use serde::{Serialize, Deserialize};
+// map need to find memory type. On mc56f you have different access on memory space
+use std::collections::HashMap;
+type MemorySpace       = u8;
+
+
+//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+/// Ram segment
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RamSegement {
+
+    /// A name to describe the region
+    pub name: Option<String>,
+
+    /// Address range of the region
+    pub range: Range<u64>,
+
 }
 
-use std::collections::HashMap;
+/// Data like Eeprom segment etc.
+//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DataSegment {
+
+    /// A name to describe the region
+    pub name: Option<String>,
+
+    /// Address range of the region
+    pub range: Range<u64>,
+
+}
+
+//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ProgrammSegment {
+
+  /// A name to describe the region
+  pub name: Option<String>,
+
+  /// Address range of the region
+  pub range: Range<u64>,
+
+}
+
+
+/// Declares the type of a memory region.
+//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MemorySegment {
+
+    Ram(RamSegement),
+
+    DataEeprom(DataSegment),
+
+    FlashProgramm(ProgrammSegment),
+}
+
+
+
+
+
+
+/// This describes a complete target with a fixed chip model and variant.
+#[derive(Clone)]
+pub struct TargetDsc {
+    /// The name of the target.
+    pub name: String,
+    /// The memory map of the target.
+    pub memory_map: Vec<MemorySegment>,
+    // Type of access (MemorySpaceType) of each segment in HexMap
+    pub mem_space_type : HashMap<MemorySegment, MemorySpace>,
+    /// The name of the flash algorithm.
+    pub flash_routine: Vec<FlashRoutine>,
+
+}
+
+
+// current variant ->
+//
+
 type AddressKey       = u32;
 type MemorySpaceType  = u8;
 type HexMap = HashMap<AddressKey, MemorySpaceType>; // map need to find memory type. On mc56f you have different access on memory space

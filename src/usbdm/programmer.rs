@@ -114,10 +114,10 @@ pub fn get_power_state(&mut self) -> Result<PowerStatus, Error>
    
     self.refresh_feedback()?;
 
-    dbg!(self.feedback.power_state);
+    //dbg!(self.feedback.power_state);
 
     let power_status =   Result::from(self.feedback.power_state)?;
-    dbg!(&power_status);
+    //dbg!(&power_status);
 
     Ok(power_status) 
 

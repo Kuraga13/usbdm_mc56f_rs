@@ -1,11 +1,12 @@
-use super::target_factory::{TargetFactory,TargetProgramming, MemoryMap, memory_space_type::*};
+use super::target_factory::{TargetFactory,TargetProgramming, MemoryMap};
 use crate::errors::Error;
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
-use iced_native::subscription;
+use crate::usbdm::constants::{memory_space_t};
+
 
 use std::collections::HashMap;
 type AddressKey       = u32;
@@ -26,7 +27,7 @@ impl TargetFactory for MC56f80x {
   
        for byte_ in v.iter() {
   
-           map.insert(address_index, MS_PWORD);
+           map.insert(address_index, memory_space_t::MS_PWORD);
            address_index += 0x1;
       } 
   
@@ -164,9 +165,9 @@ pub struct MC56f80x {
       let mut ram_addr = ram_start_add;
       for retry_test_ram in 0..10
       {
-        self.programmer.write_memory_block(MS_XWORD, ram_test_data.clone(), ram_addr)?;
+        self.programmer.write_memory_block(memory_space_t::MS_XWORD, ram_test_data.clone(), ram_addr)?;
 
-        let compare = self.programmer.dsc_read_memory(MS_XWORD, ram_test_data.len() as u32,  ram_addr)?;
+        let compare = self.programmer.dsc_read_memory(memory_space_t::MS_XWORD, ram_test_data.len() as u32,  ram_addr)?;
   
         if (compare != ram_test_data)
         {
@@ -280,7 +281,7 @@ fn read_target(&mut self, power : TargetVddSelect, address : u32) -> Result<Vec<
  
  // let test_addr = 0x7f40;
  // let test_mem_access_type =  *self.memory_map.get_memory_space_type(address)?;
-  let memory_read = self.programmer.dsc_read_memory(MS_PWORD, 0x40,  address)?;
+  let memory_read = self.programmer.dsc_read_memory(memory_space_t::MS_PWORD, 0x40,  address)?;
   
 
   //self.programmer.target_power_reset()?;
@@ -316,7 +317,7 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> 
   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
 
   let test_write = vec![0xAA; 0xEC];
-  let mem_write = self.programmer.write_memory_block(MS_XWORD, test_write, test_addr)?;
+  let mem_write = self.programmer.write_memory_block(memory_space_t::MS_XWORD, test_write, test_addr)?;
 
   self.programmer.target_power_reset()?;
   self.programmer.refresh_feedback()?;
