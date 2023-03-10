@@ -233,6 +233,9 @@ pub const CORE_DEBUG_REQUEST_COMMAND  : u8 = 0x07;
 pub const JTAG_READ_MEMORY_HEADER_SIZE: u16 = 8;
 pub const JTAG_WRITE_MEMORY_HEADER_SIZE: u16 = 8;
 
+// Calculate number of bytes required to hold N bits
+pub const fn BITS_TO_BYTES(n: u8) -> u8 {(n + 7) >> 3}
+
 fn add_uu(x: u8, y: u8) -> Vec<u8> {
     vec![x, y]
 } 
