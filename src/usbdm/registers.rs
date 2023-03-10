@@ -8,6 +8,47 @@ const DSC_FIRST_ONCE_REGISTER: u8 = 39;
 const DSC_LAST_ONCE_REGISTER: u8 = 56;
 const DSC_ONCE_REGISTER_COUNT: u8 = DSC_LAST_ONCE_REGISTER - DSC_FIRST_ONCE_REGISTER + 1;
 
+// EONCE Command register details
+//-------------------------------------------------------------------
+const ONCE_CMD_LENGTH: u8 = 8;
+
+// The following bit masks may be combined
+const ONCE_CMD_READ  : u8 = 1<<7;
+const ONCE_CMD_WRITE : u8 = 0<<7;
+const ONCE_CMD_GO    : u8 = 1<<6;
+const ONCE_CMD_EXIT  : u8 = 1<<5;
+
+// Register field - some commonly used regs here
+const OPDBR_ADDRESS  : u8 = 0x04;
+const OTX_ADDRESS    : u8 = 0x07;  // tx to target OTX/ORX register
+const OTX1_ADDRESS   : u8 = 0x09;
+const ORX_ADDRESS    : u8 = 0x0B;  // rx from target OTX/ORX register
+const ORX1_ADDRESS   : u8 = 0x0D;
+const ONCE_CMD_NOREG : u8 = 0x1F;  // used for no register
+
+// EONCE_OCR register details
+//--------------------------------------------------------------------
+const OCR_ERLO            : u8 = 1<<7;
+const OCR_PWU             : u8 = 1<<5;
+const OCR_DEVEN           : u8 = 1<<4;
+const OCR_LTE             : u8 = 1<<3;
+const OCR_ISC_0           : u8 = 0x00;
+const OCR_ISC_1           : u8 = 0x01;
+const OCR_ISC_2           : u8 = 0x02;
+const OCR_ISC_3           : u8 = 0x03;
+const OCR_ISC_4           : u8 = 0x04;
+const OCR_ISC_SINGLE_STEP : u8 = 0x05;
+const OCR_ISC_6           : u8 = 0x06;
+const OCR_ISC_7           : u8 = 0x07;
+
+//Aliases for Cached routines
+const JTAG_SUB_EXECUTE    : u8 = JTAG_SUBA;       // execute a series of target instructions (firmware implemented)
+const JTAG_SUB_MEM_READ   : u8 = JTAG_SUBB;       // read a block from target memory
+const JTAG_SUB_MEM_WRITE  : u8 = JTAG_SUBC;       // write a block to target memory
+const JTAG_CALL_EXECUTE   : u8 = JTAG_CALL_SUBA;
+const JTAG_CALL_MEM_READ  : u8 = JTAG_CALL_SUBB;
+const JTAG_CALL_MEM_WRITE : u8 = JTAG_CALL_SUBC;
+
 // regNo Parameter for DSC_ReadReg() with DSC target
 // DSC Core registers
 #[derive(Clone, Copy)]
@@ -167,7 +208,297 @@ pub fn get_register_size(reg: DscRegisters) -> Result<u8, Error> {
     else if (reg as u8 == DscRegisters::DscRegIdcode as u8) {
         return Ok(32);
     }
-    Err(Error::Unknown)
+    Err(Error::InternalError("Unexpected error in get_register_size".to_string()))
+}
+
+pub struct DscProgSeq {
+    instruction_count: u8,
+    sequence: &'static[u8],
+}
+
+// Register reads
+// Each sequence writes the given register to otx/otx1
+pub const TARGET_READ_REG_SEQUENCE: [DscProgSeq; DSC_CORE_REGISTER_COUNT as usize] = [
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD4,0x7C,0xFF,0xFF]},   // X0     move.w  X0,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD5,0x7C,0xFF,0xFF]},   // Y0     move.w  Y0,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD7,0x7C,0xFF,0xFF]},   // Y1     move.w  Y1,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   // A0     move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD0,0x7C,0xFF,0xFF]},   // A1     move.w  A1,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD4,0xFC,0xFF,0xFF]},   // A2     move.w  A2,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD7,0xFC,0xFF,0xFF]},   // B0     move.w  B0,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD1,0x7C,0xFF,0xFF]},   // B1     move.w  B1,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE7,0x7F,0xD5,0xFC,0xFF,0xFF]},   // B2     move.w  B2,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x7C,0x20,                         // C0     tfr     C,A
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   //        move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x7C,0x20,                         // C1     tfr     C,A
+                                                  3,0xE7,0x7F,0xD0,0x7C,0xFF,0xFF]},   //        move.w  A1,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x7C,0x20,                         // C2     tfr     C,A
+                                                  3,0xE7,0x7F,0xD4,0xFC,0xFF,0xFF]},   //        move.w  A2,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x7C,0x30,                         // D0     tfr     D,A
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   //        move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x7C,0x30,                         // D1     tfr     D,A
+                                                  3,0xE7,0x7F,0xD0,0x7C,0xFF,0xFF]},   //        move.w  A1,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x7C,0x30,                         // D2     tfr     D,A
+                                                  3,0xE7,0x7F,0xD4,0xFC,0xFF,0xFF]},   //        move.w  A2,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x86,0x9C,                         // OMR    move.w  OMR,A0
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   //        move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x86,0x9D,                         // SR     move.w  SR,A0
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   //        move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x8C,0x1F,                         // LA     moveu.w LA,R4
+                                                  3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   //        move.l  R4,X:>>otx
+    DscProgSeq {instruction_count: 2, sequence: &[3,0xE4,0x1C,0xDB,0xAD,0xFF,0xBA,     // LA2    move.l  #$ffbadbad,R4
+                                                  3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   //        move.l  R4,X:>>otx
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x8C,0x1E,                         // LC     moveu.w LC,R4
+                                                  3,0xE7,0x7F,0xDC,0x7C,0xFF,0xFF]},   //        move.w  R4,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[2,0x87,0x4C,0xAB,0xAD,               // LC2    moveu.w  #$abad,R4
+                                                  3,0xE7,0x7F,0xDC,0x7C,0xFF,0xFF]},   //        move.w  R4,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[3,0xE4,0x1C,0xDB,0xAD,0xFF,0xBA,     // HWS0   move.l  #$ffbadbad,R4
+                                                  3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   //        move.l  R4,X:>>otx
+    DscProgSeq {instruction_count: 2, sequence: &[3,0xE4,0x1C,0xDB,0xAD,0xFF,0xBA,     // HWS1   move.l  #$ffbadbad,R4
+                                                  3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   //        move.l  R4,X:>>otx
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x81,0xBC,                         // SP     tfra    SP,R4
+                                                  3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   //        move.l  R4,X:>>otx
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x86,0x99,                         // N3     move.w  N3,A0
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   //        move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 2, sequence: &[1,0x86,0x9A,                         // M01    move.w  M01,A0
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF]},   //        move.w  A0,X:>>otx1
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xDE,0x7D,0xFF,0xFF]},   // N      move.l  N,X:>>otx
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xD8,0x7D,0xFF,0xFF]},   // R0     move.l  R0,X:>>otx
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xD9,0x7D,0xFF,0xFF]},   // R1     move.l  R1,X:>>otx
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xDA,0x7D,0xFF,0xFF]},   // R2     move.l  R2,X:>>otx
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xDB,0x7D,0xFF,0xFF]},   // R3     move.l  R3,X:>>otx
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   // R4     move.l  R4,X:>>otx
+    DscProgSeq {instruction_count: 1, sequence: &[3,0xE3,0x7F,0xDD,0x7D,0xFF,0xFF]},   // R5     move.l  R5,X:>>otx
+    DscProgSeq {instruction_count: 4, sequence: &[1,0xE7,0x06,                         // SHM01  swap    shadows
+                                                  1,0x86,0x9A,                         //        move.w  M01,A0
+                                                  3,0xE7,0x7F,0xD6,0xFC,0xFF,0xFF,     //        move.w  A0,X:>>otx1
+                                                  1,0xE7,0x06]},                       //        swap    shadows
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,                         // SHN    swap    shadows
+                                                  3,0xE3,0x7F,0xDE,0x7D,0xFF,0xFF,     //        move.l  N,X:>>otx
+                                                  1,0xE7,0x00,                         //        nop
+                                                  1,0xE7,0x00,                         //        nop
+                                                  1,0xE7,0x06]},                       //        swap    shadows
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,                         // SHR0   swap    shadows
+                                                  3,0xE3,0x7F,0xD8,0x7D,0xFF,0xFF,     //        move.l  R0,X:>>otx
+                                                  1,0xE7,0x00,                         //        nop
+                                                  1,0xE7,0x00,                         //        nop
+                                                  1,0xE7,0x06]},                       //        swap    shadows
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,                         // SHR1   swap    shadows
+                                                  3,0xE3,0x7F,0xD9,0x7D,0xFF,0xFF,     //        move.l  R1,X:>>otx
+                                                  1,0xE7,0x00,                         //        nop
+                                                  1,0xE7,0x00,                         //        nop
+                                                  1,0xE7,0x06]},                       //        swap    shadows
+    DscProgSeq {instruction_count: 2, sequence: &[1,0xE7,0x16,                         // PC     move.l  PC,R4  // must be R4!
+                                                  3,0xE3,0x7F,0xDC,0x7D,0xFF,0xFF]},   //        move.l  R4,X:>>otx
+];
+
+// Register Writes
+// These write a value in R4 into the given register
+pub const TARGET_WRITE_REG_SEQUENCE: [DscProgSeq; DSC_CORE_REGISTER_COUNT as usize] = [
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x84,0x0C,]},     // X0    move.w  R4,X0
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x85,0x0C,]},     // X1    move.w  R4,Y0
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x87,0x0C,]},     // X2    move.w  R4,Y1
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x86,0x8C,]},     // A0    move.w  R4,A0
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x80,0x8C,]},     // A1    move.w  R4,A1
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x84,0x8C,]},     // A2    move.w  R4,A2
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x87,0x8C,]},     // B0    move.w  R4,B0
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0x8C,]},     // B1    move.w  R4,B1
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x85,0x8C,]},     // B2    move.w  R4,B2
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x7C,0x20,        // C0    tfr     C,A
+                                                  1,0x86,0x8C,        //       move.w  R4,A0
+                                                  1,0x7D,0x00,]},     //       tfr     A,C
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x7C,0x20,        // C1    tfr     C,A
+                                                  1,0x80,0x8C,        //       move.w  R4,A1
+                                                  1,0x7D,0x00,]},     //       tfr     A,C
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x7C,0x20,        // C2    tfr     C,A
+                                                  1,0x84,0x8C,        //       move.w  R4,A2
+                                                  1,0x7D,0x00,]},     //       tfr     A,C
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x7C,0x30,        // D0    tfr     D,A
+                                                  1,0x86,0x8C,        //       move.w  R4,A0
+                                                  1,0x7D,0x80,]},     //       tfr     A,D
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x7C,0x30,        // D1    tfr     D,A
+                                                  1,0x80,0x8C,        //       move.w  R4,A1
+                                                  1,0x7D,0x80,]},     //       tfr     A,D
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x7C,0x30,        // D2    tfr     D,A
+                                                  1,0x84,0x8C,        //       move.w  R4,A2
+                                                  1,0x7D,0x80,]},     //       tfr     A,D
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x8C,0x8C,]},     // OMR   moveu.w R4,OMR
+    DscProgSeq {instruction_count: 3, sequence: &[1,0x8D,0x8C,        // SR    moveu.w R4,SR
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x00,]},     //       nop
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x8F,0x8C,]},     // LA    moveu.w R4,LA
+    DscProgSeq {instruction_count: 1, sequence: &[1,0xE7,0x00,]},     // LA2   nop
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x8E,0x8C,]},     // LC    moveu.w R4,LC
+    DscProgSeq {instruction_count: 1, sequence: &[1,0xE7,0x00,]},     // LC2   nop
+    DscProgSeq {instruction_count: 1, sequence: &[1,0xE7,0x00,]},     // HWS0  nop
+    DscProgSeq {instruction_count: 1, sequence: &[1,0xE7,0x00,]},     // HWS1  nop
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xAB,]},     // SP    tfra    R4,SP
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x89,0x8C,]},     // N3    moveu.w R4,N3
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x8A,0x8C,]},     // M01   moveu.w R4,M01
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xAA,]},     // N     tfra    R4,N
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xA0,]},     // R0    tfra    R4,R0
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xA1,]},     // R1    tfra    R4,R1
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xA2,]},     // R2    tfra    R4,R2
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xA3,]},     // R3    tfra    R4,R3
+    DscProgSeq {instruction_count: 1, sequence: &[1,0xE7,0x00,]},     // R4    nop
+    DscProgSeq {instruction_count: 1, sequence: &[1,0x81,0xA9,]},     // R5    tfra    R4,R5
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,        // SHM01 swap    shadows
+                                                  1,0x8A,0x8C,        //       moveu.w R4,M01
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x06,]},     //       swap    shadows
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,        // SHN   swap    shadows
+                                                  1,0x81,0xAA,        //       tfra    R4,N
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x06,]},     //       swap    shadows
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,        // SHR0  swap    shadows
+                                                  1,0x81,0xA0,        //       tfra    R4,R0
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x06,]},     //       swap    shadows
+    DscProgSeq {instruction_count: 5, sequence: &[1,0xE7,0x06,        // SHR1  swap    shadows
+                                                  1,0x81,0xA1,        //       tfra    R4,R1
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x00,        //       nop
+                                                  1,0xE7,0x06,]},     //       swap    shadows
+    DscProgSeq {instruction_count: 1, sequence: &[1,0xE7,0x17,]},     // PC    move.l  R4,PC
+];
+
+fn read_core_reg_sequence(reg: DscRegisters) -> Result<Vec<u8>, Error> {
+    if (reg as u8) < DSC_FIRST_CORE_REGISTER || (reg as u8) > DSC_LAST_CORE_REGISTER {
+        return Err(Error::InternalError("Unexpected input value in read_core_reg_sequence".to_string()))
+    }
+    let reg_index: u8 = reg as u8 - DSC_FIRST_CORE_REGISTER;
+    let reg_size: u8 = get_register_size(reg)?;
+    let instruction_count: u8 = TARGET_READ_REG_SEQUENCE[reg_index as usize].instruction_count;
+    let sequence: &[u8] = TARGET_READ_REG_SEQUENCE[reg_index as usize].sequence;
+    let mut output: Vec<u8> = vec![];
+
+    output.push(instruction_count); // # of instructions
+    output.extend_from_slice(sequence); // target instructions to write the given register to otx/otx1
+    
+    if reg_size > 16 {
+        output.push(ONCE_CMD_READ|OTX_ADDRESS);
+    } else {
+        output.push(ONCE_CMD_READ|OTX1_ADDRESS);
+    }
+    output.push(reg_size);
+    
+    Ok(output)
+}
+
+fn write_core_reg_sequence(reg: DscRegisters, value: u32) -> Result<Vec<u8>, Error> {
+    if (reg as u8) < DSC_FIRST_CORE_REGISTER || (reg as u8) > DSC_LAST_CORE_REGISTER {
+        return Err(Error::InternalError("Unexpected input value in write_core_reg_sequence".to_string()))
+    }
+    let reg_index: u8 = reg as u8 - DSC_FIRST_CORE_REGISTER;
+    let instruction_count: u8 = TARGET_WRITE_REG_SEQUENCE[reg_index as usize].instruction_count;
+    let sequence: &[u8] = TARGET_WRITE_REG_SEQUENCE[reg_index as usize].sequence;
+    let mut value: u32 = value;
+    let mut output: Vec<u8> = vec![];
+
+    if (value &  0xFF800000) != 0 {
+        value |= 0xFF000000;
+    }
+
+    output.push(instruction_count + 1); // # of instructions (+1 for MOVE #dd,R4)
+
+    // Target code to load 32-bit value into R4
+    output.push(3);      // 3 words long
+    output.push(0xE4);   // opcode = move #<value>,R4
+    output.push(0x1C);
+     
+    // V - value to load into register
+    output.push((value >> 8) as u8);  // Immediate value
+    output.push( value as u8);
+    output.push((value >> 24) as u8);
+    output.push((value >> 16) as u8);
+
+    // I - Target instruction(s) to transfer value to Reg
+    output.extend_from_slice(sequence);
+
+    Ok(output)
+}
+
+
+impl Programmer
+{
+    // Read Core register via OnCE & target execution
+    //
+    // @param regNo     - Register number
+    // @param regValue  - Value for register
+    //
+    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
+    // @note Leaves Core TAP in RUN-TEST/IDLE, EONCE register selected
+    //
+    pub fn dsc_read_core_reg(&self, reg: DscRegisters) -> Result<u32, Error> {
+        if (reg as u8) < DSC_FIRST_CORE_REGISTER || (reg as u8) > DSC_LAST_CORE_REGISTER {
+            return Err(Error::InternalError("Unexpected input value in read_core_reg".to_string())) 
+        }
+        let mut sequence: Vec<u8> = vec![];
+
+        // Execute target instruction to transfer register to memory-mapped EONCE reg OTX
+        // Read OTX/OTX1
+        // Main
+        sequence.push(JTAG_CALL_EXECUTE);                                 // Execute target instruction: move Reg -> OTX/OTX1
+        // Read EONCE reg OTX/OTX1
+        sequence.push(JTAG_MOVE_DR_SCAN);                                  // Move to SCAN-DR (EONCE)
+        sequence.push(JTAG_SET_EXIT_SHIFT_DR);
+        sequence.push(JTAG_SHIFT_OUT_DP); sequence.push(ONCE_CMD_LENGTH); // Command for Read Register - either OTX/OTX1
+        sequence.push(JTAG_SET_EXIT_IDLE);
+        sequence.push(JTAG_SHIFT_IN_DP); sequence.push(0);                // Data size to read
+        sequence.push(JTAG_END);
+    
+        sequence.append(&mut read_core_reg_sequence(reg)?);
+
+        let answer_length = BITS_TO_BYTES(get_register_size(reg)?);
+        let answer_vec = self.exec_jtag_seq(sequence, answer_length)?;
+
+        if answer_vec.len() > 4 {return Err(Error::InternalError("Answer too long in read_core_reg".to_string()))}
+        if answer_vec.len() == 0 {return Err(Error::InternalError("No answer in read_core_reg".to_string()))}
+    
+        let mut answer: u32 = 0;
+        for i in 0..answer_vec.len(){ 
+            answer = (answer << 8) | answer_vec[i] as u32; 
+        }
+    
+        Ok(answer)
+    }
+
+    // Write Core register via ONCE & target execution
+    //
+    // @param regNo     - Register number
+    // @param regValue  - Value for register
+    //
+    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
+    // @note Leaves Core TAP in RUN-TEST/IDLE, EONCE register selected
+    //
+    pub fn dsc_write_core_reg(&self, reg: DscRegisters, value: u32) -> Result<(), Error> {
+        if (reg as u8) < DSC_FIRST_CORE_REGISTER || (reg as u8) > DSC_LAST_CORE_REGISTER {
+            return Err(Error::InternalError("Unexpected input value in write_core_reg".to_string())) 
+        }
+        
+        // Execute target instructions to load register
+        let mut sequence: Vec<u8> = vec![];
+        sequence.push(JTAG_CALL_EXECUTE);  // Execute instructions routine
+        sequence.push(JTAG_END);
+
+        sequence.append(&mut write_core_reg_sequence(reg, value)?);
+ 
+        self.exec_jtag_seq(sequence, 0)?;
+
+        Ok(())
+    }
+
+    pub fn dsc_read_pc(&self) -> Result<u32, Error>{
+        self.dsc_read_core_reg(DscRegisters::DscRegPc)
+    }
+
+    pub fn dsc_write_pc(&self, value: u32) -> Result<(), Error>  {
+        self.dsc_write_core_reg(DscRegisters::DscRegPc, value)
+    }
+
 }
 
 #[cfg(test)]

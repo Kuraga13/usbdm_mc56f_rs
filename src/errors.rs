@@ -30,6 +30,7 @@ pub enum Error {
    FileReadErr,
    FileFormatErr,
    FileParserError(String),
+   InternalError(String),
 }
 
 pub fn get_title_message_error_modal(err : Error) -> (String, String)
