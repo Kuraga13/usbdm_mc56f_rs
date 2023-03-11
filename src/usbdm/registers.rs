@@ -10,21 +10,21 @@ const DSC_ONCE_REGISTER_COUNT: u8 = DSC_LAST_ONCE_REGISTER - DSC_FIRST_ONCE_REGI
 
 // EONCE Command register details
 //-------------------------------------------------------------------
-const ONCE_CMD_LENGTH: u8 = 8;
+pub const ONCE_CMD_LENGTH: u8 = 8;
 
 // The following bit masks may be combined
-const ONCE_CMD_READ  : u8 = 1<<7;
-const ONCE_CMD_WRITE : u8 = 0<<7;
-const ONCE_CMD_GO    : u8 = 1<<6;
-const ONCE_CMD_EXIT  : u8 = 1<<5;
+pub const ONCE_CMD_READ  : u8 = 1<<7;
+pub const ONCE_CMD_WRITE : u8 = 0<<7;
+pub const ONCE_CMD_GO    : u8 = 1<<6;
+pub const ONCE_CMD_EXIT  : u8 = 1<<5;
 
 // Register field - some commonly used regs here
-const OPDBR_ADDRESS  : u8 = 0x04;
-const OTX_ADDRESS    : u8 = 0x07;  // tx to target OTX/ORX register
-const OTX1_ADDRESS   : u8 = 0x09;
-const ORX_ADDRESS    : u8 = 0x0B;  // rx from target OTX/ORX register
-const ORX1_ADDRESS   : u8 = 0x0D;
-const ONCE_CMD_NOREG : u8 = 0x1F;  // used for no register
+pub const OPDBR_ADDRESS  : u8 = 0x04;
+pub const OTX_ADDRESS    : u8 = 0x07;  // tx to target OTX/ORX register
+pub const OTX1_ADDRESS   : u8 = 0x09;
+pub const ORX_ADDRESS    : u8 = 0x0B;  // rx from target OTX/ORX register
+pub const ORX1_ADDRESS   : u8 = 0x0D;
+pub const ONCE_CMD_NOREG : u8 = 0x1F;  // used for no register
 
 // EONCE_OCR register details
 //--------------------------------------------------------------------
