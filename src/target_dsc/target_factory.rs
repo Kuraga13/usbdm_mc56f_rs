@@ -12,53 +12,57 @@ use core::ops::Range;
 
 // new variant -> in Work, is draft! 
 use serde::{Serialize, Deserialize};
-// map need to find memory type. On mc56f you have different access on memory space
-use std::collections::HashMap;
+
+
 type MemorySpace       = u8;
 
-
-//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 /// Ram segment
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RamSegement {
 
-    /// A name to describe the region
+    /// A `name` to describe the region
     pub name: Option<String>,
 
-    /// Address range of the region
+    /// Address `range` of the region
     pub range: Range<u64>,
+
+    /// Type of `access` (MemorySpaceType). map need to find memory type. On mc56f you have different access on memory space
+    pub access : MemorySpace, 
 
 }
 
 /// Data like Eeprom segment etc.
-//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct DataSegment {
 
-    /// A name to describe the region
+    /// A `name` to describe the region
     pub name: Option<String>,
 
-    /// Address range of the region
+    /// Address `range` of the region
     pub range: Range<u64>,
+
+    /// Type of `access` (MemorySpaceType). map need to find memory type. On mc56f you have different access on memory space
+    pub access : MemorySpace, 
 
 }
 
-//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ProgrammSegment {
 
-  /// A name to describe the region
+  /// A `name` to describe the region
   pub name: Option<String>,
 
-  /// Address range of the region
+  /// Address `range` of the region
   pub range: Range<u64>,
+
+  /// Type of `access` (MemorySpaceType). map need to find memory type. On mc56f you have different access on memory space
+  pub access : MemorySpace, 
 
 }
 
 
 /// Declares the type of a memory region.
-//#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MemorySegment {
 
     Ram(RamSegement),
@@ -66,31 +70,98 @@ pub enum MemorySegment {
     DataEeprom(DataSegment),
 
     FlashProgramm(ProgrammSegment),
+
+    
 }
 
 
 
 
+/// This describes a target import from Yaml, ser-de_ser fields
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TargetYaml {
+    /// The name of the target.
+    #[serde(default)]
+    pub name               : String,
+    /// The memory map of the target.
+    pub memory_map         : Vec<MemorySegment>,
+    /// `base_routine_path` base pre-compiled routine path
+    pub base_routine_path  : String,
+    /// `flash_routine` configured and builded for some task
+    pub flash_routine      : FlashRoutine,
+    /// `jtag_id_code` id code from dsc, for example  MC5680XX_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
+    pub jtag_id_code       : u32,
+    /// `core id code`, orig pjt `sdid`, for example  mc5680xx(23-35) =  0x02211004, get by fn read_core_id_code().
+    pub core_id_code       : u32,
+    /// `security_bytes`, security bytes sequense, for unsecuring-securing device ref datasheet
+    pub security_bytes     : Vec<u8>,
+ 
 
+}
+
+#[derive(Debug, Clone,PartialEq)]
+pub enum SecurityStatus {
+        
+       Unknown,
+       Secured,
+       Unsecured,
+    
+}
+#[derive(Debug, Clone)]
+pub struct TargetState
+{
+  pub once_status   : OnceStatus,
+  pub security      : SecurityStatus,
+}
+
+impl Default for TargetState
+{
+    fn default() -> Self { 
+
+       TargetState {
+
+        once_status : OnceStatus::UnknownMode,
+        security    : SecurityStatus::Unknown,
+    }
+  } 
+}
 
 /// This describes a complete target with a fixed chip model and variant.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TargetDsc {
+
     /// The name of the target.
-    pub name: String,
+    pub name               : String,
     /// The memory map of the target.
-    pub memory_map: Vec<MemorySegment>,
-    // Type of access (MemorySpaceType) of each segment in HexMap
-    pub mem_space_type : HashMap<MemorySegment, MemorySpace>,
-    /// The name of the flash algorithm.
-    pub flash_routine: Vec<FlashRoutine>,
+    pub memory_map         : Vec<MemorySegment>,
+    /// `flash_routine` configured and builded for some task
+    pub flash_routine      : FlashRoutine,
+    /// `jtag_id_code` id code from dsc, for example  MC5680XX_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
+    pub jtag_id_code       : u32,
+    /// `core id code`, orig pjt `sdid`, for example  mc5680xx(23-35) =  0x02211004, get by fn read_core_id_code().
+    pub core_id_code       : u32,
+    /// `security_bytes`, security bytes sequense, for unsecuring-securing device ref datasheet
+    pub security_bytes     : Vec<u8>,
+    /// `dsc_state`, all state data needed for programming
+    pub dsc_state          : TargetState,
 
 }
 
+// TODO 
+// 1. deal with data in old TCL's
+//2. Implement them either
+//-trait TP-gimng
+//- data from yaml?
+//3. Put it all together
+//- build specific target from yaml
+//- building her flash routine
+//- applying trait methods
+
+/////////////////////////////////////
 
 // current variant ->
 //
-
+use std::collections::HashMap;
 type AddressKey       = u32;
 type MemorySpaceType  = u8;
 type HexMap = HashMap<AddressKey, MemorySpaceType>; // map need to find memory type. On mc56f you have different access on memory space
@@ -153,7 +224,7 @@ pub fn memory_start_address(&self)  -> u32
 
   type Output: TargetProgramming;
 
-  fn create_target( prg : Programmer,  mem_size : usize, start_addr : u32, name : String) -> Self::Output;
+  fn create_target(mem_size : usize, start_addr : u32, name : String) -> Self::Output;
   
 }
 
@@ -162,25 +233,25 @@ pub trait TargetProgramming
 {
 
 /// Init
-fn init(&mut self) -> Result<(), Error>;
+fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>;
 
 /// Connect
-fn connect(&mut self, power : TargetVddSelect ) -> Result<(), Error>;
+fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
 
 /// Power. Toggled
-fn power(&mut self, power : TargetVddSelect ) -> Result<(), Error>;
+fn power(&mut self, power : TargetVddSelect, prog : &mut Programmer ) -> Result<(), Error>;
 
 /// Disconnect
 fn disconnect(&mut self);
 
 /// Read target
-fn read_target(&mut self, power : TargetVddSelect, address : u32) -> Result<Vec<u8>, Error>;
+fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>;
 
 /// Write target
-fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> Result<(), Error>;
+fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>,  prog : &mut Programmer) -> Result<(), Error>;
 
 /// Write target
-fn erase_target(&mut self, power : TargetVddSelect) -> Result<(), Error>;
+fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
 
 }
 

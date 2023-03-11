@@ -84,6 +84,7 @@ pub enum Message {
 pub struct App {
 
            target             : Option<MC56f80x>,
+           programmer         : Option<Programmer>,
     pub    buffer             : HexBuffer,
            buffer_path        : String,
     pub    selected_power     : TargetVddSelect,
@@ -219,9 +220,9 @@ impl App
 
   fn check_connection_programmer(&mut self)
   {
-    let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
+    let mut prog =  self.programmer.as_mut().expect("Try to Connect to Opt:None Target!");
 
-    let mut check_connect_usb =  dsc.programmer.refresh_feedback();
+    let mut check_connect_usb =  prog.refresh_feedback();
     ok_or_show_error(self, check_connect_usb.clone());
     match check_connect_usb
     {
@@ -255,7 +256,9 @@ impl App
     }
 
     let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
-    let mut check_connect_dsc =  dsc.connect(self.selected_power);
+    let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+
+    let mut check_connect_dsc =  dsc.connect(self.selected_power, prog);
     ok_or_show_error(self, check_connect_dsc.clone());
     match check_connect_dsc
     {
@@ -287,8 +290,8 @@ impl App
         return;
     }
 
-    let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
-    let mut power_state =  dsc.programmer.get_power_state();
+    let mut prog =  self.programmer.as_mut().expect("Try to Connect to Opt:None Target!");
+    let mut power_state =  prog.get_power_state();
     match power_state
     {
 
@@ -339,6 +342,7 @@ impl Application for App {
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
                 target             : None,
+                programmer         : None,
                 status             : UsbdmAppStatus::NotConnected,
                 target_status      : TargetStatus::NotConnected,
                 power_status       : PowerStatus::PowerOff,
@@ -573,11 +577,12 @@ impl Application for App {
                                 Ok(programmer) =>
                                 {
                                 
-            
-                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target( programmer, 0x8000, 0x0000, "MC56f8035".to_string()));
+                                  self.programmer = Some(programmer);
+
+                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target(  0x8000, 0x0000, "MC56f8035".to_string()));
                                   self.target = dsc;
-                                  let handle =  self.target.as_mut().expect("");
-                                  self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.programmer.name.clone() +  &handle.programmer.get_string_version().clone();
+                                  let handle =  self.programmer.as_mut().expect("");
+                                  self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.name.clone() +  &handle.get_string_version().clone();
                                 
                                 }
 
@@ -600,7 +605,9 @@ impl Application for App {
                     
 
                        let mut dsc =  self.target.as_mut().expect("target lost");
-                       dsc.init();
+                       let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+
+                       dsc.init(prog);
 
                        self.check_connection_target();
                        
@@ -663,7 +670,8 @@ impl Application for App {
                  PowerStatus::PowerOn =>
                  {
                     let dsc =  self.target.as_mut().expect("");
-                    dsc.power(TargetVddSelect::VddOff);
+                    let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+                    dsc.power(TargetVddSelect::VddOff, prog);
                     self.check_power_state();
 
                  }
@@ -673,7 +681,8 @@ impl Application for App {
                  {
     
                     let dsc =  self.target.as_mut().expect("");
-                    dsc.power(self.selected_power);
+                    let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+                    dsc.power(self.selected_power, prog);
                     self.check_power_state();
 
                  }
@@ -719,6 +728,7 @@ impl Application for App {
 
                 self.target_status = TargetStatus::InProgramming;
                 let dsc = self.target.as_mut().expect("target lost");
+                let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
   
                 let counter = self.counter;
                 //dbg!(counter);
@@ -726,7 +736,7 @@ impl Application for App {
 
                 for counter in counter..self.number_to_read 
                 {
-                  let read = dsc.read_target(self.selected_power, self.read_adddress);
+                  let read = dsc.read_target(self.selected_power, self.read_adddress, prog);
                     match read
                     {
                       Ok(read) => 
@@ -761,7 +771,7 @@ impl Application for App {
             
 
               let write = self.buffer.download_in_one();  
-              let write_target = dsc.write_target(self.selected_power, write);
+              let write_target = dsc.write_target(self.selected_power, write, self.programmer.as_mut().expect("Try to Connect to Opt:None Target!"));
 
               match write_target
               {
@@ -787,7 +797,10 @@ impl Application for App {
                 
                 println!("TestFeedback");
                 let dsc =  self.target.as_mut().expect("");
-                let test_ram = dsc.test_ram_rw(0x008000, self.selected_power);
+                let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+
+
+                let test_ram = dsc.test_ram_rw(0x008000, self.selected_power, prog);
 
                 match test_ram
                 {

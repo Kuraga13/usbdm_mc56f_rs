@@ -18,7 +18,7 @@ impl TargetFactory for MC56f80x {
 
     type Output = MC56f80x;
     
-    fn create_target(prg : Programmer,  mem_size : usize, start_addr : u32, name : String) -> MC56f80x
+    fn create_target(mem_size : usize, start_addr : u32, name : String) -> MC56f80x
      {
           
        let v: Vec<u8> = vec![0x00; mem_size]; // default HexBuffer size 0xFFFF, filled 0xFF
@@ -34,7 +34,7 @@ impl TargetFactory for MC56f80x {
       let m_map = MemoryMap::init_memory_map(mem_size, start_addr, map);
   
   
-      return MC56f80x{programmer : prg, once_status : OnceStatus::UnknownMode, security : SecurityStatus::Unknown, memory_map : m_map, mcu_name : name};
+      return MC56f80x{once_status : OnceStatus::UnknownMode, security : SecurityStatus::Unknown, memory_map : m_map, mcu_name : name};
     }
   }
 
@@ -52,7 +52,7 @@ pub enum SecurityStatus {
   // Least Significant Half of JTAG ID (SIM_LSHID), in mc568023-35 is  $801D.
 pub struct MC56f80x {
     
-    pub programmer    : Programmer,
+   // pub programmer    : Programmer,
     pub once_status   : OnceStatus,
     pub security      : SecurityStatus,
     pub memory_map    : MemoryMap,
@@ -145,15 +145,15 @@ pub struct MC56f80x {
 
     //fn load
 
-    pub fn test_ram_rw(&mut self, ram_start_add: u32, power: TargetVddSelect) -> Result<(), Error>
+    pub fn test_ram_rw(&mut self, ram_start_add: u32, power: TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
     {
 
-      let powered = self.programmer.get_power_state()?;
-      self.once_status = enableONCE(&self.programmer)?;
+      let powered = prog.get_power_state()?;
+      self.once_status = enableONCE(&prog)?;
       
       if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
       {
-          self.connect(power)?;
+          self.connect(power, prog)?;
       }
     
       if (self.security == SecurityStatus::Secured)
@@ -165,9 +165,9 @@ pub struct MC56f80x {
       let mut ram_addr = ram_start_add;
       for retry_test_ram in 0..10
       {
-        self.programmer.write_memory_block(memory_space_t::MS_XWORD, ram_test_data.clone(), ram_addr)?;
+        prog.write_memory_block(memory_space_t::MS_XWORD, ram_test_data.clone(), ram_addr)?;
 
-        let compare = self.programmer.dsc_read_memory(memory_space_t::MS_XWORD, ram_test_data.len() as u32,  ram_addr)?;
+        let compare = prog.dsc_read_memory(memory_space_t::MS_XWORD, ram_test_data.len() as u32,  ram_addr)?;
   
         if (compare != ram_test_data)
         {
@@ -185,7 +185,6 @@ pub struct MC56f80x {
  impl Drop for MC56f80x{
  
          fn drop(&mut self) {
-             drop(&mut self.programmer);
              println!("Target dropped");
          }
  }
@@ -196,27 +195,27 @@ pub struct MC56f80x {
 impl TargetProgramming for MC56f80x
 {
 
-fn init(&mut self) -> Result<(), Error>
+fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>
 {
-  self.programmer.set_bdm_options()?;
-  self.programmer.refresh_feedback()?;
-  self.programmer.set_target_mc56f()?;
+  prog.set_bdm_options()?;
+  prog.refresh_feedback()?;
+  prog.set_target_mc56f()?;
 
   Ok(())  
 
 }
 
-fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
+fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
 {
 
-  self.programmer.target_power_reset()?;
-  self.power(power)?;
+  prog.target_power_reset()?;
+  self.power(power, prog)?;
 
-  let dsc_jtag_id_code = read_master_id_code_DSC_JTAG_ID(true, &self.programmer)?;
+  let dsc_jtag_id_code = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
 
-  enableCoreTAP(&self.programmer); 
+  enableCoreTAP(&prog); 
 
-  let target_device_id = read_core_id_code(false, &self.programmer)?; // on second not
+  let target_device_id = read_core_id_code(false, &prog)?; // on second not
   
   self.print_id_code(&target_device_id, &dsc_jtag_id_code);
 
@@ -227,7 +226,7 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
   for retry in 0..10 
   {
     dbg!(&self.once_status);
-    self.once_status = targetDebugRequest(&self.programmer)?;
+    self.once_status = targetDebugRequest(&prog)?;
     if(self.once_status == OnceStatus::DebugMode)
     {
       break;
@@ -238,7 +237,7 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
     }
   }
 
-  self.once_status = enableONCE(&self.programmer)?;
+  self.once_status = enableONCE(&prog)?;
   dbg!("Final status is: ", &self.once_status);
   
 
@@ -246,11 +245,11 @@ fn connect(&mut self, power : TargetVddSelect) -> Result<(), Error>
     
 }
 
-fn power(&mut self, user_power_query : TargetVddSelect) -> Result<(), Error>
+fn power(&mut self, user_power_query : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
 {
                                                                         
-  self.programmer.set_vdd(user_power_query)?;           // If we try double-set power, filter in set_vdd just return ok
-  self.programmer.check_expected_power(user_power_query)?;    // Check power is setted
+  prog.set_vdd(user_power_query)?;           // If we try double-set power, filter in set_vdd just return ok
+  prog.check_expected_power(user_power_query)?;    // Check power is setted
   Ok(())
 
 }
@@ -263,15 +262,15 @@ fn disconnect(&mut self)
   
 }
 
-fn read_target(&mut self, power : TargetVddSelect, address : u32) -> Result<Vec<u8>, Error>
+fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>
 {
 
-  let powered = self.programmer.get_power_state()?;
-  self.once_status = enableONCE(&self.programmer)?;
+  let powered = prog.get_power_state()?;
+  self.once_status = enableONCE(&prog)?;
   
   if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
   {
-      self.connect(power)?;
+      self.connect(power, prog)?;
   }
 
   if (self.security == SecurityStatus::Secured)
@@ -281,7 +280,7 @@ fn read_target(&mut self, power : TargetVddSelect, address : u32) -> Result<Vec<
  
  // let test_addr = 0x7f40;
  // let test_mem_access_type =  *self.memory_map.get_memory_space_type(address)?;
-  let memory_read = self.programmer.dsc_read_memory(memory_space_t::MS_PWORD, 0x40,  address)?;
+  let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x40,  address)?;
   
 
   //self.programmer.target_power_reset()?;
@@ -294,15 +293,15 @@ fn read_target(&mut self, power : TargetVddSelect, address : u32) -> Result<Vec<
 }
 
 
-fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> Result<(), Error>
+fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>, prog :  &mut Programmer) -> Result<(), Error>
 {
   
-  let powered = self.programmer.get_power_state()?;
-  self.once_status = enableONCE(&self.programmer)?;
+  let powered = prog.get_power_state()?;
+  self.once_status = enableONCE(&prog)?;
   
   if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
   {
-      self.connect(power)?;
+      self.connect(power, prog)?;
   }
   if (self.security == SecurityStatus::Secured)
   {
@@ -317,25 +316,25 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>) -> 
   let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
 
   let test_write = vec![0xAA; 0xEC];
-  let mem_write = self.programmer.write_memory_block(memory_space_t::MS_XWORD, test_write, test_addr)?;
+  let mem_write = prog.write_memory_block(memory_space_t::MS_XWORD, test_write, test_addr)?;
 
-  self.programmer.target_power_reset()?;
-  self.programmer.refresh_feedback()?;
-  self.power(TargetVddSelect::VddOff)?;
+  prog.target_power_reset()?;
+  prog.refresh_feedback()?;
+  self.power(TargetVddSelect::VddOff, prog)?;
  
   Ok(())
     
 }
 
-fn erase_target(&mut self, power : TargetVddSelect) -> Result<(), Error>
+fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
 {
   
-  let powered = self.programmer.get_power_state()?; // base init : check power and status
-  self.once_status = enableONCE(&self.programmer)?;
+  let powered = prog.get_power_state()?; // base init : check power and status
+  self.once_status = enableONCE(&prog)?;
   
   if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
   {
-      self.connect(power)?;
+      self.connect(power, prog)?;
   }
 
   Ok(())
