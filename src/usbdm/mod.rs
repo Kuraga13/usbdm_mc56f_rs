@@ -10,6 +10,7 @@ mod registers;
 use constants::{memory_space_t, bdm_commands};
 use crate::errors::Error;
 use jtag::*;
+use registers::*;
 pub use programmer::Programmer;
 
 

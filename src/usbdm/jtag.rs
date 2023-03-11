@@ -384,29 +384,27 @@ impl From <u8>  for OnceStatus  {
     }
 
 
-    /// `DSC_WriteRegister` set Core JTAG-IR to DebugRequest
-    /// 
-    /// `register_number` dsc register number
-    /// 
-    /// `value` value to write
-    ///
-    /// `note` Assumes Core TAP is active & in RUN-TEST/IDLE
-    /// 
-    /// `note` Leaves Core TAP in RUN-TEST/IDLE
-    ///
-    pub fn DSC_WriteRegister(prg:  &Programmer, register_number : u8, value : u32) -> Result<(), Error> {
-        unimplemented!();
+
+
+
+impl Programmer
+{
+    // Start Target execution at current PC
+    //
+    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
+    // @note Leaves Core TAP in RUN-TEST/IDLE
+    //
+    pub fn dsc_target_go(&self) -> Result<(), Error> {
         let mut sequence: Vec<u8> = Vec::new();
-        sequence.push(JTAG_CALL_SUBA);                // Write enable EONCE command to IR
-        sequence.push(JTAG_END);
-        prg.exec_jtag_seq(sequence, 0)?;
-    
+        sequence.push(JTAG_MOVE_DR_SCAN);  // Write to ONCE (DR-CHAIN)
+        sequence.push(JTAG_SET_EXIT_IDLE);
+        sequence.push(JTAG_SHIFT_OUT_Q(ONCE_CMD_LENGTH));  // ONCE command
+        sequence.push(ONCE_CMD_EXIT|ONCE_CMD_NOREG);
+        sequence.push(JTAG_END);  // Terminate sequence
+        self.exec_jtag_seq(sequence, 0)?; // Terminate sequence
         Ok(())
     }
 
-
- impl Programmer
-{
     // Read X/P memory via ONCE & target execution
     //
     // @param memorySpace - Memory space & size of memory accesses 1/2/4 bytes
