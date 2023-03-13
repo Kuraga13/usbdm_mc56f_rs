@@ -342,18 +342,57 @@ pub struct FlashRoutine {
 impl FlashRoutine {
 
 
-pub fn build_base_routine(base_routine_path : String) -> Result<Self, Error> {
+    pub fn build_base_routine(base_routine_path : String) -> Result<Self, Error> {
    
-           unimplemented!(); // !! For example !!!
-           //this is a draft, it's in progress
+        unimplemented!(); // !! For example !!!
+        //this is a draft, it's in progress
 
-           let p =Path::new(&base_routine_path);
-           let s19_file = std::fs::File::open(p)?;
+        let p =Path::new(&base_routine_path);
+        let s19_file = std::fs::File::open(p)?;
+        let mut file_data = Vec::new();
+        s19_file.read_to_end(&mut file_data)?;
+        let parsed_data = ParsedData::parse_s19(file_data)?;
+        if parsed_data.data_vec.len() != 1 { return Err(Error::InternalError("Base routine is fragmented or do not exist".to_string())) }
+        
+        let bin_routine: Vec<u8> = parsed_data.data_vec[0].data_blob.clone();
+        let image_address: u32 = parsed_data.data_vec[0].address * 2;
+        let header_address: usize = ((((bin_routine[0] as u32) <<  0) |  //LITTLE ENDIAN
+                                      ((bin_routine[1] as u32) <<  8) | 
+                                      ((bin_routine[2] as u32) << 16) | 
+                                      (bin_routine[3] as u32) << 24) as usize) * 2;
+           
+        // Address where to load this image
+        let code_load_address: u32 = (((bin_routine[0 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+                                      ((bin_routine[1 + header_address] as u32) <<  8) | 
+                                      ((bin_routine[2 + header_address] as u32) << 16) | 
+                                      ((bin_routine[3 + header_address] as u32) << 24)) * 2;
 
-           let mut buffer_vec = Vec::new();
-           s19_file.read_to_end(&mut buffer_vec)?;
-           let parsed_data = ParsedData::parse_s19(buffer_vec)?;
-           let bin_routine = parsed_data.to_bin()?;
+        // Pointer to entry routine (for currently loaded routine)
+        let code_entry: u32 =        (((bin_routine[4 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+                                      ((bin_routine[5 + header_address] as u32) <<  8) | 
+                                      ((bin_routine[6 + header_address] as u32) << 16) | 
+                                      ((bin_routine[7 + header_address] as u32) << 24)) * 2;
+
+        // Capabilities of routine
+        let capabilities: u16 =       ((bin_routine[8 + header_address] as u16) <<  8) |  //BIG ENDIAN 
+                                      ((bin_routine[9 + header_address] as u16) <<  0);
+                                
+        // Frequency (kHz) used for calibFactor
+        let calib_frequency: u16 =    ((bin_routine[10 + header_address] as u16) <<  8) |  //BIG ENDIAN 
+                                      ((bin_routine[11 + header_address] as u16) <<  0);
+
+        // Calibration factor for speed determination
+        let calib_factor: u32 =       ((bin_routine[12 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+                                      ((bin_routine[13 + header_address] as u32) <<  8) | 
+                                      ((bin_routine[14 + header_address] as u32) << 16) | 
+                                      ((bin_routine[15 + header_address] as u32) << 24);
+
+        // Pointer to information about operation
+        let flash_data: u32 =        (((bin_routine[16 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+                                      ((bin_routine[17 + header_address] as u32) <<  8) | 
+                                      ((bin_routine[18 + header_address] as u32) << 16) | 
+                                      ((bin_routine[19 + header_address] as u32) << 24)) * 2;
+
 
      
       
