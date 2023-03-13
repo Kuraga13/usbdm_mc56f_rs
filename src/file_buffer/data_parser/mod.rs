@@ -22,7 +22,7 @@ impl Default for ParsedData {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DataBlock {
-    address: u32,
+    pub address: u32,
     pub data_blob: Vec<u8>,
 }
 
