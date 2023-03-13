@@ -3,6 +3,8 @@ use crate::errors::Error;
 
 use serde::{Serialize, Deserialize};
 use std::io::Read;
+use std::path::Path;
+use crate::file_buffer::data_parser::ParsedData;
 
 /*
 
@@ -340,16 +342,23 @@ pub struct FlashRoutine {
 impl FlashRoutine {
 
 
-pub fn build_base_routine(base_routine_path : String) -> Self {
+pub fn build_base_routine(base_routine_path : String) -> Result<Self, Error> {
    
            unimplemented!(); // !! For example !!!
            //this is a draft, it's in progress
 
-           let elf_bin = std::fs::File::open("bin_file_path_from_yaml.yaml");
+           let p =Path::new(&base_routine_path);
+           let s19_file = std::fs::File::open(p)?;
+
+           let mut buffer_vec = Vec::new();
+           s19_file.read_to_end(&mut buffer_vec)?;
+           let parsed_data = ParsedData::parse_s19(buffer_vec)?;
+           let bin_routine = parsed_data.to_bin()?;
+
+     
+      
    
-           let routine_from_elf = vec![0;0xff];
-   
-           FlashRoutine {
+           Ok(FlashRoutine {
    
                name                 : Some("Some Mcu name from yaml".to_string()),
                load_address         : 0, // set in YAML directly OR parse base load address from elf_bin 
@@ -357,11 +366,11 @@ pub fn build_base_routine(base_routine_path : String) -> Self {
                capabilities         : RoutineCapabilites::parse_capabilities_from_elf(), // in param need binary elf OR directly from YAML
                calib_frequency      : 0, //set in YAML directly OR  parse from bin 
                calib_factor         : 0, //set in YAML directly OR  parse from bin 
-               base_routine         : routine_from_elf, // here binary from elf_bin
-               routine_task         : RoutineTask::build_routine_task(routine_from_elf), // 
+               base_routine         : bin_routine, // here binary from elf_bin
+               routine_task         : RoutineTask::build_routine_task(bin_routine), // 
                address_routine_task : 0, //set in YAML directly OR  parse from bin 
                execution_result     : None, // 
-    }
+    })
 }
 
 

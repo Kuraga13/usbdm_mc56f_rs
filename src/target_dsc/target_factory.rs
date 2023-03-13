@@ -134,23 +134,24 @@ pub struct TargetDsc {
 impl TargetDsc 
 {
 
-   /// Create a new dsc from preapered dsc
-   pub fn new(dsc: impl TargetProgramming + 'static) -> Self {
+ /// Create a new dsc from preapered dsc
+ pub fn new(dsc: impl TargetProgramming + 'static) -> Self {
         Self {
             inner: Box::new(dsc),
         }
    }
 
-   pub fn create_target_from_selector(selector : TargetSelector) -> Self {
+ pub fn create_target_from_selector(selector : TargetSelector) -> Self {
 
-      let test_yaml =  Path::new("target_yaml_path");;
+      let test_yaml =  Path::new("target_yaml_path");
       let f = std::fs::File::open(test_yaml).unwrap();
       let target_from_yaml: TargetYaml = serde_yaml::from_reader(f).unwrap();
+
 
       let dsc_family = target_from_yaml.family.clone();
 
 
-      let programming_type: Box<dyn TargetProgramming> = match dsc_family.as_str()
+      let programming_type: Option<Box<dyn TargetProgramming>> = match dsc_family.as_str()
       {
         "801x"  => 
         {
@@ -160,13 +161,13 @@ impl TargetDsc
             name             : target_from_yaml.name.clone(), 
             core_id          : target_from_yaml.core_id_code, 
             memory_map       : target_from_yaml.memory_map.clone(), 
-            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()), 
+            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()).unwrap(), 
             security_bytes   : target_from_yaml.security_bytes.clone(),
             security         : SecurityStatus::Unknown,
             once_status      : OnceStatus::UnknownMode,
             image_path       : target_from_yaml.connection_image_path.clone()});
 
-          prg_type
+          Some(prg_type)
 
         }
 
@@ -177,39 +178,29 @@ impl TargetDsc
             name             : target_from_yaml.name.clone(), 
             core_id          : target_from_yaml.core_id_code, 
             memory_map       : target_from_yaml.memory_map.clone(), 
-            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()), 
+            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()).unwrap(), 
             security_bytes   : target_from_yaml.security_bytes.clone(),
             security         : SecurityStatus::Unknown,
             once_status      : OnceStatus::UnknownMode, 
             image_path       : target_from_yaml.connection_image_path.clone()});
-            prg_type
+            Some(prg_type)
         }
         _ => 
         {
-          let prg_type =  Box::new( 
-            MC56f802x {
-            name             : target_from_yaml.name.clone(), 
-            core_id          : target_from_yaml.core_id_code, 
-            memory_map       : target_from_yaml.memory_map.clone(), 
-            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()), 
-            security_bytes   : target_from_yaml.security_bytes.clone(),
-            security         : SecurityStatus::Unknown,
-            once_status      : OnceStatus::UnknownMode, 
-            image_path       : target_from_yaml.connection_image_path.clone()});
-
-          prg_type
+          None
         }
         
       };
 
+      let configured_dsc = programming_type.expect("Target not found in Yaml!");
       
       TargetDsc {
 
-        inner : programming_type }
+        inner : configured_dsc }
   }
 
  
-pub fn read(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error> {
+ pub fn read(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error> {
 
     let dump = self.inner.read_target(power, address, prog)?;
     Ok(dump)

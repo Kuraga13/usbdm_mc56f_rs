@@ -15,7 +15,7 @@ pub const MC56801X_SIM_ID : u32 =  0x01F2401D;
 
 /// `MC56f801x` describes DSC targets family which include:
 /// 
-///`MC56F8011/13`, 
+/// `MC56F8011/13`, 
 /// 
 ///`MC56F8014`
 /// 
