@@ -50,6 +50,7 @@ pub enum SecurityStatus {
   
  pub const  MC5680XX_SIM_ID : u32 =  0x01F2801D;
   // Least Significant Half of JTAG ID (SIM_LSHID), in mc568023-35 is  $801D.
+  #[derive(Debug, Clone)]
 pub struct MC56f80x {
     
    // pub programmer    : Programmer,

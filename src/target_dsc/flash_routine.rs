@@ -340,43 +340,32 @@ pub struct FlashRoutine {
 impl FlashRoutine {
 
 
-fn build_flash_routine_from_yaml<R>(&mut self, target_yaml : &str) -> Self
+pub fn build_base_routine(base_routine_path : String) -> Self {
+   
+           unimplemented!(); // !! For example !!!
+           //this is a draft, it's in progress
 
-where
-    R: Read, 
-          
-          // TODO implement   
-          //serde_yaml::from_reader(yaml_reader_type);
-          //  let yaml = serde_yaml::to_string(&FlashRoutine)? and derive marco (Serialize, Deserialize);
-    {
+           let elf_bin = std::fs::File::open("bin_file_path_from_yaml.yaml");
+   
+           let routine_from_elf = vec![0;0xff];
+   
+           FlashRoutine {
+   
+               name                 : Some("Some Mcu name from yaml".to_string()),
+               load_address         : 0, // set in YAML directly OR parse base load address from elf_bin 
+               entry_address        : 0, //set in YAML directly OR  parse from bin 
+               capabilities         : RoutineCapabilites::parse_capabilities_from_elf(), // in param need binary elf OR directly from YAML
+               calib_frequency      : 0, //set in YAML directly OR  parse from bin 
+               calib_factor         : 0, //set in YAML directly OR  parse from bin 
+               base_routine         : routine_from_elf, // here binary from elf_bin
+               routine_task         : RoutineTask::build_routine_task(routine_from_elf), // 
+               address_routine_task : 0, //set in YAML directly OR  parse from bin 
+               execution_result     : None, // 
+    }
+}
 
-        unimplemented!(); // !! For example !!!
-        //this is a draft, it's in progress
 
-        let serialazed          = serde_yaml::to_string(&target_yaml).unwrap();
-        let deserialized :  Vec<u8>     = serde_yaml::from_str(&target_yaml).unwrap();
-        //TODO - bind serde_yaml with FlashRoutine, serialize/deserialize 
 
-      
-
-        let elf_bin = std::fs::File::open("bin_file_path_from_yaml.yaml");
-
-        let routine_from_elf = vec![0;0xff];
-
-        FlashRoutine {
-
-            name                 : Some("Some Mcu name from yaml".to_string()),
-            load_address         : 0, // set in YAML directly OR parse base load address from elf_bin 
-            entry_address        : 0, //set in YAML directly OR  parse from bin 
-            capabilities         : RoutineCapabilites::parse_capabilities_from_elf(), // in param need binary elf OR directly from YAML
-            calib_frequency      : 0, //set in YAML directly OR  parse from bin 
-            calib_factor         : 0, //set in YAML directly OR  parse from bin 
-            base_routine         : routine_from_elf, // here binary from elf_bin
-            routine_task         : RoutineTask::build_routine_task(routine_from_elf), // 
-            address_routine_task : 0, //set in YAML directly OR  parse from bin 
-            execution_result     : None, // 
-      }
-   }
 
 pub fn build_speed_meter_routine(&mut self,  target_yaml : &str) -> Self {
 

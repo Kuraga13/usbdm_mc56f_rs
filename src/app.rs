@@ -17,7 +17,7 @@ use crate::usbdm::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::programmer::{Programmer};
-use crate::target_dsc::target_factory::{TargetFactory, TargetProgramming};
+use crate::target_dsc::target_factory::{TargetFactory, TargetProgramming, TargetDsc, TargetSelector};
 use crate::target_dsc::mc56f80x::MC56f80x;
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
@@ -84,6 +84,7 @@ pub enum Message {
 pub struct App {
 
            target             : Option<MC56f80x>,
+           target2            : Option<TargetDsc>,
            programmer         : Option<Programmer>,
     pub    buffer             : HexBuffer,
            buffer_path        : String,
@@ -342,6 +343,7 @@ impl Application for App {
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
                 target             : None,
+                target2            : None,
                 programmer         : None,
                 status             : UsbdmAppStatus::NotConnected,
                 target_status      : TargetStatus::NotConnected,
@@ -581,6 +583,14 @@ impl Application for App {
 
                                   let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target(  0x8000, 0x0000, "MC56f8035".to_string()));
                                   self.target = dsc;
+                                 
+                                 /* test_target2 for new target programming interface, with abstract factory */
+                                 // let test_target2 = TargetDsc::create_target_from_selector(TargetSelector::Mc56f8011);
+                                 // self.target2 = Some(test_target2);
+                                 // let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+                                 // let test2 = self.target2.as_mut().expect("Try to Connect to Opt:None Programmer!");
+                                 //  test2.read(self.selected_power, self.read_adddress, prog);
+                                  
                                   let handle =  self.programmer.as_mut().expect("");
                                   self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.name.clone() +  &handle.get_string_version().clone();
                                 

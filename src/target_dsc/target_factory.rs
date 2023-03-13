@@ -6,13 +6,14 @@ use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
 use super::flash_routine::{FlashRoutine};
+use crate::target_dsc::mc56f802x::MC56f802x;
+use crate::target_dsc::mc56f801x::MC56f801x;
 
 use std::borrow::BorrowMut;
+use std::io::Read;
+use std::path::Path;
 use core::ops::Range;
-
-// new variant -> in Work, is draft! 
 use serde::{Serialize, Deserialize};
-
 
 type MemorySpace       = u8;
 
@@ -75,29 +76,32 @@ pub enum MemorySegment {
 }
 
 
-
-
 /// This describes a target import from Yaml, ser-de_ser fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TargetYaml {
+  
     /// The name of the target.
     #[serde(default)]
     pub name               : String,
+    /// `family `specify TargetProgramming trait
+    #[serde(default)]
+    pub family             : String,
     /// The memory map of the target.
     pub memory_map         : Vec<MemorySegment>,
     /// `base_routine_path` base pre-compiled routine path
     pub base_routine_path  : String,
-    /// `flash_routine` configured and builded for some task
-    pub flash_routine      : FlashRoutine,
-    /// `jtag_id_code` id code from dsc, for example  MC5680XX_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
+    /// `jtag_id_code` id code from dsc, for example  MC56802X_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
     pub jtag_id_code       : u32,
     /// `core id code`, orig pjt `sdid`, for example  mc5680xx(23-35) =  0x02211004, get by fn read_core_id_code().
     pub core_id_code       : u32,
     /// `security_bytes`, security bytes sequense, for unsecuring-securing device ref datasheet
     pub security_bytes     : Vec<u8>,
- 
-
+    /// `connection_image_path`, specify path to connection image
+    pub connection_image_path     : String,
 }
+
+
+
 
 #[derive(Debug, Clone,PartialEq)]
 pub enum SecurityStatus {
@@ -107,55 +111,117 @@ pub enum SecurityStatus {
        Unsecured,
     
 }
-#[derive(Debug, Clone)]
-pub struct TargetState
+
+
+pub enum TargetSelector
 {
-  pub once_status   : OnceStatus,
-  pub security      : SecurityStatus,
+
+  Mc56f8011,
+  Mc56f8023,
+  Mc56f8035,
+
 }
 
-impl Default for TargetState
-{
-    fn default() -> Self { 
-
-       TargetState {
-
-        once_status : OnceStatus::UnknownMode,
-        security    : SecurityStatus::Unknown,
-    }
-  } 
-}
 
 /// This describes a complete target with a fixed chip model and variant.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TargetDsc {
 
-    /// The name of the target.
-    pub name               : String,
-    /// The memory map of the target.
-    pub memory_map         : Vec<MemorySegment>,
-    /// `flash_routine` configured and builded for some task
-    pub flash_routine      : FlashRoutine,
-    /// `jtag_id_code` id code from dsc, for example  MC5680XX_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
-    pub jtag_id_code       : u32,
-    /// `core id code`, orig pjt `sdid`, for example  mc5680xx(23-35) =  0x02211004, get by fn read_core_id_code().
-    pub core_id_code       : u32,
-    /// `security_bytes`, security bytes sequense, for unsecuring-securing device ref datasheet
-    pub security_bytes     : Vec<u8>,
-    /// `dsc_state`, all state data needed for programming
-    pub dsc_state          : TargetState,
-
+  inner: Box<dyn TargetProgramming>,
+  
 }
 
-// TODO 
-// 1. deal with data in old TCL's
-//2. Implement them either
-//-trait TP-gimng
-//- data from yaml?
-//3. Put it all together
-//- build specific target from yaml
-//- building her flash routine
-//- applying trait methods
+impl TargetDsc 
+{
+
+   /// Create a new dsc from preapered dsc
+   pub fn new(dsc: impl TargetProgramming + 'static) -> Self {
+        Self {
+            inner: Box::new(dsc),
+        }
+   }
+
+   pub fn create_target_from_selector(selector : TargetSelector) -> Self {
+
+      let test_yaml =  Path::new("target_yaml_path");;
+      let f = std::fs::File::open(test_yaml).unwrap();
+      let target_from_yaml: TargetYaml = serde_yaml::from_reader(f).unwrap();
+
+      let dsc_family = target_from_yaml.family.clone();
+
+
+      let programming_type: Box<dyn TargetProgramming> = match dsc_family.as_str()
+      {
+        "801x"  => 
+        {
+
+          let prg_type =  Box::new( 
+            MC56f801x {
+            name             : target_from_yaml.name.clone(), 
+            core_id          : target_from_yaml.core_id_code, 
+            memory_map       : target_from_yaml.memory_map.clone(), 
+            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()), 
+            security_bytes   : target_from_yaml.security_bytes.clone(),
+            security         : SecurityStatus::Unknown,
+            once_status      : OnceStatus::UnknownMode,
+            image_path       : target_from_yaml.connection_image_path.clone()});
+
+          prg_type
+
+        }
+
+        "802x" => 
+        {
+          let prg_type =  Box::new( 
+            MC56f802x {
+            name             : target_from_yaml.name.clone(), 
+            core_id          : target_from_yaml.core_id_code, 
+            memory_map       : target_from_yaml.memory_map.clone(), 
+            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()), 
+            security_bytes   : target_from_yaml.security_bytes.clone(),
+            security         : SecurityStatus::Unknown,
+            once_status      : OnceStatus::UnknownMode, 
+            image_path       : target_from_yaml.connection_image_path.clone()});
+            prg_type
+        }
+        _ => 
+        {
+          let prg_type =  Box::new( 
+            MC56f802x {
+            name             : target_from_yaml.name.clone(), 
+            core_id          : target_from_yaml.core_id_code, 
+            memory_map       : target_from_yaml.memory_map.clone(), 
+            flash_routine    : FlashRoutine::build_base_routine(target_from_yaml.base_routine_path.clone()), 
+            security_bytes   : target_from_yaml.security_bytes.clone(),
+            security         : SecurityStatus::Unknown,
+            once_status      : OnceStatus::UnknownMode, 
+            image_path       : target_from_yaml.connection_image_path.clone()});
+
+          prg_type
+        }
+        
+      };
+
+      
+      TargetDsc {
+
+        inner : programming_type }
+  }
+
+ 
+pub fn read(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error> {
+
+    let dump = self.inner.read_target(power, address, prog)?;
+    Ok(dump)
+
+  }
+}
+
+
+
+
+
+
 
 /////////////////////////////////////
 
@@ -166,6 +232,7 @@ type AddressKey       = u32;
 type MemorySpaceType  = u8;
 type HexMap = HashMap<AddressKey, MemorySpaceType>; // map need to find memory type. On mc56f you have different access on memory space
 
+#[derive(Debug, Clone)]
 pub struct MemoryMap
 {
 
@@ -228,8 +295,7 @@ pub fn memory_start_address(&self)  -> u32
   
 }
 
-
-pub trait TargetProgramming
+pub trait TargetProgramming:  Send + std::fmt::Debug
 {
 
 /// Init
@@ -255,24 +321,3 @@ fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> R
 
 }
 
-// TODO - Depreceated! A lot of device in one family have same SDID...
-// we need this function to create target after connection with abstract DSC
-//  This will require refactoring.
-// It should work like this:
-// 1. we have created an abstract DSC,
-// 2. we connect with it
-// 3. get SDID - NEED TO CHECK IS 
-// (It is necessary to check that SDID detection by XML of the original USBDM really works!)
-// 4. Target Factory return yous created concrete DSC with all parameters, specificallyЖ
-// - MSHID (SIM_MSHID, SIM_LSHID) + function security_status_from_id_code (need customization from target type)
-// - Memory MAP
-// - trait TargetProgramming included all pre-implemented programming actions
-//
-//this will give us:
-//you can not specify the target name manually, there will be logic like in cool programmer soft, the target name by id
-pub fn dsc_target_from_yaml()
-{
-
-  unimplemented!()
-
-}

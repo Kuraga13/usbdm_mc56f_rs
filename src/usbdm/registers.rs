@@ -466,14 +466,16 @@ impl Programmer
         Ok(answer)
     }
 
-    // Write Core register via ONCE & target execution
-    //
-    // @param regNo     - Register number
-    // @param regValue  - Value for register
-    //
-    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
-    // @note Leaves Core TAP in RUN-TEST/IDLE, EONCE register selected
-    //
+    /// `dsc_write_core_reg` write Core register via ONCE & target execution
+    ///
+    /// `regNo`     - Register number
+    /// 
+    /// `regValue`  - Value for register
+    ///
+    /// `note` Assumes Core TAP is active & in RUN-TEST/IDLE
+    /// 
+    /// `note` Leaves Core TAP in RUN-TEST/IDLE, EONCE register selected
+    ///
     pub fn dsc_write_core_reg(&self, reg: DscRegisters, value: u32) -> Result<(), Error> {
         if (reg as u8) < DSC_FIRST_CORE_REGISTER || (reg as u8) > DSC_LAST_CORE_REGISTER {
             return Err(Error::InternalError("Unexpected input value in write_core_reg".to_string())) 
