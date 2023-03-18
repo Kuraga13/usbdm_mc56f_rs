@@ -16,9 +16,11 @@ Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firm
 ###  In work
 * Concrete mc56f (target) commands - write, erase 
 
+###  On test
+* Make target_factory from yaml file with parameters
+
 ### In plan
 * Made HexBuffer interactive, copying data, addressing etc.
-* Make target_factory from yaml file with parameters
 * Big refactor TargetProgramming, usb and programmer - made it async (async trait?) and bind with iced subscribtion
 
 ###  Done now
