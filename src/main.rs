@@ -7,7 +7,7 @@ mod gui;
 mod app;
 mod errors;
 mod usbdm;
-mod target_dsc;
+mod dsc_algo;
 mod file_buffer;
 
 use std::vec;

@@ -4,6 +4,7 @@ use crate::errors::Error;
 use serde::{Serialize, Deserialize};
 use std::io::Read;
 use std::path::Path;
+use std::fs;
 use crate::file_buffer::data_parser::ParsedData;
 
 /*
@@ -64,8 +65,6 @@ impl Default for RoutineCapabilites {
 impl RoutineCapabilites  {
 
     fn parse_capabilities_from_elf() -> Self { 
-
-        unimplemented!();
 
         RoutineCapabilites {
             cap_erase_block           : false,
@@ -256,11 +255,9 @@ impl RoutineTask {
 
 fn build_routine_task(raw_elf : Vec<u8>) -> Self {
 
-        unimplemented!(); // !! For example
 
         RoutineTask {
 
-            task_byte          : RoutineTaskByte::new_task(raw_elf),
             controller         : u16::from(raw_elf[1]),
             frequency          : u16::from(raw_elf[2]), 
             minimal_sector     : u16::from(raw_elf[3]), 
@@ -268,6 +265,7 @@ fn build_routine_task(raw_elf : Vec<u8>) -> Self {
             range_size         : u16::from(raw_elf[5]), 
             buffer_address     : u32::from(raw_elf[6]), 
             timing_count       : u32::from(raw_elf[7]), 
+            task_byte          : RoutineTaskByte::new_task(raw_elf),
       }
    }
 
@@ -344,11 +342,9 @@ impl FlashRoutine {
 
     pub fn build_base_routine(base_routine_path : String) -> Result<Self, Error> {
    
-        unimplemented!(); // !! For example !!!
-        //this is a draft, it's in progress
-
-        let p =Path::new(&base_routine_path);
-        let s19_file = std::fs::File::open(p)?;
+        
+        let p = fs::canonicalize(&base_routine_path)?;
+        let mut s19_file = std::fs::File::open(p)?;
         let mut file_data = Vec::new();
         s19_file.read_to_end(&mut file_data)?;
         let parsed_data = ParsedData::parse_s19(file_data)?;
@@ -362,36 +358,36 @@ impl FlashRoutine {
                                       (bin_routine[3] as u32) << 24) as usize) * 2;
            
         // Address where to load this image
-        let code_load_address: u32 = (((bin_routine[0 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+        let code_load_address: u32 =  0; /*  (((bin_routine[0 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
                                       ((bin_routine[1 + header_address] as u32) <<  8) | 
                                       ((bin_routine[2 + header_address] as u32) << 16) | 
-                                      ((bin_routine[3 + header_address] as u32) << 24)) * 2;
+                                      ((bin_routine[3 + header_address] as u32) << 24)) * 2;*/
 
         // Pointer to entry routine (for currently loaded routine)
-        let code_entry: u32 =        (((bin_routine[4 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+        let code_entry: u32 =  0; /*      (((bin_routine[4 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
                                       ((bin_routine[5 + header_address] as u32) <<  8) | 
                                       ((bin_routine[6 + header_address] as u32) << 16) | 
-                                      ((bin_routine[7 + header_address] as u32) << 24)) * 2;
+                                      ((bin_routine[7 + header_address] as u32) << 24)) * 2;*/
 
         // Capabilities of routine
-        let capabilities: u16 =       ((bin_routine[8 + header_address] as u16) <<  8) |  //BIG ENDIAN 
-                                      ((bin_routine[9 + header_address] as u16) <<  0);
+        let capabilities: u16 =   0;   /* ((bin_routine[8 + header_address] as u16) <<  8) |  //BIG ENDIAN 
+                                      ((bin_routine[9 + header_address] as u16) <<  0);*/
                                 
         // Frequency (kHz) used for calibFactor
-        let calib_frequency: u16 =    ((bin_routine[10 + header_address] as u16) <<  8) |  //BIG ENDIAN 
-                                      ((bin_routine[11 + header_address] as u16) <<  0);
+        let calib_frequency: u16 = 0;  /* ((bin_routine[10 + header_address] as u16) <<  8) |  //BIG ENDIAN 
+                                      ((bin_routine[11 + header_address] as u16) <<  0);*/
 
         // Calibration factor for speed determination
-        let calib_factor: u32 =       ((bin_routine[12 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+        let calib_factor: u32 =   0;   /* ((bin_routine[12 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
                                       ((bin_routine[13 + header_address] as u32) <<  8) | 
                                       ((bin_routine[14 + header_address] as u32) << 16) | 
-                                      ((bin_routine[15 + header_address] as u32) << 24);
+                                      ((bin_routine[15 + header_address] as u32) << 24);*/
 
         // Pointer to information about operation
-        let flash_data: u32 =        (((bin_routine[16 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
+        let flash_data: u32 =   0;    /* (((bin_routine[16 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
                                       ((bin_routine[17 + header_address] as u32) <<  8) | 
                                       ((bin_routine[18 + header_address] as u32) << 16) | 
-                                      ((bin_routine[19 + header_address] as u32) << 24)) * 2;
+                                      ((bin_routine[19 + header_address] as u32) << 24)) * 2;*/
 
 
      
@@ -405,7 +401,7 @@ impl FlashRoutine {
                capabilities         : RoutineCapabilites::parse_capabilities_from_elf(), // in param need binary elf OR directly from YAML
                calib_frequency      : 0, //set in YAML directly OR  parse from bin 
                calib_factor         : 0, //set in YAML directly OR  parse from bin 
-               base_routine         : bin_routine, // here binary from elf_bin
+               base_routine         : bin_routine.clone(), // here binary from elf_bin
                routine_task         : RoutineTask::build_routine_task(bin_routine), // 
                address_routine_task : 0, //set in YAML directly OR  parse from bin 
                execution_result     : None, // 

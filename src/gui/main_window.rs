@@ -13,6 +13,7 @@ use crate::errors::{Error};
 use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
+use crate::dsc_algo::target_factory::{TargetSelector};
 use super::styling::{PowerButtonStyle, ButtonStyle, EnablePowerButtonStyle};
 
 use super::hexbuffer_widget::{TableContents,table_contents };
@@ -199,6 +200,10 @@ pub fn about_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message
 }
 
 pub fn connect_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
+    MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
+}
+
+pub fn target_button_item<'a>(label: &str, msg : Message) -> MenuTree<'a, Message, iced::Renderer> {
     MenuTree::new(labeled_button(label, msg).width(Length::Fill).height(Length::Fill))
 }
 
@@ -467,9 +472,9 @@ pub fn target_selection_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Rend
     let root = MenuTree::with_children(
         menu_button("Target"),
         vec![
-            empty_item("MC56F8035",),
-           
-            //file_button_item("Save As", Message::TestFeedback),
+        target_button_item("MC56F8011", Message::TargetSelect(TargetSelector::Mc56f8011)),
+        target_button_item("MC56F8025", Message::TargetSelect(TargetSelector::Mc56f8025)),
+        target_button_item("MC56F8035", Message::TargetSelect(TargetSelector::Mc56f8035)),
         ],
     )
     .width(110);
