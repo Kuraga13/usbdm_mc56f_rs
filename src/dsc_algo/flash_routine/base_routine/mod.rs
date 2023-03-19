@@ -86,19 +86,25 @@ impl BaseRoutine
         let parsed_data = ParsedData::parse_s19(base_routine_s19)?;
         if parsed_data.data_vec.len() != 1 { return Err(Error::InternalError("Base routine is fragmented or do not exist".to_string())) }
         let base_routine: Vec<u8> = parsed_data.data_vec[0].data_blob.clone();
-        let block_address: usize = parsed_data.data_vec[0].address as usize;
+        let image_address: usize = parsed_data.data_vec[0].address as usize;
+
+        if base_routine.len() < 4 { return Err(Error::InternalError("Base routine length < 4".to_string())) }
 
         let header_offset: usize = 
             (((((base_routine[0] as u32) <<  0) |  //LITTLE ENDIAN
             ((   base_routine[1] as u32) <<  8) | 
             ((   base_routine[2] as u32) << 16) | 
-            (    base_routine[3] as u32) << 24) as usize) - block_address) * 2;
+            (    base_routine[3] as u32) << 24) as usize) - image_address) * 2;
+
+        if base_routine.len() < (header_offset + 20) { return Err(Error::InternalError("Base routine length < (header_offset + 20)".to_string())) }
 
         let code_load_address: u32 = 
             (((base_routine[0 + header_offset] as u32) <<  0) |  //LITTLE ENDIAN
             (( base_routine[1 + header_offset] as u32) <<  8) | 
             (( base_routine[2 + header_offset] as u32) << 16) | 
             (( base_routine[3 + header_offset] as u32) << 24));
+
+        if (code_load_address as usize != image_address) { return Err(Error::InternalError("Inconsistent actual and code load addresses".to_string())) }
 
         let code_entry: u32 =
             (((base_routine[4 + header_offset] as u32) <<  0) |  //LITTLE ENDIAN
