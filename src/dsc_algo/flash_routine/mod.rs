@@ -1,3 +1,8 @@
+pub mod base_routine;
+
+use crate::errors::Error;
+
+/*
 use packed_struct::prelude::*;
 use crate::errors::Error;
 
@@ -407,9 +412,10 @@ impl FlashRoutine {
                execution_result     : None, // 
     })
 }
+*/
 
 
-
+/*
 
 pub fn build_speed_meter_routine(&mut self,  target_yaml : &str) -> Self {
 
@@ -568,7 +574,7 @@ pub fn build_verify_routine(&mut self,  target_yaml : &str) -> Self {
    }
 }
 
-
+*/
 
 
 
