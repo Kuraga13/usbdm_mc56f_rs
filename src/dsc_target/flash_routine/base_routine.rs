@@ -3,13 +3,10 @@
 use super::*;
 use crate::file_buffer::data_parser::ParsedData;
 
-const DSC_56F8006_FLASH_PROG: &[u8] = include_bytes!(r"DSC-56F8006-flash-prog.elf.p.S");
-const DSC_56F8014_FLASH_PROG: &[u8] = include_bytes!(r"DSC-56F8014-flash-prog.elf.p.S");
-const DSC_56F8023_FLASH_PROG: &[u8] = include_bytes!(r"DSC-56F8023-flash-prog.elf.p.S");
-//const DSC_56F825X_FLASH_PROG: &[u8] = include_bytes!(r"DSC-56F825X-flash-prog.elf.p.S");
-//const DSC_56F8323_FLASH_PROG: &[u8] = include_bytes!(r"DSC-56F8323-flash-prog.elf.p.S");
-//const DSC_FTFA_FLASH_PROG: &[u8] = include_bytes!(r"DSC-FTFA-flash-prog.elf.p.S");
-//const DSC_FTFL_FLASH_PROG: &[u8] = include_bytes!(r"DSC-FTFL-flash-prog.elf.p.S");
+const DSC_56F800X_FLASH_PROG: &[u8] = include_bytes!(r"base_routine\DSC-56F800x-base_routine.S");
+const DSC_56F801X_FLASH_PROG: &[u8] = include_bytes!(r"base_routine\DSC-56F801x-base_routine.S");
+const DSC_56F802X_FLASH_PROG: &[u8] = include_bytes!(r"base_routine\DSC-56F802x-base_routine.S");
+
 
 // Capability masks
 const CAP_ERASE_BLOCK       : u16 = 1<<1;
@@ -44,13 +41,9 @@ pub struct BaseRoutine {
 }
 
 pub enum BaseRoutineFamily {
-    DSC_56F8006,
-    DSC_56F8014,
-    DSC_56F8023,
-    //DSC_56F825X, 
-    //DSC_56F8323,
-    //DSC_FTFA,
-    //DSC_FTFL,
+    DSC_56F800X,
+    DSC_56F801X,
+    DSC_56F802X,
     NONE,
 }
 
@@ -73,13 +66,9 @@ impl BaseRoutine
 {
     pub fn new(base_routine_family : BaseRoutineFamily) -> Result<Self, Error> {
         let base_routine_s19: Vec<u8> = match base_routine_family {
-            BaseRoutineFamily::DSC_56F8006 => DSC_56F8006_FLASH_PROG.to_vec(),
-            BaseRoutineFamily::DSC_56F8014 => DSC_56F8014_FLASH_PROG.to_vec(),
-            BaseRoutineFamily::DSC_56F8023 => DSC_56F8023_FLASH_PROG.to_vec(),
-            //BaseRoutineFamily::DSC_56F825X => DSC_56F825X_FLASH_PROG.to_vec(),
-            //BaseRoutineFamily::DSC_56F8323 => DSC_56F8323_FLASH_PROG.to_vec(),
-            //BaseRoutineFamily::DSC_FTFA    => DSC_FTFA_FLASH_PROG.to_vec(),
-            //BaseRoutineFamily::DSC_FTFL    => DSC_FTFL_FLASH_PROG.to_vec(),
+            BaseRoutineFamily::DSC_56F800X => DSC_56F800X_FLASH_PROG.to_vec(),
+            BaseRoutineFamily::DSC_56F801X => DSC_56F801X_FLASH_PROG.to_vec(),
+            BaseRoutineFamily::DSC_56F802X => DSC_56F802X_FLASH_PROG.to_vec(),
             BaseRoutineFamily::NONE        => return Ok(BaseRoutine::default()),
         };
         
@@ -166,73 +155,45 @@ mod tests {
     #[test]
     fn base_routine_checksum() {
         // checksum test
-        assert_eq!(checksum(BaseRoutineFamily::DSC_56F8006), 124047);
-        assert_eq!(checksum(BaseRoutineFamily::DSC_56F8014), 124494);
-        assert_eq!(checksum(BaseRoutineFamily::DSC_56F8023), 124051);
-        //assert_eq!(checksum(BaseRoutineFamily::DSC_56F825X), 120433);
-        //assert_eq!(checksum(BaseRoutineFamily::DSC_56F8323), 131804);
-        //assert_eq!(checksum(BaseRoutineFamily::DSC_FTFA),    157857);
-        //assert_eq!(checksum(BaseRoutineFamily::DSC_FTFL),    161699);
+        assert_eq!(checksum(BaseRoutineFamily::DSC_56F800X), 124047);
+        assert_eq!(checksum(BaseRoutineFamily::DSC_56F801X), 124494);
+        assert_eq!(checksum(BaseRoutineFamily::DSC_56F802X), 124051);
         assert_eq!(checksum(BaseRoutineFamily::NONE),        0);
 
         // code_load_address check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8006).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8014).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8023).unwrap().code_load_address, 0x008000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F825X).unwrap().code_load_address, 0x008000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8323).unwrap().code_load_address, 0x02F800);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFA   ).unwrap().code_load_address, 0x00F000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFL   ).unwrap().code_load_address, 0x060000);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().code_load_address, 0x008000);
         assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().code_load_address,        0);
 
         // code_entry check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8006).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8014).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8023).unwrap().code_entry, 0x00800C);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F825X).unwrap().code_entry, 0x00800C);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8323).unwrap().code_entry, 0x02F80C);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFA   ).unwrap().code_entry, 0x00F00C);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFL   ).unwrap().code_entry, 0x06000C);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().code_entry, 0x00800C);
         assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().code_entry,        0);
 
         // flash_data check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8006).unwrap().flash_data, 0x000260);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8014).unwrap().flash_data, 0x000260);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8023).unwrap().flash_data, 0x000260);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F825X).unwrap().flash_data, 0x000252);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8323).unwrap().flash_data, 0x000028);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFA   ).unwrap().flash_data, 0x000298);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFL   ).unwrap().flash_data, 0x0002E0);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().flash_data, 0x000260);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().flash_data, 0x000260);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().flash_data, 0x000260);
         assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().flash_data,        0);
 
         // calib_frequency check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8006).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8014).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8023).unwrap().calib_frequency, 4000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F825X).unwrap().calib_frequency, 4000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8323).unwrap().calib_frequency, 4000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFA   ).unwrap().calib_frequency, 4000);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFL   ).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().calib_frequency, 4000);
         assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().calib_frequency,    0);
 
         // calib_factor
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8006).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8014).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8023).unwrap().calib_factor, 444039);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F825X).unwrap().calib_factor, 444039);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8323).unwrap().calib_factor, 508214);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFA   ).unwrap().calib_factor, 500553);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFL   ).unwrap().calib_factor, 500553);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().calib_factor, 444039);
         assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().calib_factor,      0);
 
         // capabilities check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8006).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8014).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8023).unwrap().capabilities, 0b0000100000111110);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F825X).unwrap().capabilities, 0b0000100000111110);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F8323).unwrap().capabilities, 0b0000000000111110);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFA   ).unwrap().capabilities, 0b0000100000111110);
-        //assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_FTFL   ).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().capabilities, 0b0000100000111110);
         assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().capabilities,                  0);
     }
 

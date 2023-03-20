@@ -13,7 +13,7 @@ use crate::errors::{Error};
 use crate::app::{Message, App, UsbdmAppStatus, TargetStatus};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
-use crate::dsc_algo::target_factory::{TargetSelector};
+use crate::dsc_target::target_factory::{TargetSelector};
 use super::styling::{PowerButtonStyle, ButtonStyle, EnablePowerButtonStyle};
 
 use super::hexbuffer_widget::{TableContents,table_contents };

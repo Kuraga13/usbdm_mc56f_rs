@@ -168,7 +168,7 @@ pub struct TargetDsc {
 
 }
 
-const YAML_STR : &str = include_str!("../dsc_algo/targets.yaml");
+const YAML_STR : &str = include_str!("../dsc_target/targets.yaml");
 
 
 impl TargetDsc {
