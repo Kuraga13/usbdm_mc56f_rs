@@ -1,3 +1,8 @@
+pub mod base_routine;
+
+use crate::errors::Error;
+
+/*
 use packed_struct::prelude::*;
 use crate::errors::Error;
 
@@ -340,77 +345,6 @@ pub struct FlashRoutine {
 impl FlashRoutine {
 
 
-    pub fn build_base_routine(base_routine_path : String) -> Result<Self, Error> {
-   
-        
-        let p = fs::canonicalize(&base_routine_path)?;
-        let mut s19_file = std::fs::File::open(p)?;
-        let mut file_data = Vec::new();
-        s19_file.read_to_end(&mut file_data)?;
-        let parsed_data = ParsedData::parse_s19(file_data)?;
-        if parsed_data.data_vec.len() != 1 { return Err(Error::InternalError("Base routine is fragmented or do not exist".to_string())) }
-        
-        let bin_routine: Vec<u8> = parsed_data.data_vec[0].data_blob.clone();
-        let image_address: u32 = parsed_data.data_vec[0].address * 2;
-        let header_address: usize = ((((bin_routine[0] as u32) <<  0) |  //LITTLE ENDIAN
-                                      ((bin_routine[1] as u32) <<  8) | 
-                                      ((bin_routine[2] as u32) << 16) | 
-                                      (bin_routine[3] as u32) << 24) as usize) * 2;
-           
-        // Address where to load this image
-        let code_load_address: u32 =  0; /*  (((bin_routine[0 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
-                                      ((bin_routine[1 + header_address] as u32) <<  8) | 
-                                      ((bin_routine[2 + header_address] as u32) << 16) | 
-                                      ((bin_routine[3 + header_address] as u32) << 24)) * 2;*/
-
-        // Pointer to entry routine (for currently loaded routine)
-        let code_entry: u32 =  0; /*      (((bin_routine[4 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
-                                      ((bin_routine[5 + header_address] as u32) <<  8) | 
-                                      ((bin_routine[6 + header_address] as u32) << 16) | 
-                                      ((bin_routine[7 + header_address] as u32) << 24)) * 2;*/
-
-        // Capabilities of routine
-        let capabilities: u16 =   0;   /* ((bin_routine[8 + header_address] as u16) <<  8) |  //BIG ENDIAN 
-                                      ((bin_routine[9 + header_address] as u16) <<  0);*/
-                                
-        // Frequency (kHz) used for calibFactor
-        let calib_frequency: u16 = 0;  /* ((bin_routine[10 + header_address] as u16) <<  8) |  //BIG ENDIAN 
-                                      ((bin_routine[11 + header_address] as u16) <<  0);*/
-
-        // Calibration factor for speed determination
-        let calib_factor: u32 =   0;   /* ((bin_routine[12 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
-                                      ((bin_routine[13 + header_address] as u32) <<  8) | 
-                                      ((bin_routine[14 + header_address] as u32) << 16) | 
-                                      ((bin_routine[15 + header_address] as u32) << 24);*/
-
-        // Pointer to information about operation
-        let flash_data: u32 =   0;    /* (((bin_routine[16 + header_address] as u32) <<  0) |  //LITTLE ENDIAN
-                                      ((bin_routine[17 + header_address] as u32) <<  8) | 
-                                      ((bin_routine[18 + header_address] as u32) << 16) | 
-                                      ((bin_routine[19 + header_address] as u32) << 24)) * 2;*/
-
-
-     
-      
-   
-           Ok(FlashRoutine {
-   
-               name                 : Some("Some Mcu name from yaml".to_string()),
-               load_address         : 0, // set in YAML directly OR parse base load address from elf_bin 
-               entry_address        : 0, //set in YAML directly OR  parse from bin 
-               capabilities         : RoutineCapabilites::parse_capabilities_from_elf(), // in param need binary elf OR directly from YAML
-               calib_frequency      : 0, //set in YAML directly OR  parse from bin 
-               calib_factor         : 0, //set in YAML directly OR  parse from bin 
-               base_routine         : bin_routine.clone(), // here binary from elf_bin
-               routine_task         : RoutineTask::build_routine_task(bin_routine), // 
-               address_routine_task : 0, //set in YAML directly OR  parse from bin 
-               execution_result     : None, // 
-    })
-}
-
-
-
-
 pub fn build_speed_meter_routine(&mut self,  target_yaml : &str) -> Self {
 
     unimplemented!(); // !! For example !!!
@@ -568,7 +502,7 @@ pub fn build_verify_routine(&mut self,  target_yaml : &str) -> Self {
    }
 }
 
-
+*/
 
 
 
