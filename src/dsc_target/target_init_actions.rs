@@ -1,5 +1,5 @@
 use crate::errors::Error;
-use super::target_factory::{TargetInitActions};
+use super::target_factory::{TargetInitActions, SecurityStatus};
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
@@ -20,10 +20,30 @@ pub struct MC56f801x;
 
 impl TargetInitActions for MC56f801x {
 
-/// is Unsecure - check Target unsecured, get Secure Status
-fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<(), Error> {
+/// `is_unsecure` - check Target unsecured, get Secure Status
+///
+/// 
+/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
+/// 
+/// Most Significant Half of JTAG ID (`SIM_MSHID`), in MC56f801x is `$01F2`.
+/// 
+/// Least Significant Half of JTAG ID (`SIM_LSHID`), in MC56f801x is  `$401D`.
+/// 
+/// PGO wrote in original usbdm pjt, if you have match id code dsc in
+/// we have to match `jtag_id_code` with `SIM_ID`
+fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error> {
 
-    unimplemented!();
+    let jtag_id_code =  vec_as_u32_be(jtag_id_code_vec);
+    
+    // println!("jtag_id_code : {:02X}", jtag_id_code);
+    // println!("expected_id : {:02X}", expected_id);
+   
+     match jtag_id_code {
+           expected_id           => Ok(SecurityStatus::Unsecured),
+           0x0                        => Ok(SecurityStatus::Secured),           
+           _                          => Ok(SecurityStatus::Unknown),             
+       }    
+
 
  } 
 
@@ -67,10 +87,31 @@ pub struct MC56f802x;
 
 impl TargetInitActions for MC56f802x {
 
-/// is Unsecure - check Target unsecured, get Secure Status
-fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<(), Error> {
+/// `is_unsecure` - check Target unsecured, get Secure Status
+///
+/// 
+/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
+/// 
+/// Most Significant Half of JTAG ID (`SIM_MSHID`), in mc568023-35 is `$01F2`.
+/// 
+/// Least Significant Half of JTAG ID (`SIM_LSHID`), in mc568023-35 is  `$801D`.
+/// 
+/// PGO wrote in original usbdm pjt, if you have match id code dsc in
+/// we have to match `jtag_id_code` with `SIM_ID`
+fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error> {
 
-    unimplemented!();
+    let jtag_id_code =  vec_as_u32_be(jtag_id_code_vec);
+    
+    // println!("jtag_id_code : {:02X}", jtag_id_code);
+    // println!("expected_id : {:02X}", expected_id);
+   
+
+     match jtag_id_code {
+           expected_id           => Ok(SecurityStatus::Unsecured),
+           0x0                        => Ok(SecurityStatus::Secured),           
+           _                          => Ok(SecurityStatus::Unknown),             
+       }    
+
 
  } 
 
@@ -96,3 +137,55 @@ fn target_init(&mut self, power : TargetVddSelect, prog : &mut Programmer ) {
  }
 }
 
+
+
+
+pub fn vec_as_u32_be(vec:  Vec<u8>) -> u32 {
+    ((vec[0] as u32) << 24) +
+    ((vec[1] as u32) << 16) +
+    ((vec[2] as u32) <<  8) +
+    ((vec[3] as u32) <<  0)
+}
+
+
+pub fn print_id_code(core_id_code : &Vec<u8>, master_id_code : &Vec<u8>) {
+    
+    println!(" core_id_code :");
+     
+    for byte in core_id_code.iter()
+    {
+    let in_string = format!("{:02X}", byte);
+    print!("{} ", in_string);
+    }
+   
+    println!(" \n");
+   
+    println!(" master_id_code (in usbdm jtag-idcode) :");
+    for byte in master_id_code.iter()
+    {
+   
+    let in_string = format!("{:02X}", byte);
+    print!("{} ", in_string);
+   
+    }
+   
+    println!(" \n");
+      
+   }
+
+///'print_vec_memory' for debug memory read, use for print small readed block
+fn print_vec_memory(mem : Vec<u8>) {
+   
+   let mut printed_vec = Vec::new();
+    for byte in mem.iter() {
+    let in_string = format!("{:02X}", byte);
+    printed_vec.push(in_string);
+     if(printed_vec.len() == 0x10) {
+
+      for symbol in printed_vec.iter() {
+       print!("{} ", symbol); }
+    print!("\n");
+    printed_vec.clear();
+    }  
+  } 
+}

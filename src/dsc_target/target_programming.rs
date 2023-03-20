@@ -6,7 +6,8 @@ use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
-
+use std::{thread, time};
+use std::time::Duration;
 
 impl TargetDsc
 {
@@ -44,6 +45,99 @@ impl TargetDsc
       Ok(())
 
   }
+
+pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
+
+  let powered = prog.get_power_state()?;
+  self.once_status = enableONCE(&prog)?;
+  
+  if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
+  {
+      self.connect(power, prog)?;
+  }
+
+  if (self.security == SecurityStatus::Secured)
+  {
+    return Err(Error::TargetSecured)
+  }
+
+  let pc_start = prog.dsc_read_pc()?;
+
+  dbg!(pc_start);
+
+  prog.dsc_write_pc(0x008000);
+
+  let pc_writed = prog.dsc_read_pc()?;
+
+  dbg!(pc_writed);
+
+  if(pc_writed != 0x008000)
+  {
+
+    return Err(Error::InternalError("test_rw_programm_counter Test Failed! Pc mismatch!".to_string()));
+
+  }
+
+  Ok(())
+
+ }
+
+ pub fn test_rw_debug_target(&mut self, power: TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
+
+  let powered = prog.get_power_state()?;
+  self.once_status = enableONCE(&prog)?;
+  
+  if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
+  {
+      self.connect(power, prog)?;
+  }
+
+  if (self.security == SecurityStatus::Secured)
+  {
+    return Err(Error::TargetSecured)
+  }
+
+  let pc_start = prog.dsc_read_pc()?;
+
+  dbg!(pc_start);
+
+  let pc_start2 = prog.dsc_read_pc()?;
+
+  dbg!(pc_start2);
+
+  prog.dsc_target_go()?;
+
+  thread::sleep(time::Duration::from_millis(20));
+
+  for retry in 0..10 
+  {
+    
+    self.once_status = targetDebugRequest(&prog)?;
+    dbg!(&self.once_status);
+    if(self.once_status == OnceStatus::DebugMode)
+    {
+      break;
+    }
+    if(self.once_status == OnceStatus::UnknownMode) 
+    {
+       return Err((Error::TargetNotConnected))
+    }
+  }
+
+  let pc_after_execution = prog.dsc_read_pc()?;
+
+  dbg!(pc_after_execution);
+  
+  let pc_after_execution2 = prog.dsc_read_pc()?;
+
+  dbg!(pc_after_execution2);
+
+  self.power(TargetVddSelect::VddOff, prog)?;
+
+  Ok(())
+
+ }
+
 }
 
 
@@ -70,11 +164,8 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   enableCoreTAP(&prog); 
 
   let target_device_id = read_core_id_code(false, &prog)?; // on second not
-  
-  //self.print_id_code(&target_device_id, &dsc_jtag_id_code);
 
-  //self.security_status_from_id_code(dsc_jtag_id_code, MC5680XX_SIM_ID);
-  self.family.is_unsecure(prog)?;
+  self.security = self.family.is_unsecure(prog, dsc_jtag_id_code, self.jtag_id_code)?;
   dbg!(&self.security);
   self.once_status = OnceStatus::UnknownMode;
 

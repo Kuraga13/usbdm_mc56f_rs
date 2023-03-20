@@ -86,7 +86,7 @@ pub enum Message {
 pub struct App {
 
            target             : Option<MC56f80x>,
-           target2            : Option<TargetDsc>,
+           target2            : TargetDsc,
            programmer         : Option<Programmer>,
            programmer2        : Option<Arc<RwLock<Programmer>>>,
 
@@ -347,7 +347,7 @@ impl Application for App {
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
                 target             : None,
-                target2            : None,
+                target2            : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).unwrap(),
                 programmer         : None,
                 programmer2        : None,
                 status             : UsbdmAppStatus::NotConnected,
@@ -383,7 +383,7 @@ impl Application for App {
              let test_target2 = TargetDsc::create_target_from_selector(target);
              let target = match test_target2 {
 
-                Ok(target) => { self.target2 = Some(target);}
+                Ok(target) => { self.target2 = target;}
                 Err(_e) => 
                 {                
                     show_error(  self, _e);
@@ -827,25 +827,25 @@ impl Application for App {
             {
                 
                 println!("TestFeedback");
-                let dsc =  self.target2.as_mut().expect("");
+                let mut dsc =  Box::new(&mut self.target2);
                 let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
 
-                let test_ram = dsc.test_ram_rw(0x008000, self.selected_power, prog);
+                let test_debug = dsc.test_rw_debug_target(self.selected_power, prog);
 
-                match test_ram
+                match test_debug
                 {
                   Ok(_) => 
                   {
                   self.check_power_state();
-                  println!("test_ram ok!");
+                  println!("test_rw_programm_counter ok!");
       
                   }
                   Err(_e) =>
                   {
                   show_error(self, _e);
                   self.check_power_state();
-                  println!("test_ram error");
+                  println!("test_rw_programm_counter error");
                   return iced::Command::none();
                  }
                 }

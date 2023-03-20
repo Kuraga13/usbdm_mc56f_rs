@@ -153,6 +153,8 @@ pub struct TargetDsc {
     pub family             : Box<dyn TargetInitActions>,
     /// `core_id` we should get it by command read_core_id_code.
     pub core_id            : u32,
+    /// `jtag_id_code` we should get it by command jtag_id_code, use for security status check.
+    pub jtag_id_code       : u32,
     /// `memory_map` of the target contain ranged Segment with MemorySpaceType.
     pub memory_map         : Vec<MemorySegment>,
     /// `flash_routine` pre-compiled and configured code for concrete target, assume load & execute for some programming task
@@ -220,6 +222,7 @@ impl TargetDsc {
       name             : dsc_name,
       family           : family_actions,
       core_id          : dsc.core_id_code, 
+      jtag_id_code     : dsc.jtag_id_code,
       memory_map       : dsc.memory_map.clone(), 
       //flash_routine    : FlashRoutine::build_base_routine(dsc.base_routine_path.clone()).unwrap(), 
       security_bytes   : dsc.security_bytes.clone(),
@@ -343,7 +346,7 @@ pub trait TargetInitActions:  Send + std::fmt::Debug
 {
 
 /// is Unsecure - check Target unsecured, get Secure Status
-fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<(), Error>;
+fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error>;
 
 /// Mass Erase specific on Dsc Target Family mass erase algorith
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
