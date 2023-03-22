@@ -15,7 +15,6 @@ const CAP_BLANK_CHECK_RANGE : u16 = 1<<3;
 const CAP_PROGRAM_RANGE     : u16 = 1<<4;
 const CAP_VERIFY_RANGE      : u16 = 1<<5;
 const CAP_PARTITION_FLEXNVM : u16 = 1<<7;
-const CAP_TIMING            : u16 = 1<<8;
 const CAP_DSC_OVERLAY       : u16 = 1<<11; // Indicates DSC code in pMEM overlays xRAM
 const CAP_DATA_FIXED        : u16 = 1<<12; // Indicates TargetFlashDataHeader is at fixed address
 const CAP_RELOCATABLE       : u16 = 1<<15; // Code may be relocated

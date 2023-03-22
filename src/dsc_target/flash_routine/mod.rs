@@ -1,4 +1,5 @@
 pub mod base_routine;
+mod flash_data_header;
 
 use crate::errors::Error;
 
@@ -11,84 +12,6 @@ use std::io::Read;
 use std::path::Path;
 use std::fs;
 use crate::file_buffer::data_parser::ParsedData;
-
-/*
-
-  this is a draft, it's in progress
-
-
- */
-
-
-/// `RoutineCapabilites` u16 byte, stored in compiled elf file for concrete target! 
-/// 
-/// We need parse and match to check what we are asking from the routine that it has the ability
-#[derive(PackedStruct, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[packed_struct(bit_numbering="lsb0",size_bytes="2",endian="lsb",)]
-pub struct RoutineCapabilites {
-
-    #[packed_field(bits="1")]
-    cap_erase_block           : bool,     // Erase entire flash block e.g. Flash, FlexNVM etc                    
-    #[packed_field(bits="2")]
-    cap_erase_range           : bool,     // Erase range (including option region) 
-    #[packed_field(bits="3")]
-    cap_blanck_check_range    : bool,     // Blank check region                             
-    #[packed_field(bits="4")]
-    cap_programm_range        : bool,     // Program range (including option region)  
-    #[packed_field(bits="5")]
-    cap_verify_range          : bool,     // Verify range                
-    #[packed_field(bits="7")]
-    cap_partion_data_programm : bool,     // Program FlexNVM DFLASH/EEPROM partitioning    
-    #[packed_field(bits="8")]
-    cap_timing                : bool,     // Counting loop to determine clock speed
-    #[packed_field(bits="11")]
-    cap_dsc_overlay           : bool,     // Indicates DSC code in pMEM overlays xRAM
-    #[packed_field(bits="12")]
-    cap_data_fixed            : bool,     // Indicates TargetFlashDataHeader is at fixed address
-    #[packed_field(bits="15")]
-    cap_relocatable           : bool,     // Routine may be relocated  
-}
-
-impl Default for RoutineCapabilites {
-    fn default() -> Self { 
-
-        RoutineCapabilites {
-            cap_erase_block           : false,
-            cap_erase_range           : false,
-            cap_blanck_check_range    : false,
-            cap_programm_range        : false,
-            cap_verify_range          : false,
-            cap_partion_data_programm : false,
-            cap_timing                : false,
-            cap_dsc_overlay           : false,
-            cap_data_fixed            : false,
-            cap_relocatable           : false,
-      }
-    } 
- }
-
-impl RoutineCapabilites  {
-
-    fn parse_capabilities_from_elf() -> Self { 
-
-        RoutineCapabilites {
-            cap_erase_block           : false,
-            cap_erase_range           : false,
-            cap_blanck_check_range    : false,
-            cap_programm_range        : false,
-            cap_verify_range          : false,
-            cap_partion_data_programm : false,
-            cap_timing                : false,
-            cap_dsc_overlay           : false,
-            cap_data_fixed            : false,
-            cap_relocatable           : false,
-      }
-    } 
- }
-
-
- 
-
 
 /// `RoutineTaskByte` u16 byte, descripe command operation to Routine, packed in header, orig `flags` in `LargeTargetFlashDataHeader`
 #[derive(PackedStruct, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
