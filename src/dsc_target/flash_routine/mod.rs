@@ -1,5 +1,6 @@
 pub mod base_routine;
 mod flash_data_header;
+mod flash_operations;
 
 use crate::errors::Error;
 use serde::{Deserialize, Serialize};
