@@ -64,7 +64,6 @@ impl RoutineFlashTask {
     }
 } 
 
-
 /// `RoutineTimimgTask`
 /// 
 /// Header at the start of timing data (controls program action & holds result)
@@ -82,6 +81,17 @@ struct RoutineTimimgTask {
     timing_count: u32,
 }
 
+impl Default for RoutineTimimgTask {
+    fn default() -> Self {
+        Self { 
+            flash_operation: DO_TIMING_LOOP | IS_COMPLETE, // IS_COMPLETE as check - should be cleared
+            error_code: 0xFFFF,
+            controller: 0xFFFF, // Dummy value - not used 
+            timing_count: 0,
+        }
+    }
+}
+
 impl RoutineTimimgTask {
     pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
         match bincode::serialize(&self) {
@@ -89,5 +99,28 @@ impl RoutineTimimgTask {
             Err(_e) => Err(Error::InternalError("Serialization of RoutineTimimgTask failed".to_string())),
         }
     }
+
+    pub fn from_vec(vec: Vec<u8>) -> Result<Vec<u8>, Error> {
+        match bincode::deserialize(&vec) {
+            Ok(x) => Ok(x),
+            Err(_e) => Err(Error::InternalError("Deserialization of RoutineTimimgTask failed".to_string())),
+        }
+    }
 } 
 
+// Error codes return from the flash driver
+pub const FLASH_ERR_OK               : u16 = 0;  // No error
+pub const FLASH_ERR_LOCKED           : u16 = 1;  // Flash is still locked
+pub const FLASH_ERR_ILLEGAL_PARAMS   : u16 = 2;  // Parameters illegal
+pub const FLASH_ERR_PROG_FAILED      : u16 = 3;  // STM - Programming operation failed - general
+pub const FLASH_ERR_PROG_WPROT       : u16 = 4;  // STM - Programming operation failed - write protected
+pub const FLASH_ERR_VERIFY_FAILED    : u16 = 5;  // Verify failed
+pub const FLASH_ERR_ERASE_FAILED     : u16 = 6;  // Erase or Blank Check failed
+pub const FLASH_ERR_TRAP             : u16 = 7;  // Program trapped (illegal instruction/location etc.)
+pub const FLASH_ERR_PROG_ACCERR      : u16 = 8;  // Kinetis/CFVx - Programming operation failed - ACCERR
+pub const FLASH_ERR_PROG_FPVIOL      : u16 = 9;  // Kinetis/CFVx - Programming operation failed - FPVIOL
+pub const FLASH_ERR_PROG_MGSTAT0     : u16 = 10; // Kinetis - Programming operation failed - MGSTAT0
+pub const FLASH_ERR_CLKDIV           : u16 = 11; // CFVx - Clock divider not set
+pub const FLASH_ERR_ILLEGAL_SECURITY : u16 = 12; // Kinetis - Illegal value for security location
+pub const FLASH_ERR_UNKNOWN          : u16 = 13; // Unspecified error
+pub const FLASH_ERR_TIMEOUT          : u16 = 14; // Timeout waiting for completion
