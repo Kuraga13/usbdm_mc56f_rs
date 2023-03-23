@@ -34,7 +34,7 @@ enum FlashOperation {
 /// it is stored in the header of the uploaded routine
 ///
 /// orig name `LargeTargetFlashDataHeader` - Header at the start of flash programming buffer (controls program action)
-#[repr(C, packed)]
+#[derive(Debug, Serialize, Deserialize)]
 struct RoutineFlashTask {
     /// Controls actions of routine
     flash_operation: u16,
@@ -55,13 +55,22 @@ struct RoutineFlashTask {
     data_address: u32,
  }
 
+impl RoutineFlashTask {
+    pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
+        match bincode::serialize(&self) {
+            Ok(x) => Ok(x),
+            Err(_e) => Err(Error::InternalError("Serialization of RoutineFlashTask failed".to_string())),
+        }
+    }
+} 
+
 
 /// `RoutineTimimgTask`
 /// 
 /// Header at the start of timing data (controls program action & holds result)
 /// 
 /// orig name `LargeTargetTimingDataHeader`
-#[repr(C, packed)]
+#[derive(Debug, Serialize, Deserialize)]
 struct RoutineTimimgTask {
     /// Controls actions of routine
     flash_operation: u16,
@@ -72,3 +81,13 @@ struct RoutineTimimgTask {
     /// Timing count
     timing_count: u32,
 }
+
+impl RoutineTimimgTask {
+    pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
+        match bincode::serialize(&self) {
+            Ok(x) => Ok(x),
+            Err(_e) => Err(Error::InternalError("Serialization of RoutineTimimgTask failed".to_string())),
+        }
+    }
+} 
+
