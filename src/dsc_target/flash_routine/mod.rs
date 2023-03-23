@@ -13,69 +13,10 @@ use std::path::Path;
 use std::fs;
 use crate::file_buffer::data_parser::ParsedData;
 
-/// `RoutineTaskByte` u16 byte, descripe command operation to Routine, packed in header, orig `flags` in `LargeTargetFlashDataHeader`
-#[derive(PackedStruct, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[packed_struct(bit_numbering="lsb0",size_bytes="2",endian="lsb",)]
-pub struct RoutineTaskByte {
-   
-    #[packed_field(bits="0")]
-    init_flash             : bool,          // Do initialisation of flash                   
-    #[packed_field(bits="1")]
-    erase_block            : bool,          // Erase entire flash block e.g. Flash, FlexNVM etc         
-    #[packed_field(bits="2")]
-    erase_range            : bool,          // Erase range (including option region)                          
-    #[packed_field(bits="3")]
-    blank_check_range      : bool,          // Blank check region    
-    #[packed_field(bits="4")]
-    program_range          : bool,          // Program range (including option region)          
-    #[packed_field(bits="5")]
-    verify_range           : bool,          // Verify range     
-    #[packed_field(bits="6")]
-    partion_data_programm  : bool,          // Program FlexNVM DFLASH/EEPROM partitioning        
-    #[packed_field(bits="7")]
-    timing_loop            : bool,          // Counting loop to determine clock speed
-    #[packed_field(bits="15")]
-    is_complete            : bool,          // set completion flag, routine must clear it
-}
-
-impl Default for RoutineTaskByte {
-    fn default() -> Self { 
-
-        unimplemented!();
-
-        RoutineTaskByte {
-            init_flash            : false,
-            erase_block           : false,
-            erase_range           : false,
-            blank_check_range     : false,
-            program_range         : false,
-            verify_range          : false,
-            partion_data_programm : false,
-            timing_loop           : false,
-            is_complete           : false,
-      }
-    }
-
-
-
- }
 
  impl RoutineTaskByte {
 
-    fn new_task(flash_code : Vec<u8>) -> Self { 
 
-        RoutineTaskByte {
-            init_flash            : false,
-            erase_block           : false,
-            erase_range           : false,
-            blank_check_range     : false,
-            program_range         : false,
-            verify_range          : false,
-            partion_data_programm : false,
-            timing_loop           : false,
-            is_complete           : false,
-      }
-    }
 
     fn check_task_ability(ability : RoutineCapabilites)
     {
@@ -131,51 +72,7 @@ impl RoutineResult
 }
 
 
-/// `RoutineTask` 
-/// 
-/// this struct represent task with parameters we give to routine
-/// 
-/// it is stored in the header of the uploaded routine
-/// 
-/// orig name `LargeTargetFlashDataHeader` - Header at the start of flash programming buffer (controls program action)
-#[derive(Debug, Clone, PartialEq, Default, Eq, Hash, Serialize, Deserialize)]
-pub struct RoutineTask
-{
-   /// `task_byte`  - coded in byte task for Routine, struct `RoutineTaskByte`
-   /// 
-   /// in orig = defines DO_PROGRAM_RANGE or DO_BLANK_CHECK_RANGE|DO_PROGRAM_RANGE|DO_VERIFY_RANGE etc.
-   /// 
-   /// `task_byte`  - struct `RoutineTaskByte` in u16 orig flags
-   pub task_byte               : RoutineTaskByte,
 
-   // from orig `error_code`  -  not sure we need this, looks like another regular boilerplate from origin
-   //pub error_code            : u16,
-   
-   /// from orig `controller`  -  Ptr to flash controller. Controller is struct hold dsc core registers for routine
-   pub controller             : u16,
-   
-   /// `calibFrequency` in u16, Target frequency (kHz)
-   pub frequency              : u16,
-
-   ///`minimal_sector` from orig `sector_size` - Size of Flash memory sectors (smallest erasable block)
-   pub minimal_sector         : u16,
-
-   /// `start_address` start address for routine programming. orig `address`:  Memory address being accessed (reserved/page/address)
-   pub start_address          : u32,
-
-   /// `range_size` range for routine programming orig `dataSize`
-   pub range_size             : u16, 
-   
-   // from orig `pad`  -  not sure we need this, it's either a stub or a reserve
-   //pub pad                    : u16,
-
-   /// `buffer_address` Ptr to data to program orig `dataAddress`
-   pub buffer_address         : u32, 
-
-   /// ` timing_count `for speed determine function
-   pub timing_count           : u32,   // from LargeTargetTimingDataHeader(I think the rest is redundant), 
-   
-}
 
 
 impl RoutineTask {
