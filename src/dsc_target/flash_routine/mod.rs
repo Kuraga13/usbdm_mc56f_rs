@@ -2,8 +2,14 @@ pub mod base_routine;
 mod flash_data_header;
 mod flash_operations;
 
+use crate::usbdm::Programmer;
+use crate::usbdm::constants::{memory_space_t};
 use crate::errors::Error;
 use serde::{Deserialize, Serialize};
+
+use base_routine::{BaseRoutine, BaseRoutineFamily};
+use flash_data_header::*;
+use std::{thread, time};
 
 /*
 use packed_struct::prelude::*;

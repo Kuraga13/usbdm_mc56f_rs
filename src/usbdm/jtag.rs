@@ -389,6 +389,26 @@ impl From <u8>  for OnceStatus  {
 
 impl Programmer
 {
+    pub fn dsc_target_halt(&self) -> Result<(), Error> {
+        let mut once_status: OnceStatus = OnceStatus::UnknownMode;
+        for retry in 0..10 
+        {
+            once_status = targetDebugRequest(&self)?;
+            if(once_status == OnceStatus::DebugMode)
+                { 
+                    break; 
+                }
+            if(once_status == OnceStatus::UnknownMode) 
+                {
+                    return Err((Error::TargetNotConnected))
+                }
+        }
+        if (once_status != OnceStatus::DebugMode) {
+            return Err(Error::InternalError("Target Halt Failed".to_string()))
+        }
+        Ok(())
+    }
+
     // Start Target execution at current PC
     //
     // @note Assumes Core TAP is active & in RUN-TEST/IDLE

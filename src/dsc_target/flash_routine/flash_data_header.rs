@@ -3,15 +3,15 @@
 use super::*;
 
 // Flash operation masks
-const DO_INIT_FLASH        : u16 = 1<<0;  // Do initialisation of flash
-const DO_ERASE_BLOCK       : u16 = 1<<1;  // Erase entire flash block e.g. Flash, FlexNVM etc
-const DO_ERASE_RANGE       : u16 = 1<<2;  // Erase range (including option region)
-const DO_BLANK_CHECK_RANGE : u16 = 1<<3;  // Blank check region
-const DO_PROGRAM_RANGE     : u16 = 1<<4;  // Program range (including option region)
-const DO_VERIFY_RANGE      : u16 = 1<<5;  // Verify range
-const DO_PARTITION_FLEXNVM : u16 = 1<<7;  // Program FlexNVM DFLASH/EEPROM partitioning
-const DO_TIMING_LOOP       : u16 = 1<<8;  // Counting loop to determine clock speed
-const IS_COMPLETE          : u16 = 1<<15; // Completion flag, routine must clear it
+pub const DO_INIT_FLASH        : u16 = 1<<0;  // Do initialisation of flash
+pub const DO_ERASE_BLOCK       : u16 = 1<<1;  // Erase entire flash block e.g. Flash, FlexNVM etc
+pub const DO_ERASE_RANGE       : u16 = 1<<2;  // Erase range (including option region)
+pub const DO_BLANK_CHECK_RANGE : u16 = 1<<3;  // Blank check region
+pub const DO_PROGRAM_RANGE     : u16 = 1<<4;  // Program range (including option region)
+pub const DO_VERIFY_RANGE      : u16 = 1<<5;  // Verify range
+pub const DO_PARTITION_FLEXNVM : u16 = 1<<7;  // Program FlexNVM DFLASH/EEPROM partitioning
+pub const DO_TIMING_LOOP       : u16 = 1<<8;  // Counting loop to determine clock speed
+pub const IS_COMPLETE          : u16 = 1<<15; // Completion flag, routine must clear it
 
 /// Different flash operations
 #[repr(u16)]
@@ -64,24 +64,24 @@ impl RoutineFlashTask {
     }
 } 
 
-/// `RoutineTimimgTask`
+/// `TimingRoutineHeader`
 /// 
 /// Header at the start of timing data (controls program action & holds result)
 /// 
 /// orig name `LargeTargetTimingDataHeader`
 #[derive(Debug, Serialize, Deserialize)]
-struct RoutineTimimgTask {
+pub struct TimingRoutineHeader {
     /// Controls actions of routine
-    flash_operation: u16,
+    pub flash_operation: u16,
     /// Error code from action
-    error_code: u16,
+    pub error_code: u16,
     /// Ptr to flash controller (unused)
-    controller: u32,
+    pub controller: u32,
     /// Timing count
-    timing_count: u32,
+    pub timing_count: u32,
 }
 
-impl Default for RoutineTimimgTask {
+impl Default for TimingRoutineHeader {
     fn default() -> Self {
         Self { 
             flash_operation: DO_TIMING_LOOP | IS_COMPLETE, // IS_COMPLETE as check - should be cleared
@@ -92,7 +92,11 @@ impl Default for RoutineTimimgTask {
     }
 }
 
-impl RoutineTimimgTask {
+impl TimingRoutineHeader {
+    pub fn get() -> Self {
+        Self::default()
+    }
+
     pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
         match bincode::serialize(&self) {
             Ok(x) => Ok(x),
@@ -100,11 +104,15 @@ impl RoutineTimimgTask {
         }
     }
 
-    pub fn from_vec(vec: Vec<u8>) -> Result<Vec<u8>, Error> {
+    pub fn from_vec(vec: Vec<u8>) -> Result<Self, Error> {
         match bincode::deserialize(&vec) {
             Ok(x) => Ok(x),
             Err(_e) => Err(Error::InternalError("Deserialization of RoutineTimimgTask failed".to_string())),
         }
+    }
+
+    pub fn len(&self) -> Result<u32, Error> {
+        Ok(self.to_vec()?.len() as u32)
     }
 } 
 
@@ -124,3 +132,25 @@ pub const FLASH_ERR_CLKDIV           : u16 = 11; // CFVx - Clock divider not set
 pub const FLASH_ERR_ILLEGAL_SECURITY : u16 = 12; // Kinetis - Illegal value for security location
 pub const FLASH_ERR_UNKNOWN          : u16 = 13; // Unspecified error
 pub const FLASH_ERR_TIMEOUT          : u16 = 14; // Timeout waiting for completion
+
+pub fn parse_flash_err(error: u16) -> String {
+    match error {
+        FLASH_ERR_OK                => String::from("No error"),
+        FLASH_ERR_LOCKED            => String::from("Flash is still locked"),
+        FLASH_ERR_ILLEGAL_PARAMS    => String::from("Parameters illegal"),
+        FLASH_ERR_PROG_FAILED       => String::from("STM - Programming operation failed - general"),
+        FLASH_ERR_PROG_WPROT        => String::from("STM - Programming operation failed - write protected"),
+        FLASH_ERR_VERIFY_FAILED     => String::from("Verify failed"),
+        FLASH_ERR_ERASE_FAILED      => String::from("Erase or Blank Check failed"),
+        FLASH_ERR_TRAP              => String::from("Program trapped (illegal instruction/location etc.)"),
+        FLASH_ERR_PROG_ACCERR       => String::from("Kinetis/CFVx - Programming operation failed - ACCERR"),
+        FLASH_ERR_PROG_FPVIOL       => String::from("Kinetis/CFVx - Programming operation failed - FPVIOL"),
+        FLASH_ERR_PROG_MGSTAT0      => String::from("Kinetis - Programming operation failed - MGSTAT0"),
+        FLASH_ERR_CLKDIV            => String::from("CFVx - Clock divider not set"),
+        FLASH_ERR_ILLEGAL_SECURITY  => String::from("Kinetis - Illegal value for security location"),
+        FLASH_ERR_UNKNOWN           => String::from("Unspecified error"),
+        FLASH_ERR_TIMEOUT           => String::from("Timeout waiting for completion"),
+        _                           => String::from("Unexpected Error Value"),
+    }
+
+}

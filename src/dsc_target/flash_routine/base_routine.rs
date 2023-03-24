@@ -22,21 +22,21 @@ const CAP_RELOCATABLE       : u16 = 1<<15; // Code may be relocated
 /// Contains all information about base flash routine
 pub struct BaseRoutine {
     /// Describes family of processors this flash routine is for
-    family: BaseRoutineFamily,
+    pub family: BaseRoutineFamily,
     /// Vec<u8> containing flash routine
-    routine: Vec<u8>,
+    pub routine: Vec<u8>,
     /// Address where this routine is loaded to (in 2 byte words)
-    code_load_address: u32,
+    pub code_load_address: u32,
     /// Address for execution start (in 2 byte words)
-    code_entry: u32,
+    pub code_entry: u32,
     /// Capabilities of routine
-    capabilities: u16,
+    pub capabilities: u16,
     /// Frequency (kHz) used for calibFactor
-    calib_frequency: u16,
+    pub calib_frequency: u16,
     /// Calibration factor for speed determination
-    calib_factor: u32,
+    pub calib_factor: u32,
     /// Address where to load flash data for execution (in 2 byte words)
-    flash_data: u32,
+    pub data_header_address: u32,
 }
 
 pub enum BaseRoutineFamily {
@@ -56,14 +56,14 @@ impl Default for BaseRoutine {
             capabilities: 0,
             calib_frequency: 0,
             calib_factor: 0,
-            flash_data: 0,
+            data_header_address: 0,
         }
     } 
 }
 
 impl BaseRoutine
 {
-    pub fn new(base_routine_family : BaseRoutineFamily) -> Result<Self, Error> {
+    pub fn get(base_routine_family : BaseRoutineFamily) -> Result<Self, Error> {
         let base_routine_s19: Vec<u8> = match base_routine_family {
             BaseRoutineFamily::DSC_56F800X => DSC_56F800X_FLASH_PROG.to_vec(),
             BaseRoutineFamily::DSC_56F801X => DSC_56F801X_FLASH_PROG.to_vec(),
@@ -114,7 +114,7 @@ impl BaseRoutine
             ((base_routine[14 + header_offset] as u32) << 16) | 
             ((base_routine[15 + header_offset] as u32) << 24);
 
-        let flash_data: u32 =
+        let data_header_address: u32 =
             (((base_routine[16 + header_offset] as u32) <<  0) | //LITTLE ENDIAN
             (( base_routine[17 + header_offset] as u32) <<  8) | 
             (( base_routine[18 + header_offset] as u32) << 16) | 
@@ -129,7 +129,7 @@ impl BaseRoutine
             capabilities,
             calib_frequency,
             calib_factor,
-            flash_data,
+            data_header_address,
             }
         )
     }
@@ -142,7 +142,7 @@ mod tests {
     use super::*;
 
     fn checksum(family: BaseRoutineFamily) -> u32 {
-        let base_routine = BaseRoutine::new(family).unwrap();
+        let base_routine = BaseRoutine::get(family).unwrap();
 
         let mut sum: u32 = 0;
         for &x in base_routine.routine.iter() {
@@ -160,40 +160,40 @@ mod tests {
         assert_eq!(checksum(BaseRoutineFamily::NONE),        0);
 
         // code_load_address check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().code_load_address,        0);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().code_load_address,        0);
 
         // code_entry check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().code_entry,        0);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().code_entry,        0);
 
         // flash_data check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().flash_data, 0x000260);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().flash_data, 0x000260);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().flash_data, 0x000260);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().flash_data,        0);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().data_header_address, 0x000260);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().data_header_address, 0x000260);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().data_header_address, 0x000260);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().data_header_address,        0);
 
         // calib_frequency check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().calib_frequency,    0);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().calib_frequency,    0);
 
         // calib_factor
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().calib_factor,      0);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().calib_factor,      0);
 
         // capabilities check
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F800X).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F801X).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::DSC_56F802X).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::new(BaseRoutineFamily::NONE       ).unwrap().capabilities,                  0);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().capabilities,                  0);
     }
 
 }
