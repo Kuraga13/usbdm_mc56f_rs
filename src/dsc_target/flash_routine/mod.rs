@@ -1,6 +1,6 @@
 pub mod base_routine;
 mod flash_data_header;
-mod flash_operations;
+pub mod flash_operations;
 
 use crate::usbdm::Programmer;
 use crate::usbdm::constants::{memory_space_t};

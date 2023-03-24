@@ -347,7 +347,7 @@ impl Application for App {
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
                 target             : None,
-                target2            : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).unwrap(),
+                target2            : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).expect("Target Builder Fault!"),
                 programmer         : None,
                 programmer2        : None,
                 status             : UsbdmAppStatus::NotConnected,
@@ -831,21 +831,21 @@ impl Application for App {
                 let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
 
-                let test_debug = dsc.test_rw_debug_target(self.selected_power, prog);
+                let test_debug = dsc.test_get_speed_routine(self.selected_power, prog);
 
                 match test_debug
                 {
                   Ok(_) => 
                   {
                   self.check_power_state();
-                  println!("test_rw_programm_counter ok!");
+                  println!("test_get_speed_routine ok!");
       
                   }
                   Err(_e) =>
                   {
                   show_error(self, _e);
                   self.check_power_state();
-                  println!("test_rw_programm_counter error");
+                  println!("test_get_speed_routine error");
                   return iced::Command::none();
                  }
                 }

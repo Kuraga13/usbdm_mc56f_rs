@@ -20,17 +20,7 @@ pub struct MC56f801x;
 
 impl TargetInitActions for MC56f801x {
 
-/// `is_unsecure` - check Target unsecured, get Secure Status
-///
-/// 
-/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
-/// 
-/// Most Significant Half of JTAG ID (`SIM_MSHID`), in MC56f801x is `$01F2`.
-/// 
-/// Least Significant Half of JTAG ID (`SIM_LSHID`), in MC56f801x is  `$401D`.
-/// 
-/// PGO wrote in original usbdm pjt, if you have match id code dsc in
-/// we have to match `jtag_id_code` with `SIM_ID`
+
 fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error> {
 
     let jtag_id_code =  vec_as_u32_be(jtag_id_code_vec);
@@ -39,7 +29,7 @@ fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, ex
     // println!("expected_id : {:02X}", expected_id);
    
      match jtag_id_code {
-           expected_id           => Ok(SecurityStatus::Unsecured),
+           expected_id                => Ok(SecurityStatus::Unsecured),
            0x0                        => Ok(SecurityStatus::Secured),           
            _                          => Ok(SecurityStatus::Unknown),             
        }    
@@ -55,9 +45,48 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
  }
 
 /// Calculate specific on Dsc Target Family cfmclkd
-fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer ) -> Result<(), Error> {
+fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_frequency : u32 ) -> Result<u32, Error> {
 
     unimplemented!();
+
+    const DSC_PRDIV8 : u32 = 0x40;
+
+    if (bus_frequency < 1000) {
+       println! ("Clock too low for flash programming");
+       return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string())));
+     
+    };
+ 
+    let osc_frequency = 2 * bus_frequency;
+    let mut in_frequency;
+    let mut cfmclkd : u32;
+ 
+    if (osc_frequency > 12800) {
+       cfmclkd = DSC_PRDIV8;
+       in_frequency = osc_frequency / 8;
+    } else {
+       cfmclkd = 0;
+       in_frequency = osc_frequency;
+    }
+ 
+    let min_period = 1.0 / 200.0 + 1.0 / (4.0 * bus_frequency as f64);
+ 
+
+    let mut calculation = in_frequency as f64 * min_period;
+    calculation.floor();
+    cfmclkd += calculation.round() as u32;
+    
+
+    let flash_clk = in_frequency / ((cfmclkd & 0x3F) + 1);
+
+    println!("inFrequency {}, kHz cfmclkd = 0x {}, flashClk = {}, kHz, ", in_frequency, cfmclkd, flash_clk);
+ 
+    if (flash_clk < 150) {
+        println! ("Not possible to find suitable flash clock divider");
+        return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string())));
+    }
+ 
+     Ok(cfmclkd)
 
  }
 
@@ -87,17 +116,7 @@ pub struct MC56f802x;
 
 impl TargetInitActions for MC56f802x {
 
-/// `is_unsecure` - check Target unsecured, get Secure Status
-///
-/// 
-/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
-/// 
-/// Most Significant Half of JTAG ID (`SIM_MSHID`), in mc568023-35 is `$01F2`.
-/// 
-/// Least Significant Half of JTAG ID (`SIM_LSHID`), in mc568023-35 is  `$801D`.
-/// 
-/// PGO wrote in original usbdm pjt, if you have match id code dsc in
-/// we have to match `jtag_id_code` with `SIM_ID`
+
 fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error> {
 
     let jtag_id_code =  vec_as_u32_be(jtag_id_code_vec);
@@ -123,7 +142,7 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
  }
 
 /// Calculate specific on Dsc Target Family cfmclkd
-fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer ) -> Result<(), Error> {
+fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_frequency : u32) -> Result<u32, Error> {
 
     unimplemented!();
 
@@ -173,7 +192,7 @@ pub fn print_id_code(core_id_code : &Vec<u8>, master_id_code : &Vec<u8>) {
       
    }
 
-///'print_vec_memory' for debug memory read, use for print small readed block
+///'print_vec_memory' for debug memory read, sequnces etc., use for print small block in Vec<u8>
 fn print_vec_memory(mem : Vec<u8>) {
    
    let mut printed_vec = Vec::new();

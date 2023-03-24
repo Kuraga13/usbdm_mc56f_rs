@@ -6,11 +6,15 @@ use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
+use super::flash_routine::flash_operations::get_target_speed;
+use super::flash_routine::base_routine::BaseRoutineFamily;
+
 use std::{thread, time};
 use std::time::Duration;
 
-impl TargetDsc
-{
+impl TargetDsc {
+
+
   pub fn test_ram_rw(&mut self, ram_start_add: u32, power: TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
   {
 
@@ -137,6 +141,32 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
   Ok(())
 
  }
+
+ pub fn test_get_speed_routine(&mut self, power: TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
+
+  let powered = prog.get_power_state()?;
+  self.once_status = enableONCE(&prog)?;
+  
+  if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
+  {
+      self.connect(power, prog)?;
+  }
+
+  if (self.security == SecurityStatus::Secured)
+  {
+    return Err(Error::TargetSecured)
+  }
+
+  let speed_result = get_target_speed(BaseRoutineFamily::DSC_56F802X, prog)?;
+
+  dbg!(speed_result);
+
+  self.power(TargetVddSelect::VddOff, prog)?;
+
+  Ok(())
+
+ }
+
 
 }
 

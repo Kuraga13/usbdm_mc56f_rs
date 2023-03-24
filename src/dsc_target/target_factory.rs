@@ -345,14 +345,26 @@ fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> R
 pub trait TargetInitActions:  Send + std::fmt::Debug
 {
 
-/// is Unsecure - check Target unsecured, get Secure Status
+/// `is_unsecure` - check Target unsecured, get Secure Status
+///
+/// 
+/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
+/// 
+/// For example:
+/// 
+/// Most Significant Half of JTAG ID (`SIM_MSHID`), in MC56f801x is `$01F2`.
+/// 
+/// Least Significant Half of JTAG ID (`SIM_LSHID`), in MC56f801x is  `$401D`.
+/// 
+/// PGO wrote in original usbdm pjt, if you have match id code dsc in
+/// we have to match `jtag_id_code` with `SIM_ID`
 fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error>;
 
 /// Mass Erase specific on Dsc Target Family mass erase algorith
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
 
 /// Calculate specific on Dsc Target Family cfmclkd
-fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer ) -> Result<(), Error>;
+fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_frequency : u32) -> Result<u32, Error>;
 
 /// Init specific on Dsc Target Family algorith
 fn target_init(&mut self, power : TargetVddSelect, prog : &mut Programmer);
