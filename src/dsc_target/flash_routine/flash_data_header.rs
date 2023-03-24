@@ -86,7 +86,7 @@ impl Default for TimingRoutineHeader {
         Self { 
             flash_operation: DO_TIMING_LOOP | IS_COMPLETE, // IS_COMPLETE as check - should be cleared
             error_code: 0xFFFF,
-            controller: 0xFFFF, // Dummy value - not used 
+            controller: 0xFFFFFFFF, // Dummy value - not used 
             timing_count: 0,
         }
     }
@@ -153,4 +153,22 @@ pub fn parse_flash_err(error: u16) -> String {
         _                           => String::from("Unexpected Error Value"),
     }
 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flash_data_header_check() {
+        let timing_header: TimingRoutineHeader = TimingRoutineHeader{
+            flash_operation: 0x0011, // IS_COMPLETE as check - should be cleared
+            error_code: 0x2233,
+            controller: 0x44556677, // Dummy value - not used 
+            timing_count: 0x8899AABB, 
+        };
+        let timing_header_vec: Vec<u8> = timing_header.to_vec().unwrap();
+        assert_eq!(timing_header_vec, vec![0x11, 0x00, 0x33, 0x22, 0x77, 0x66, 0x55, 0x44, 0xBB, 0xAA, 0x99, 0x88]);
+
+    } 
 }
