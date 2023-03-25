@@ -8,13 +8,13 @@ use super::*;
 /// 
 /// assume `target inited & debug state`
 /// 
-pub fn get_target_speed(family : BaseRoutineFamily, prog :  &mut Programmer) -> Result<u32, Error>
+pub fn get_target_speed(family : DscFamily, prog :  &mut Programmer) -> Result<u32, Error>
 {
     let routine: BaseRoutine = BaseRoutine::get(family)?;
     let timing_header: TimingRoutineHeader = TimingRoutineHeader::get();
 
     prog.dsc_write_memory(memory_space_t::MS_PWORD, routine.routine, routine.code_load_address)?;
-    prog.dsc_write_memory(memory_space_t::MS_PWORD, timing_header.to_vec()?, routine.data_header_address + 0x8000)?;
+    prog.dsc_write_memory(memory_space_t::MS_XWORD, timing_header.to_vec()?, routine.data_header_address)?;
 
     prog.dsc_write_pc(routine.code_entry)?;
     prog.dsc_target_go()?;

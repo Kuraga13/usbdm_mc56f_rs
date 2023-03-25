@@ -22,7 +22,7 @@ const CAP_RELOCATABLE       : u16 = 1<<15; // Code may be relocated
 /// Contains all information about base flash routine
 pub struct BaseRoutine {
     /// Describes family of processors this flash routine is for
-    pub family: BaseRoutineFamily,
+    pub dsc_family: DscFamily,
     /// Vec<u8> containing flash routine
     pub routine: Vec<u8>,
     /// Address where this routine is loaded to (in 2 byte words)
@@ -39,36 +39,15 @@ pub struct BaseRoutine {
     pub data_header_address: u32,
 }
 
-pub enum BaseRoutineFamily {
-    DSC_56F800X,
-    DSC_56F801X,
-    DSC_56F802X,
-    NONE,
-}
-
-impl Default for BaseRoutine {
-    fn default() -> Self { 
-        BaseRoutine {
-            family: BaseRoutineFamily::NONE,
-            routine: vec![],
-            code_load_address: 0,
-            code_entry: 0,
-            capabilities: 0,
-            calib_frequency: 0,
-            calib_factor: 0,
-            data_header_address: 0,
-        }
-    } 
-}
-
 impl BaseRoutine
 {
-    pub fn get(base_routine_family : BaseRoutineFamily) -> Result<Self, Error> {
-        let base_routine_s19: Vec<u8> = match base_routine_family {
-            BaseRoutineFamily::DSC_56F800X => DSC_56F800X_FLASH_PROG.to_vec(),
-            BaseRoutineFamily::DSC_56F801X => DSC_56F801X_FLASH_PROG.to_vec(),
-            BaseRoutineFamily::DSC_56F802X => DSC_56F802X_FLASH_PROG.to_vec(),
-            BaseRoutineFamily::NONE        => return Ok(BaseRoutine::default()),
+    pub fn get(dsc_family : DscFamily) -> Result<Self, Error> {
+        let base_routine_s19: Vec<u8> = match dsc_family {
+            DscFamily::Mc56f800X => DSC_56F800X_FLASH_PROG.to_vec(),
+            DscFamily::Mc56f801X => DSC_56F801X_FLASH_PROG.to_vec(),
+            DscFamily::Mc56f802X => DSC_56F802X_FLASH_PROG.to_vec(),
+            DscFamily::Mc56f803X => DSC_56F802X_FLASH_PROG.to_vec(), // DSC_56F803X use the same routine as DSC_56F802X
+            _                    => return Err(Error::InternalError("Unknown DscFamily".to_string())),
         };
         
         let parsed_data = ParsedData::parse_s19(base_routine_s19)?;
@@ -122,7 +101,7 @@ impl BaseRoutine
 
         Ok(
             BaseRoutine {
-            family: base_routine_family,
+            dsc_family,
             routine: base_routine,
             code_load_address,
             code_entry,
@@ -141,7 +120,7 @@ impl BaseRoutine
 mod tests {
     use super::*;
 
-    fn checksum(family: BaseRoutineFamily) -> u32 {
+    fn checksum(family: DscFamily) -> u32 {
         let base_routine = BaseRoutine::get(family).unwrap();
 
         let mut sum: u32 = 0;
@@ -154,46 +133,46 @@ mod tests {
     #[test]
     fn base_routine_checksum() {
         // checksum test
-        assert_eq!(checksum(BaseRoutineFamily::DSC_56F800X), 124047);
-        assert_eq!(checksum(BaseRoutineFamily::DSC_56F801X), 124494);
-        assert_eq!(checksum(BaseRoutineFamily::DSC_56F802X), 124051);
-        assert_eq!(checksum(BaseRoutineFamily::NONE),        0);
+        assert_eq!(checksum(DscFamily::Mc56f800X), 124047);
+        assert_eq!(checksum(DscFamily::Mc56f801X), 124494);
+        assert_eq!(checksum(DscFamily::Mc56f802X), 124051);
+        assert_eq!(checksum(DscFamily::Mc56f803X), 124051);
 
         // code_load_address check
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().code_load_address, 0x008000);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().code_load_address,        0);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f800X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f801X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f802X).unwrap().code_load_address, 0x008000);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f803X).unwrap().code_load_address, 0x008000);
 
         // code_entry check
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().code_entry, 0x00800C);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().code_entry,        0);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f800X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f801X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f802X).unwrap().code_entry, 0x00800C);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f803X).unwrap().code_entry, 0x00800C);
 
         // flash_data check
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().data_header_address, 0x000260);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().data_header_address, 0x000260);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().data_header_address, 0x000260);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().data_header_address,        0);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f800X).unwrap().data_header_address, 0x000260);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f801X).unwrap().data_header_address, 0x000260);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f802X).unwrap().data_header_address, 0x000260);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f803X).unwrap().data_header_address, 0x000260);
 
         // calib_frequency check
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().calib_frequency, 4000);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().calib_frequency,    0);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f800X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f801X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f802X).unwrap().calib_frequency, 4000);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f803X).unwrap().calib_frequency, 4000);
 
         // calib_factor
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().calib_factor, 444039);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().calib_factor,      0);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f800X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f801X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f802X).unwrap().calib_factor, 444039);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f803X).unwrap().calib_factor, 444039);
 
         // capabilities check
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F800X).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F801X).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::DSC_56F802X).unwrap().capabilities, 0b0000100000111110);
-        assert_eq!(BaseRoutine::get(BaseRoutineFamily::NONE       ).unwrap().capabilities,                  0);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f800X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f801X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f802X).unwrap().capabilities, 0b0000100000111110);
+        assert_eq!(BaseRoutine::get(DscFamily::Mc56f803X).unwrap().capabilities, 0b0000100000111110);
     }
 
 }
