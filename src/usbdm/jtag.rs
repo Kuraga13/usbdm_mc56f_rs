@@ -436,7 +436,8 @@ impl Programmer
     // @note If memory space size is byte size then address is DSC byte pointer address
     // @note Size is limited to dscInfo.maxMemoryReadSize
     //
-    pub fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
+    /// Private helper function use `dsc_read_memory` instead
+    fn read_memory_block(&self, mut memory_space: u8, num_bytes: u8, address: u32) -> Result<(Vec<u8>), Error> {
         if (memory_space == memory_space_t::MS_PLONG) {
             // Treat as word access
             memory_space = memory_space_t::MS_PWORD;
@@ -538,7 +539,8 @@ impl Programmer
     // @note If memory space size is byte size then address is DSC byte pointer address
     // @note Size is limited to dscInfo.maxMemoryWriteSize
     //
-    pub fn write_memory_block(&self, mut memory_space: u8, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
+    /// Private helper function use `dsc_write_memory` instead
+    fn write_memory_block(&self, mut memory_space: u8, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
         if (memory_space == memory_space_t::MS_PLONG) {
             // Treat as word access
             memory_space = memory_space_t::MS_PWORD;
@@ -611,16 +613,22 @@ impl Programmer
     // @note If memory space size is word or long size then address is DSC word address
     // @note If memory space size is byte size then address is DSC byte pointer address
     //
-    pub fn dsc_write_memory(&self, mut memory_space: u8, mut data: Vec<u8>, mut address: u32) -> Result<(), Error> {
-    
+    pub fn dsc_write_memory(&self, mut memory_space: u8, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
+        let mut current_address: u32 = address;
+        let element_size: u8 = memory_space & memory_space_t::MS_SIZE;
+
         while (data.len() > 0) {
             let mut block_size = data.len();
             
-            if (block_size > 0x10) {
-                block_size = 0x10; };
+            if (block_size > 0x20) {
+                block_size = 0x20; };
 
-            self.write_memory_block(memory_space, data.drain(..block_size).collect(), address)?;
-            address += block_size as u32;
+            self.write_memory_block(memory_space, data.drain(..block_size).collect(), current_address)?;
+            if element_size == memory_space_t::MS_BYTE {
+                current_address += block_size as u32; // Byte currentAddress advanced by count of bytes written
+            } else {
+                current_address += block_size as u32 / 2; // Address advanced by count of words written
+            }
         }
      
         Ok(())

@@ -35,7 +35,7 @@ impl TargetDsc {
     let mut ram_addr = ram_start_add;
     for retry_test_ram in 0..10
     {
-      prog.write_memory_block(memory_space_t::MS_XWORD, ram_test_data.clone(), ram_addr)?;
+      prog.dsc_write_memory(memory_space_t::MS_XWORD, ram_test_data.clone(), ram_addr)?;
 
       let compare = prog.dsc_read_memory(memory_space_t::MS_XWORD, ram_test_data.len() as u32,  ram_addr)?;
 
@@ -292,7 +292,7 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>, pro
   //let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
 
   let test_write = vec![0xAA; 0xEC];
-  let mem_write = prog.write_memory_block(memory_space_t::MS_XWORD, test_write, test_addr)?;
+  let mem_write = prog.dsc_write_memory(memory_space_t::MS_XWORD, test_write, test_addr)?;
 
   prog.target_power_reset()?;
   prog.refresh_feedback()?;
