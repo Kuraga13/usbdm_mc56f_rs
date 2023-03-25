@@ -1,4 +1,4 @@
-use super::target_factory::{TargetFactory,TargetProgramming, MemoryMap, SecurityStatus,TargetDsc};
+use super::target_factory::{TargetFactory, TargetProgramming, MemoryMap, SecurityStatus, TargetDsc, DscFamily};
 use crate::errors::Error;
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
@@ -7,7 +7,6 @@ use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
 use super::flash_routine::flash_operations::get_target_speed;
-use super::flash_routine::base_routine::BaseRoutineFamily;
 
 use std::{thread, time};
 use std::time::Duration;
@@ -144,7 +143,7 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
     return Err(Error::TargetSecured)
   }
 
-  let speed_result = get_target_speed(BaseRoutineFamily::DSC_56F802X, prog)?;
+  let speed_result = get_target_speed(DscFamily::Mc56f802X, prog)?;
 
   dbg!(speed_result);
 
