@@ -19,14 +19,25 @@ use serde::{Serialize, Deserialize, Deserializer};
 type MemorySpace       = u8;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum TargetSelector
-{
+pub enum TargetSelector {
 
     Mc56f8011,
     Mc56f8025,
     Mc56f8035,
 
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum DscFamily {
+
+    Mc56f800X,
+    Mc56f801X,
+    Mc56f802X,
+    Mc56f803X,
+
+}
+
+
 
 /// Ram segment
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -86,8 +97,8 @@ pub struct TargetBase {
   
     /// The name of the target.
     pub name               : TargetSelector,
-    /// `family `specify TargetProgramming trait
-    pub family             : String,
+    /// `family `specify TargetProgramming trait by enum DscFamily
+    pub family             : DscFamily,
     /// `base_routine_path` base pre-compiled routine path
     pub base_routine_path  : String,
     /// `jtag_id_code` id code from dsc, for example  MC56802X_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
@@ -107,7 +118,7 @@ pub struct TargetBase {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TargetYaml {
   
-    /// The name of the target.
+    ///`dsc` - targets in Yaml database.
     pub dsc          : Vec<TargetBase>,
 
 }
@@ -195,20 +206,34 @@ impl TargetDsc {
 
     dbg!(&dsc);
 
-    let mut family_actions: Option<Box<dyn TargetInitActions>> = match dsc.family.as_str()
+    let mut family_actions: Option<Box<dyn TargetInitActions>> = match dsc.family
     {
-      "801x"  => 
+
+      DscFamily::Mc56f800X  => 
       {
 
         let init_type = Box::new(MC56f801x);
         Some(init_type)
       }
 
-      "802x" => 
+      DscFamily::Mc56f801X  => 
+      {
+
+        let init_type = Box::new(MC56f801x);
+        Some(init_type)
+      }
+
+      DscFamily::Mc56f802X => 
       {
         let init_type = Box::new(MC56f802x);
         Some(init_type)
-      }  
+      } 
+      
+      DscFamily::Mc56f803X => 
+      {
+        let init_type = Box::new(MC56f802x);
+        Some(init_type)
+      }   
       _ =>   { None }       
 
     };
@@ -230,12 +255,38 @@ impl TargetDsc {
       once_status      : OnceStatus::UnknownMode,
       image_path       : dsc.connection_image_path.clone() })
   }
+
+
+     
+  pub fn get_ram_range(&self) -> Result<&Range<u64>, Error> {
+        
+    let ram_seg = self.memory_map.iter()
+        .filter_map(|r| match r {
+          MemorySegment::Ram(r) => Some(r),
+          _ => None,
+      })
+      .next();
+
+    match ram_seg {
+
+      Some(rs) => {  Ok(&rs.range)  }
+      None => {return Err(Error::InternalError("Ram Segment not found for DscTarget!".to_string())) } }
+ 
+     
+    }
+
+
+
+
+
+
+
 }
 
 impl Drop for TargetDsc{
  
   fn drop(&mut self) {
-      println!("Target dropped");
+      println!("TargetDsc dropped");
   }
 }
 

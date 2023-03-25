@@ -381,9 +381,20 @@ impl Application for App {
                                  
              /* test_target2 for new target programming interface, with abstract factory */
              let test_target2 = TargetDsc::create_target_from_selector(target);
-             let target = match test_target2 {
+             match test_target2 {
 
-                Ok(target) => { self.target2 = target;}
+                Ok(target) => 
+                { 
+                    self.target2 = target;
+                    let test_rng_ram = self.target2.get_ram_range().expect("test rng ram");
+                    let start_ram = test_rng_ram.start;
+                    let end_ram = test_rng_ram.end;
+                    dbg!(&start_ram);
+                    dbg!(&end_ram);
+
+
+                    return iced::Command::none();
+                }
                 Err(_e) => 
                 {                
                     show_error(  self, _e);
@@ -827,7 +838,13 @@ impl Application for App {
             {
                 
                 println!("TestFeedback");
+
+
                 let mut dsc =  Box::new(&mut self.target2);
+
+                let test_something = dsc.core_id;
+                dbg!(test_something);
+                
                 let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
 

@@ -1,6 +1,13 @@
+dsc_family:
+
+ - family:    Mc56f801X
+ - family:    Mc56f802X
+ - family:    Mc56f803X
+
+
 dsc:
  - name:    Mc56f8011
-   family:  801x
+   family:  Mc56f801X
    base_routine_path : "./src/dsc_algo/base_routine/DSC-56F8014-flash-prog.elf.p.S"
    jtag_id_code : 0x01F2401D
    core_id_code : 0x02211004
@@ -23,7 +30,7 @@ dsc:
        start: 0x800
        end: 0x7FFF
  - name:    Mc56f8025
-   family:  802x
+   family:  Mc56f802X
    base_routine_path : "./src/dsc_algo/base_routine/DSC-56F8023-flash-prog.elf.p.S"
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
@@ -46,7 +53,7 @@ dsc:
        start: 0x4000
        end: 0x7FFF
  - name:    Mc56f8035
-   family:  802x
+   family:  Mc56f803X
    base_routine_path : "./src/dsc_algo/base_routine/DSC-56F8023-flash-prog.elf.p.S"
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
