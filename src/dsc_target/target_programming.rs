@@ -113,20 +113,7 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
 
   thread::sleep(time::Duration::from_millis(20));
 
-  for retry in 0..10 
-  {
-    
-    self.once_status = targetDebugRequest(&prog)?;
-    dbg!(&self.once_status);
-    if(self.once_status == OnceStatus::DebugMode)
-    {
-      break;
-    }
-    if(self.once_status == OnceStatus::UnknownMode) 
-    {
-       return Err((Error::TargetNotConnected))
-    }
-  }
+  prog.dsc_target_halt()?;
 
   let pc_after_execution = prog.dsc_read_pc()?;
 
@@ -199,19 +186,7 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   dbg!(&self.security);
   self.once_status = OnceStatus::UnknownMode;
 
-  for retry in 0..10 
-  {
-    dbg!(&self.once_status);
-    self.once_status = targetDebugRequest(&prog)?;
-    if(self.once_status == OnceStatus::DebugMode)
-    {
-      break;
-    }
-    if(self.once_status == OnceStatus::UnknownMode) 
-    {
-       return Err((Error::TargetNotConnected))
-    }
-  }
+  prog.dsc_target_halt()?;
 
   self.once_status = enableONCE(&prog)?;
   dbg!("Final status is: ", &self.once_status);

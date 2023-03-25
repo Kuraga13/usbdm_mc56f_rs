@@ -222,21 +222,8 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
 
   self.security_status_from_id_code(dsc_jtag_id_code, MC5680XX_SIM_ID);
   dbg!(&self.security);
-  self.once_status = OnceStatus::UnknownMode;
-
-  for retry in 0..10 
-  {
-    dbg!(&self.once_status);
-    self.once_status = targetDebugRequest(&prog)?;
-    if(self.once_status == OnceStatus::DebugMode)
-    {
-      break;
-    }
-    if(self.once_status == OnceStatus::UnknownMode) 
-    {
-       return Err((Error::TargetNotConnected))
-    }
-  }
+  
+  prog.dsc_target_halt()?;
 
   self.once_status = enableONCE(&prog)?;
   dbg!("Final status is: ", &self.once_status);
