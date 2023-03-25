@@ -364,36 +364,37 @@ impl From <u8>  for OnceStatus  {
         Ok((OnceStatus::from(once_byte)))
     }
 
+impl Programmer
+{
     /// `targetDebugRequest` set Core JTAG-IR to DebugRequest
     ///
     /// `note` Assumes Core TAP is active & in RUN-TEST/IDLE
     /// 
     /// `note` Leaves Core TAP in RUN-TEST/IDLE
     ///
-      pub fn targetDebugRequest(prg:  &Programmer) -> Result<(OnceStatus), Error> {
+    /// Private helper function use `dsc_target_halt()` instead
+    fn targetDebugRequest(&self) -> Result<OnceStatus, Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
         sequence.push(JTAG_SET_EXIT_IDLE); 
         sequence.push(JTAG_SHIFT_IN_OUT_Q(JTAG_CORE_COMMAND_LENGTH));
         sequence.push(CORE_DEBUG_REQUEST_COMMAND);
         sequence.push(JTAG_END);
-        let answer = prg.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
+        let answer = self.exec_jtag_seq(sequence, JTAG_CORE_COMMAND_LENGTH)?;
         let once_byte = answer[0]; // TODO need right conversion!!! from 4 byte of answer to one once byte. now empric first byte from debug
-        dbg!(&answer);
-        Ok((OnceStatus::from(once_byte)))
+        Ok(OnceStatus::from(once_byte))
     }
-
-
-
-
-
-impl Programmer
-{
-    pub fn dsc_target_halt(&self) -> Result<(), Error> {
+    
+    /// `dsc_target_halt` uses `targetDebugRequest` in cycle to set Core JTAG-IR to DebugRequest
+    ///
+    /// `note` Assumes Core TAP is active & in RUN-TEST/IDLE
+    /// 
+    /// `note` Leaves Core TAP in RUN-TEST/IDLE
+    pub fn dsc_target_halt(&self) -> Result<OnceStatus, Error> {
         let mut once_status: OnceStatus = OnceStatus::UnknownMode;
         for retry in 0..10 
         {
-            once_status = targetDebugRequest(&self)?;
+            once_status = self.targetDebugRequest()?;
             if(once_status == OnceStatus::DebugMode)
                 { 
                     break; 
@@ -406,7 +407,7 @@ impl Programmer
         if (once_status != OnceStatus::DebugMode) {
             return Err(Error::InternalError("Target Halt Failed".to_string()))
         }
-        Ok(())
+        Ok(once_status)
     }
 
     // Start Target execution at current PC
