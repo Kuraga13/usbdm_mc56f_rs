@@ -34,7 +34,7 @@ enum FlashOperation {
 /// it is stored in the header of the uploaded routine
 ///
 /// orig name `LargeTargetFlashDataHeader` - Header at the start of flash programming buffer (controls program action)
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct RoutineFlashTask {
     /// Controls actions of routine
     flash_operation: u16,
@@ -69,7 +69,7 @@ impl RoutineFlashTask {
 /// Header at the start of timing data (controls program action & holds result)
 /// 
 /// orig name `LargeTargetTimingDataHeader`
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimingRoutineHeader {
     /// Controls actions of routine
     pub flash_operation: u16,
@@ -167,8 +167,17 @@ mod tests {
             controller: 0x44556677, // Dummy value - not used 
             timing_count: 0x8899AABB, 
         };
-        let timing_header_vec: Vec<u8> = timing_header.to_vec().unwrap();
-        assert_eq!(timing_header_vec, vec![0x11, 0x00, 0x33, 0x22, 0x77, 0x66, 0x55, 0x44, 0xBB, 0xAA, 0x99, 0x88]);
 
+        // Test timing header serialization with to_vec()
+        let timing_header_vec: Vec<u8> = timing_header.to_vec().unwrap();
+        let expected_header_vec: Vec<u8> = vec![0x11, 0x00, 0x33, 0x22, 0x77, 0x66, 0x55, 0x44, 0xBB, 0xAA, 0x99, 0x88];
+        assert_eq!(timing_header_vec, expected_header_vec);
+        
+        // Test timing header deserialization with from_vec()
+        let serialized_timing_header: TimingRoutineHeader = TimingRoutineHeader::from_vec(expected_header_vec).unwrap();
+        assert_eq!(timing_header, serialized_timing_header);
+
+        // Test timing header length with len()
+        assert_eq!(timing_header.len().unwrap(), 12); 
     } 
 }
