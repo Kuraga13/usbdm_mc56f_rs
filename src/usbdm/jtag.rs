@@ -596,8 +596,6 @@ impl Programmer
         sequence.push(memory_space);           // 7 Memory space
         sequence.append(&mut data);
 
-        println!("we are on write mem block");
-        println!("{:?}", sequence);
         self.exec_jtag_seq(sequence, 0)?;
         Ok(())
     }
