@@ -510,11 +510,14 @@ impl Programmer
         let mut current_address: u32 = address;
         let mut output: Vec<u8> = Vec::new();
 
+        let max_block_size: u32 = self.bdm_info.dsc_max_memory_read_size as u32;
+        if max_block_size < 0x20 { return Err(Error::InternalError("dsc_max_memory_read_size < 0x20".to_string())) }
+
         while (bytes_done < num_bytes) {
             let mut block_size: u32 = num_bytes - bytes_done;
             
-            if (block_size > 0x20) {
-                block_size = 0x20; }
+            if (block_size > max_block_size) {
+                block_size = max_block_size; }
             
             let mut data = self.read_memory_block(memory_space, block_size as u8, current_address)?;
             output.append(&mut data);
@@ -616,11 +619,14 @@ impl Programmer
         let mut current_address: u32 = address;
         let element_size: u8 = memory_space & memory_space_t::MS_SIZE;
 
+        let max_block_size: usize = self.bdm_info.dsc_max_memory_write_size as usize;
+        if max_block_size < 0x20 { return Err(Error::InternalError("dsc_max_memory_write_size < 0x20".to_string())) }
+
         while (data.len() > 0) {
             let mut block_size = data.len();
             
-            if (block_size > 0x20) {
-                block_size = 0x20; };
+            if (block_size > max_block_size) {
+                block_size = max_block_size; };
 
             self.write_memory_block(memory_space, data.drain(..block_size).collect(), current_address)?;
             if element_size == memory_space_t::MS_BYTE {
