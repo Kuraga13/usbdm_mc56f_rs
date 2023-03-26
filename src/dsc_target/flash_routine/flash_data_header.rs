@@ -27,7 +27,7 @@ enum FlashOperation {
 }
 
 
-/// `RoutineFlashTask` 
+/// `DataHeader` 
 /// 
 /// this struct represent task with parameters we give to routine
 /// 
@@ -35,7 +35,7 @@ enum FlashOperation {
 ///
 /// orig name `LargeTargetFlashDataHeader` - Header at the start of flash programming buffer (controls program action)
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-struct RoutineFlashTask {
+struct DataHeader {
     /// Controls actions of routine
     flash_operation: u16,
     /// Error code from action
@@ -55,7 +55,7 @@ struct RoutineFlashTask {
     data_address: u32,
  }
 
-impl RoutineFlashTask {
+impl DataHeader {
     pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
         match bincode::serialize(&self) {
             Ok(x) => Ok(x),
@@ -64,13 +64,13 @@ impl RoutineFlashTask {
     }
 } 
 
-/// `TimingRoutineHeader`
+/// `TimingHeader`
 /// 
 /// Header at the start of timing data (controls program action & holds result)
 /// 
 /// orig name `LargeTargetTimingDataHeader`
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TimingRoutineHeader {
+pub struct TimingHeader {
     /// Controls actions of routine
     pub flash_operation: u16,
     /// Error code from action
@@ -81,7 +81,7 @@ pub struct TimingRoutineHeader {
     pub timing_count: u32,
 }
 
-impl Default for TimingRoutineHeader {
+impl Default for TimingHeader {
     fn default() -> Self {
         Self { 
             flash_operation: DO_TIMING_LOOP | IS_COMPLETE, // IS_COMPLETE as check - should be cleared
@@ -92,7 +92,7 @@ impl Default for TimingRoutineHeader {
     }
 }
 
-impl TimingRoutineHeader {
+impl TimingHeader {
     pub fn get() -> Self {
         Self::default()
     }
@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn flash_data_header_check() {
-        let timing_header: TimingRoutineHeader = TimingRoutineHeader{
+        let timing_header: TimingHeader = TimingHeader{
             flash_operation: 0x0011, // IS_COMPLETE as check - should be cleared
             error_code: 0x2233,
             controller: 0x44556677, // Dummy value - not used 
@@ -174,7 +174,7 @@ mod tests {
         assert_eq!(timing_header_vec, expected_header_vec);
         
         // Test timing header deserialization with from_vec()
-        let serialized_timing_header: TimingRoutineHeader = TimingRoutineHeader::from_vec(expected_header_vec).unwrap();
+        let serialized_timing_header: TimingHeader = TimingHeader::from_vec(expected_header_vec).unwrap();
         assert_eq!(timing_header, serialized_timing_header);
 
         // Test timing header length with len()

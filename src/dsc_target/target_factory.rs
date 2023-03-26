@@ -5,7 +5,7 @@ use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
-use super::flash_routine::*;
+use super::flash_routine::FlashRoutine;
 use super::target_init_actions::{MC56f801x,MC56f802x};
 //use crate::target_dsc::mc56f802x::MC56f802x;
 //use crate::target_dsc::mc56f801x::MC56f801x;
@@ -169,7 +169,7 @@ pub struct TargetDsc {
     /// `memory_map` of the target contain ranged Segment with MemorySpaceType.
     pub memory_map         : Vec<MemorySegment>,
     /// `flash_routine` pre-compiled and configured code for concrete target, assume load & execute for some programming task
-    //pub flash_routine      : FlashRoutine,
+    pub flash_routine      : FlashRoutine,
     /// `security_bytes`, security bytes sequense, for unsecuring-securing device ref datasheet
     pub security_bytes     : Vec<u8>,
     /// `security` status of target
@@ -249,7 +249,7 @@ impl TargetDsc {
       core_id          : dsc.core_id_code, 
       jtag_id_code     : dsc.jtag_id_code,
       memory_map       : dsc.memory_map.clone(), 
-      //flash_routine    : FlashRoutine::build_base_routine(dsc.base_routine_path.clone()).unwrap(), 
+      flash_routine    : FlashRoutine::init(dsc.family.clone())?, 
       security_bytes   : dsc.security_bytes.clone(),
       security         : SecurityStatus::Unknown,
       once_status      : OnceStatus::UnknownMode,

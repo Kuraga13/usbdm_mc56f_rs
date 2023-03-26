@@ -6,7 +6,7 @@ use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
-use super::flash_routine::flash_operations::get_target_speed;
+use super::flash_routine::FlashRoutine;
 
 use std::{thread, time};
 use std::time::Duration;
@@ -143,7 +143,7 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
     return Err(Error::TargetSecured)
   }
 
-  let speed_result = get_target_speed(DscFamily::Mc56f802X, prog)?;
+  let speed_result = self.flash_routine.get_target_speed(prog)?;
 
   dbg!(speed_result);
 
