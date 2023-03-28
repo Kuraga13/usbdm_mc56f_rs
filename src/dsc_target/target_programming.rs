@@ -143,9 +143,10 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
     return Err(Error::TargetSecured)
   }
 
-  let speed_result = self.flash_routine.get_target_speed(prog)?;
+  //let speed_result = self.flash_routine.get_target_speed(prog)?;
 
-  dbg!(speed_result);
+  //dbg!(speed_result);
+  self.flash_routine.dsc_write_prog_mem(prog)?;
 
   self.power(TargetVddSelect::VddOff, prog)?;
 
