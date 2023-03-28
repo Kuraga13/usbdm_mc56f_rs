@@ -16,7 +16,7 @@ pub const IS_COMPLETE          : u16 = 1<<15; // Completion flag, routine must c
 /// Different flash operations
 #[repr(u16)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum FlashOperation {
+pub enum FlashOperation {
     OpEraseBlock = DO_INIT_FLASH | DO_ERASE_BLOCK,
     OpEraseRange = DO_INIT_FLASH | DO_ERASE_RANGE, 
     OpBlankCheck = DO_INIT_FLASH | DO_BLANK_CHECK_RANGE, 
@@ -35,24 +35,24 @@ enum FlashOperation {
 ///
 /// orig name `LargeTargetFlashDataHeader` - Header at the start of flash programming buffer (controls program action)
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-struct DataHeader {
+pub struct DataHeader {
     /// Controls actions of routine
-    flash_operation: u16,
+    pub flash_operation: u16,
     /// Error code from action
-    error_code: u16,
+    pub error_code: u16,
     /// Ptr to flash controller
-    controller: u32,
+    pub controller: u32,
     /// Target frequency (kHz)
-    frequency: u16,
+    pub frequency: u16,
     /// Size of Flash memory sectors (smallest erasable block)
-    sector_size: u16,
+    pub sector_size: u16,
     /// Memory address being accessed (reserved/page/address)
-    address: u32,
+    pub address: u32,
     /// Size of memory range being accessed
-    data_size: u16,
-    pad: u16,
+    pub data_size: u16,
+    pub pad: u16,
     /// Ptr to data to program
-    data_address: u32,
+    pub data_address: u32,
  }
 
 impl DataHeader {
