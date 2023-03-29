@@ -1,14 +1,62 @@
 dsc_family:
-
+ - family:    Mc56f800X
  - family:    Mc56f801X
  - family:    Mc56f802X
  - family:    Mc56f803X
 
-
 dsc:
+ - name:    Mc56f8002
+   family:  Mc56f800X
+   jtag_id_code : 0x01F2601D
+   core_id_code : 0x02211004
+   security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
+   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   memory_map:
+   - !Ram
+       name: null
+       range:
+        start: 0x8000
+        end:   0x83FF
+       access_type: MemoryP
+   - !DataEeprom
+       name: null
+       range:
+        start: 0x0
+        end: 0x03FF
+       access_type: MemoryX
+   - !FlashProgramm
+      name: null
+      range:
+       start: 0x0800
+       end: 0x1FFF
+      access_type: MemoryP
+ - name:    Mc56f8006
+   family:  Mc56f800X
+   jtag_id_code : 0x01F2601D
+   core_id_code : 0x02211004
+   security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
+   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   memory_map:
+   - !Ram
+       name: null
+       range:
+        start: 0x8000
+        end:   0x83FF
+       access_type: MemoryP
+   - !DataEeprom
+       name: null
+       range:
+        start: 0x0
+        end: 0x03FF
+       access_type: MemoryX
+   - !FlashProgramm
+      name: null
+      range:
+       start: 0x0
+       end: 0x1FFF
+      access_type: MemoryP
  - name:    Mc56f8011
    family:  Mc56f801X
-   base_routine_path : "./src/dsc_algo/base_routine/DSC-56F8014-flash-prog.elf.p.S"
    jtag_id_code : 0x01F2401D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
@@ -19,19 +67,46 @@ dsc:
        range:
         start: 0x8000
         end:   0x83FF
+       access_type: MemoryP
    - !DataEeprom
        name: null
        range:
         start: 0x0
-        end: 0x1
+        end: 0x03FF
+       access_type: MemoryX
    - !FlashProgramm
       name: null
       range:
        start: 0x800
-       end: 0x7FFF
+       end: 0x1FFF
+      access_type: MemoryP
+ - name:    Mc56f8013
+   family:  Mc56f801X
+   jtag_id_code : 0x01F2401D
+   core_id_code : 0x02211004
+   security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
+   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   memory_map:
+   - !Ram
+       name: null
+       range:
+        start: 0x8000
+        end:   0x87FF
+       access_type: MemoryP
+   - !DataEeprom
+       name: null
+       range:
+        start: 0x0
+        end: 0x03FF
+       access_type: MemoryX
+   - !FlashProgramm
+      name: null
+      range:
+       start: 0x800
+       end: 0x1FFF
+      access_type: MemoryP     
  - name:    Mc56f8025
    family:  Mc56f802X
-   base_routine_path : "./src/dsc_algo/base_routine/DSC-56F8023-flash-prog.elf.p.S"
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
@@ -42,19 +117,21 @@ dsc:
        range:
         start: 0x8000
         end:   0x87FF
+       access_type: MemoryP
    - !DataEeprom
        name: null
        range:
         start: 0x0
-        end: 0x1
+        end: 0x07FF
+       access_type: MemoryX
    - !FlashProgramm
       name: null
       range:
        start: 0x4000
        end: 0x7FFF
+      access_type: MemoryP
  - name:    Mc56f8035
    family:  Mc56f803X
-   base_routine_path : "./src/dsc_algo/base_routine/DSC-56F8023-flash-prog.elf.p.S"
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
@@ -65,13 +142,16 @@ dsc:
        range:
         start: 0x8000
         end:   0x8FFF
+       access_type: MemoryP
    - !DataEeprom
        name: null
        range:
         start: 0x0
-        end: 0x1
+        end: 0x0FFF
+       access_type: MemoryX
    - !FlashProgramm
       name: null
       range:
        start: 0x0
        end: 0x7FFF
+      access_type: MemoryP

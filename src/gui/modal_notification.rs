@@ -14,6 +14,7 @@ use iced_aw::{style::CardStyles, Card};
 use iced_native::widget::tooltip::Position;
 use super::styling::{ProgressBarMy, ProgressBarStyle};
 use crate::app::{Message, App};
+use crate::dsc_target::target_factory::TargetSelector;
 use crate::errors::{Error, get_title_message_error_modal};
 use crate::VERSION;
 
@@ -140,18 +141,18 @@ pub fn get_kuraga_remont_ru() -> Tooltip<'static, Message> {
     tool_tip
 
 }
-static DSC_IMAGE: &[u8] = include_bytes!("../gui/resources/mcu_connection.jpeg");
+static DSC_56F8035_IMAGE: &[u8] = include_bytes!("../gui/resources/mcu_connection.jpeg");
 
-pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: Element<'a, Message, iced::Renderer>, )  -> Element<'a, Message>
+pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: Element<'a, Message, iced::Renderer> )  -> Element<'a, Message>
 {
+  
 
 
     Modal::new(show_conn_image, content,  move|| { 
 
-        let handle = image::Handle::from_memory(DSC_IMAGE);
+        let handle = image::Handle::from_memory(DSC_56F8035_IMAGE);
 
         Card::new( 
-    
         Text::new("Connection of MC56F8035").size(25),
         container(image(handle).width(width)).center_x()
        )

@@ -18,7 +18,7 @@ use crate::usbdm::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::programmer::{Programmer};
-use crate::dsc_target::target_factory::{TargetFactory, TargetProgramming, TargetDsc, TargetSelector};
+use crate::dsc_target::target_factory::{TargetFactory, TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
 use crate::dsc_target::mc56f80x::MC56f80x;
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
@@ -86,7 +86,9 @@ pub enum Message {
 pub struct App {
 
            target             : Option<MC56f80x>,
-           target2            : TargetDsc,
+           target_database    : TargetYaml,
+    pub    target2            : TargetDsc,
+
            programmer         : Option<Programmer>,
            programmer2        : Option<Arc<RwLock<Programmer>>>,
 
@@ -348,6 +350,7 @@ impl Application for App {
                 selected_power     : TargetVddSelect::Vdd3V3,
                 target             : None,
                 target2            : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).expect("Target Builder Fault!"),
+                target_database    : TargetYaml::init_target_db().expect("Err on Yaml Database!"),
                 programmer         : None,
                 programmer2        : None,
                 status             : UsbdmAppStatus::NotConnected,
@@ -379,14 +382,14 @@ impl Application for App {
             Message::TargetSelect(target) => 
             {
                                  
-             /* test_target2 for new target programming interface, with abstract factory */
-             let test_target2 = TargetDsc::create_target_from_selector(target);
-             match test_target2 {
+             /* TargetSelect for new target programming interface, with abstract factory */
+             let selected = TargetDsc::target_from_selector(target, self.target_database.clone());
+             match selected {
 
                 Ok(target) => 
                 { 
                     self.target2 = target;
-                    let test_rng_ram = self.target2.get_ram_range().expect("test rng ram");
+                    let test_rng_ram = self.target2.ram_range().expect("test rng ram");
                     let start_ram = test_rng_ram.start;
                     let end_ram = test_rng_ram.end;
                     dbg!(&start_ram);
@@ -613,7 +616,7 @@ impl Application for App {
                                 
                                   self.programmer = Some(programmer);
 
-                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target(  0x8000, 0x0000, "MC56f8035".to_string()));
+                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target(  0x8400, 0x0000, "MC56f8035".to_string()));
                                   self.target = dsc;
                                  
                                  /* test_target2 for new target programming interface, with abstract factory */

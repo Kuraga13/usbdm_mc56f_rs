@@ -148,7 +148,7 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
   //dbg!(speed_result);
   self.flash_routine.dsc_write_prog_mem(prog)?;
 
-  self.power(TargetVddSelect::VddOff, prog)?;
+  //self.power(TargetVddSelect::VddOff, prog)?;
 
   Ok(())
 

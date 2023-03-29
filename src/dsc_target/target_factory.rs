@@ -12,19 +12,31 @@ use super::target_init_actions::{MC56f801x,MC56f802x};
 
 use std::borrow::BorrowMut;
 use std::io::Read;
+use std::fmt;
 use std::path::Path;
 use core::ops::Range;
 use serde::{Serialize, Deserialize, Deserializer};
 
 type MemorySpace       = u8;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum TargetSelector {
 
+    Mc56f8002,
+    Mc56f8006,
     Mc56f8011,
+    Mc56f8013,
     Mc56f8025,
     Mc56f8035,
 
+}
+
+impl fmt::Display for TargetSelector {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      ///write!(f, "{:?}", self)
+      // or test ::
+       fmt::Debug::fmt(self, f)
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -35,6 +47,23 @@ pub enum DscFamily {
     Mc56f802X,
     Mc56f803X,
 
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AccessType {
+
+    MemoryX,
+    MemoryP,
+
+}
+
+impl From<AccessType> for u8 {
+  fn from(access : AccessType) -> u8 {
+      match access { 
+        AccessType::MemoryX => memory_space_t::MS_XWORD,
+        AccessType::MemoryP => memory_space_t::MS_PWORD,
+      }
+   }
 }
 
 
@@ -49,6 +78,8 @@ pub struct RamSegement {
     /// Address `range` of the region
     pub range: Range<u64>,
 
+    pub access_type: AccessType,
+
 
 }
 
@@ -62,6 +93,8 @@ pub struct DataSegment {
     /// Address `range` of the region
     pub range: Range<u64>,
 
+    pub access_type: AccessType,
+
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -72,6 +105,8 @@ pub struct ProgrammSegment {
 
   /// Address `range` of the region
   pub range: Range<u64>,
+
+  pub access_type: AccessType,
 
 
 }
@@ -91,6 +126,8 @@ pub enum MemorySegment {
 }
 
 
+
+
 /// This describes a target import from Yaml, ser-de_ser fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TargetBase {
@@ -99,8 +136,6 @@ pub struct TargetBase {
     pub name               : TargetSelector,
     /// `family `specify TargetProgramming trait by enum DscFamily
     pub family             : DscFamily,
-    /// `base_routine_path` base pre-compiled routine path
-    pub base_routine_path  : String,
     /// `jtag_id_code` id code from dsc, for example  MC56802X_SIM_ID =  0x01F2801D, get by fn read_master_id_code_DSC_JTAG_ID()
     pub jtag_id_code       : u32,
     /// `core id code`, orig pjt `sdid`, for example  mc5680xx(23-35) =  0x02211004, get by fn read_core_id_code().
@@ -121,6 +156,16 @@ pub struct TargetYaml {
     ///`dsc` - targets in Yaml database.
     pub dsc          : Vec<TargetBase>,
 
+}
+
+impl TargetYaml {
+
+  pub fn init_target_db() -> Result<Self, Error> {
+
+    let target_db: TargetYaml = serde_yaml::from_str(YAML_STR).expect("Failed deser from yaml");
+
+    Ok(target_db)
+  }
 }
 
 
@@ -189,14 +234,9 @@ impl TargetDsc {
 
   pub fn create_target_from_selector(selector : TargetSelector) -> Result<Self, Error> {
 
-    
-
     let target_from_yaml: TargetYaml = serde_yaml::from_str(YAML_STR).expect("Failed deser from yaml");
 
-    dbg!(&target_from_yaml.dsc[0]);
-
     let dsc_list = target_from_yaml.dsc;
-
 
     let dsc = dsc_list
     .iter()
@@ -240,11 +280,71 @@ impl TargetDsc {
 
     let family_actions = family_actions.expect("Target family not found in match arm!");
 
-    let dsc_name = stringify!(dsc.name).to_string();
 
     Ok(TargetDsc {
 
-      name             : dsc_name,
+      name             : dsc.name.to_string(),
+      family           : family_actions,
+      core_id          : dsc.core_id_code, 
+      jtag_id_code     : dsc.jtag_id_code,
+      memory_map       : dsc.memory_map.clone(), 
+      flash_routine    : FlashRoutine::init(dsc.family.clone())?, 
+      security_bytes   : dsc.security_bytes.clone(),
+      security         : SecurityStatus::Unknown,
+      once_status      : OnceStatus::UnknownMode,
+      image_path       : dsc.connection_image_path.clone() })
+  }
+
+  pub fn target_from_selector(selector : TargetSelector, target_db : TargetYaml) -> Result<Self, Error> {
+
+    let dsc_list = target_db.dsc;
+
+    let dsc = dsc_list
+    .iter()
+    .find(|dsc| dsc.name == selector)
+    .ok_or_else(|| Error::InternalError("dsc from selector not found on target_db!".to_string()))
+    .unwrap();
+
+    dbg!(&dsc);
+
+    let mut family_actions: Option<Box<dyn TargetInitActions>> = match dsc.family
+    {
+
+      DscFamily::Mc56f800X  => 
+      {
+
+        let init_type = Box::new(MC56f801x);
+        Some(init_type)
+      }
+
+      DscFamily::Mc56f801X  => 
+      {
+
+        let init_type = Box::new(MC56f801x);
+        Some(init_type)
+      }
+
+      DscFamily::Mc56f802X => 
+      {
+        let init_type = Box::new(MC56f802x);
+        Some(init_type)
+      } 
+      
+      DscFamily::Mc56f803X => 
+      {
+        let init_type = Box::new(MC56f802x);
+        Some(init_type)
+      }   
+      _ =>   { None }       
+
+    };
+
+
+    let family_actions = family_actions.expect("Target family not found in match arm!");
+
+    Ok(TargetDsc {
+
+      name             : dsc.name.to_string(),
       family           : family_actions,
       core_id          : dsc.core_id_code, 
       jtag_id_code     : dsc.jtag_id_code,
@@ -257,27 +357,83 @@ impl TargetDsc {
   }
 
 
-     
-  pub fn get_ram_range(&self) -> Result<&Range<u64>, Error> {
-        
-    let ram_seg = self.memory_map.iter()
-        .filter_map(|r| match r {
-          MemorySegment::Ram(r) => Some(r),
-          _ => None,
+    pub fn ram_range(&self) -> Result<&Range<u64>, Error> {
+      let ram_seg = self.memory_map.iter()
+      .filter_map(|r| match r {
+        MemorySegment::Ram(r) => Some(r),
+        _ => None,
       })
-      .next();
+     .next();
+     let range = match ram_seg {
+      Some(rs) => {  &rs.range  }
+      None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
+     Ok(range)
+    }
 
-    match ram_seg {
+    pub fn programm_range(&self) -> Result<&Range<u64>, Error> {
+      let prog_flash_seg = self.memory_map.iter()
+      .filter_map(|r| match r {
+        MemorySegment::FlashProgramm(r) => Some(r),
+        _ => None,
+      })
+     .next();
+     let range = match prog_flash_seg {
+      Some(rs) => {  &rs.range  }
+      None => {return Err(Error::InternalError("programm_range not found for DscTarget!".to_string())) } };
+     Ok(range)
+    }
 
-      Some(rs) => {  Ok(&rs.range)  }
-      None => {return Err(Error::InternalError("Ram Segment not found for DscTarget!".to_string())) } }
- 
-     
+    pub fn data_seg_range(&self) -> Result<&Range<u64>, Error> {
+      let data_seg = self.memory_map.iter()
+      .filter_map(|r| match r {
+        MemorySegment::FlashProgramm(r) => Some(r),
+        _ => None,})
+     .next();
+     let range = match data_seg {
+      Some(rs) => {  &rs.range  }
+      None => {return Err(Error::InternalError("data_seg_range not found for DscTarget!".to_string())) } };
+     Ok(range)
     }
 
 
+    fn check_range_is_programm_flash_memory(&mut self, range: Range<u64>) -> Result<(), Error> {
+      let mut address = range.start;
+      while address < range.end {
+          match Self::address_in_segment(&self.memory_map, address, AccessType::MemoryP) {
+              Some(MemorySegment::FlashProgramm(segment)) => address = segment.range.end,
+              _ => {
+                  return Err(Error::InternalError("Range not found in check_range_is_programm_flash_memory!".to_string())) }
+              }
+          }
+      Ok(()) 
+    }
 
+    pub fn check_range_is_ram_memory(&mut self, range: Range<u64>, access : AccessType) -> Result<(), Error> {
+      let mut address = range.start;
+      while address < range.end {
+          match Self::address_in_segment(&self.memory_map, address, access) {
+              Some(MemorySegment::Ram(seg)) => address = seg.range.end,
+              _ => {
+                  return Err(Error::InternalError("Range not found in check_range_is_ram_memory!".to_string())) }
+              }
+          }
+      
+      Ok(()) 
+    }
 
+    fn address_in_segment( memory_map: &[MemorySegment], address: u64, access : AccessType) -> Option<&MemorySegment> {
+
+      for segment in memory_map {
+          let (r, access_seg) = match segment {
+              MemorySegment::Ram(r) => (r.range.clone(), r.access_type.clone()),
+              MemorySegment::FlashProgramm(r) => (r.range.clone(), r.access_type.clone()),
+              MemorySegment::DataEeprom(r) => (r.range.clone(), r.access_type.clone()),
+          };
+          if access == access_seg && r.contains(&address) { 
+            return Some(segment);}
+      }
+      None
+   }
 
 
 
@@ -422,16 +578,56 @@ fn target_init(&mut self, power : TargetVddSelect, prog : &mut Programmer);
 
 }
 
-
+///`deserialize_hex_line` casting byte array in str to Vec<u8>
+/// 
+/// `length` must be even!
+/// 
+/// for some weird reason `Yaml` doesn't want to do direct deserialization of the byte array
 fn deserialize_hex_line<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let s: String = Deserialize::deserialize(deserializer)?;
-    //let hex_bytes2: Vec<u8> = s.as_bytes().to_vec();
-    let chars: Vec<char> = s.chars().collect::<Vec<_>>();
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    
+    match s.len() % 2 {
+      0 => println!("Length is even"),
+      _ => println!("Length is odd! Error, need be handled!"),
+   }
 
-    let hex_bytes: Vec<u8> = chars.iter().map(|c| *c as u8).collect::<Vec<_>>();
+   let mut deser_vec = vec![];
 
-    Ok(hex_bytes)
+   let mut local : Vec<u8> = s.as_bytes().to_vec();
+
+   let mut iter = local.iter().enumerate();
+
+   while let Some((pos, one_byte)) = iter.next() {
+    let byte_1 = *one_byte;
+    let byte_2 = *iter.next().unwrap().1;
+    
+    deser_vec.push(hex_to_byte(byte_1, byte_2)); }
+
+    print_vec(&deser_vec);
+
+    Ok(deser_vec)
 }
+
+fn hex_to_byte(a: u8, b: u8) -> u8 {
+  let mut byte = vec![a, b];
+  for x in byte.iter_mut() {
+      if      *x >= b'0' && *x <= b'9' { *x -= b'0'; }
+      else if *x >= b'a' && *x <= b'f' { *x -= b'a' - 10; }
+      else if *x >= b'A' && *x <= b'F' { *x -= b'A' - 10;}
+  }
+  (byte[0] << 4) + byte[1]
+}
+
+
+///'print_vec' for debug memory read, sequnces etc., use for print small block in Vec<u8>
+fn print_vec(mem : &Vec<u8>) {
+   
+   for byte in mem.iter() {
+   let in_string = format!("{:02X}", byte);
+   print!("{}", in_string); }
+   print!("\n");
+     
+ } 

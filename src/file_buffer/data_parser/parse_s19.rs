@@ -113,7 +113,7 @@ fn hex_string_to_byte(data: &mut Vec<Vec<u8>>){
     }
 }
 
-fn hex_to_byte(a: u8, b: u8) -> u8 {
+pub fn hex_to_byte(a: u8, b: u8) -> u8 {
     let mut byte = vec![a, b];
     for x in byte.iter_mut() {
         if      *x >= b'0' && *x <= b'9' { *x -= b'0'; }

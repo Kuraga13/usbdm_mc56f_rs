@@ -469,10 +469,16 @@ pub fn view_customization_menu<'a>(app: &App) -> MenuTree<'a, Message, iced::Ren
 
 pub fn target_selection_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
 
+    let target_label = "Target: ".to_string() + &_app.target2.name.to_uppercase().clone(); 
+
     let root = MenuTree::with_children(
-        menu_button("Target"),
+        //menu_button("Target"),
+        menu_button(target_label.as_str()),
         vec![
+        target_button_item("MC56F8002", Message::TargetSelect(TargetSelector::Mc56f8002)),
+        target_button_item("MC56F8006", Message::TargetSelect(TargetSelector::Mc56f8006)),
         target_button_item("MC56F8011", Message::TargetSelect(TargetSelector::Mc56f8011)),
+        target_button_item("MC56F8013", Message::TargetSelect(TargetSelector::Mc56f8013)),
         target_button_item("MC56F8025", Message::TargetSelect(TargetSelector::Mc56f8025)),
         target_button_item("MC56F8035", Message::TargetSelect(TargetSelector::Mc56f8035)),
         ],
