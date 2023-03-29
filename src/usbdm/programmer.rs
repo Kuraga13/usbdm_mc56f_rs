@@ -7,7 +7,6 @@ use crate::usbdm::settings::{BdmSettings, TargetVddSelect, TargetType};
 use crate::usbdm::constants::{bdm_commands};
 use crate::usbdm::bdm_info::BdmInfo;
 use crate::usbdm::jtag::*;
-use crate::dsc_target::mc56f80x::{MC56f80x};
 use std::{thread, time};
 use std::time::Duration;
 

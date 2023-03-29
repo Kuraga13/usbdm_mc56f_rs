@@ -469,7 +469,7 @@ pub fn view_customization_menu<'a>(app: &App) -> MenuTree<'a, Message, iced::Ren
 
 pub fn target_selection_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer> {
 
-    let target_label = "Target: ".to_string() + &_app.target2.name.to_uppercase().clone(); 
+    let target_label = "Target: ".to_string() + &_app.target.name.to_uppercase().clone(); 
 
     let root = MenuTree::with_children(
         //menu_button("Target"),

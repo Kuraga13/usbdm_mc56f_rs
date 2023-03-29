@@ -19,7 +19,6 @@ use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::programmer::{Programmer};
 use crate::dsc_target::target_factory::{TargetFactory, TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
-use crate::dsc_target::mc56f80x::MC56f80x;
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
@@ -85,9 +84,8 @@ pub enum Message {
 
 pub struct App {
 
-           target             : Option<MC56f80x>,
+    pub    target             : TargetDsc,
            target_database    : TargetYaml,
-    pub    target2            : TargetDsc,
 
            programmer         : Option<Programmer>,
            programmer2        : Option<Arc<RwLock<Programmer>>>,
@@ -262,7 +260,7 @@ impl App
         return;
     }
 
-    let mut dsc =  self.target.as_mut().expect("Try to Connect to Opt:None Target!");
+    let mut dsc =  Box::new(&mut self.target);// self.target.as_mut().expect("Try to Connect to Opt:None Target!");
     let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
     let mut check_connect_dsc =  dsc.connect(self.selected_power, prog);
@@ -348,8 +346,7 @@ impl Application for App {
                 show_p_progress    : false,
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
-                target             : None,
-                target2            : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).expect("Target Builder Fault!"),
+                target             : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).expect("Target Builder Fault!"),
                 target_database    : TargetYaml::init_target_db().expect("Err on Yaml Database!"),
                 programmer         : None,
                 programmer2        : None,
@@ -388,8 +385,8 @@ impl Application for App {
 
                 Ok(target) => 
                 { 
-                    self.target2 = target;
-                    let test_rng_ram = self.target2.ram_range().expect("test rng ram");
+                    self.target = target;
+                    let test_rng_ram = self.target.ram_range().expect("test rng ram");
                     let start_ram = test_rng_ram.start;
                     let end_ram = test_rng_ram.end;
                     dbg!(&start_ram);
@@ -486,24 +483,11 @@ impl Application for App {
 
             let mut start_addr : u32;
             let mut size : usize;
+
+            let programm_range = self.target.programm_range().expect("Get mem range err App"); 
     
-              match &self.target 
-              {
-                None => 
-                {
-
-                start_addr  = 0x0;
-                size  = 0xFFFF;
-
-                }
-                Some(dsc) =>
-                {
-
-                 start_addr = dsc.memory_map.memory_start_address();
-                 size = dsc.memory_map.memory_size();
-
-                 }
-              }
+            start_addr = programm_range.start as u32;
+            size = (programm_range.end - programm_range.start) as usize;
 
             self.buffer_path = path;
 
@@ -544,23 +528,13 @@ impl Application for App {
         
             let mut start_addr : u32;
             let mut size : usize;
-            
-             match &self.target 
-             {
-                None => 
-                {
-                start_addr  = 0x0;
-                size  = 0xFFFF;
-                }
 
-                Some(dsc) =>
-                {
-                         start_addr = dsc.memory_map.memory_start_address();
-                         size = dsc.memory_map.memory_size();
-        
-                }
-              }
-        
+            let programm_range = self.target.programm_range().expect("Get mem range err App"); 
+    
+            start_addr = programm_range.start as u32;
+            size = (programm_range.end - programm_range.start) as usize;
+            
+    
             self.buffer_path = path;
         
             save_buffer_to_file(self.buffer_path.clone(), start_addr, size,self);
@@ -615,17 +589,6 @@ impl Application for App {
                                 {
                                 
                                   self.programmer = Some(programmer);
-
-                                  let dsc:Option<MC56f80x>  = Some(MC56f80x::create_target(  0x8400, 0x0000, "MC56f8035".to_string()));
-                                  self.target = dsc;
-                                 
-                                 /* test_target2 for new target programming interface, with abstract factory */
-                                 // let test_target2 = TargetDsc::create_target_from_selector(TargetSelector::Mc56f8011);
-                                 // self.target2 = Some(test_target2);
-                                 // let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
-                                 // let test2 = self.target2.as_mut().expect("Try to Connect to Opt:None Programmer!");
-                                 //  test2.read(self.selected_power, self.read_adddress, prog);
-                                  
                                   let handle =  self.programmer.as_mut().expect("");
                                   self.title =  "usbdm_mc56f_rs ".to_string() + &"connected ".to_string() + &handle.name.clone() +  &handle.get_string_version().clone();
                                 
@@ -649,7 +612,7 @@ impl Application for App {
                        }
                     
 
-                       let mut dsc =  self.target.as_mut().expect("target lost");
+                       let mut dsc =  Box::new(&mut self.target);
                        let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
                        dsc.init(prog);
@@ -688,25 +651,17 @@ impl Application for App {
 
             Message::Disconnect => 
             {    
-                match &self.target
-                {   
-                Some(target) =>{ 
+             
+        
                 println!("Try disconnect and drop");
-            
-                self.target.as_mut().expect("target lost").disconnect();
-                self.target = None;
+                self.target.disconnect();
                 self.status  = UsbdmAppStatus::NotConnected; 
                 
-                }
-                    
-                None => {}
-                } 
             } 
 
             Message::PowerToggle => 
             {    
 
-            let dsc =  self.target.as_mut().expect("");
             self.check_power_state();
 
                match self.power_status
@@ -714,7 +669,7 @@ impl Application for App {
 
                  PowerStatus::PowerOn =>
                  {
-                    let dsc =  self.target.as_mut().expect("");
+                    let dsc =  Box::new(&mut self.target);
                     let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
                     dsc.power(TargetVddSelect::VddOff, prog);
                     self.check_power_state();
@@ -725,7 +680,7 @@ impl Application for App {
 
                  {
     
-                    let dsc =  self.target.as_mut().expect("");
+                    let dsc =  Box::new(&mut self.target);
                     let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
                     dsc.power(self.selected_power, prog);
                     self.check_power_state();
@@ -751,15 +706,16 @@ impl Application for App {
 
               self.progress_bar_value = 0.0;
 
-              let dsc = self.target.as_mut().expect("target lost");
-            
-              self.read_adddress = dsc.memory_map.memory_start_address();
-              let size = dsc.memory_map.memory_size();
-              let end_addr = self.read_adddress + size as u32;
+              let dsc = Box::new(&mut self.target);
 
+              let programm_range = self.target.programm_range().expect("Get mem range err App"); 
+    
+              self.read_adddress = programm_range.start as u32;
+              
               self.read_buff.clear();
 
-              self.number_to_read = end_addr * 2 / 64;
+              self.number_to_read = (programm_range.end - programm_range.start) as u32 * 2 / 64;
+              self.number_to_read += 1;
               dbg!(&self.number_to_read);
               self.counter = 0;
               return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ProgrammingInProgress);
@@ -768,11 +724,9 @@ impl Application for App {
 
             Message::ReadTargetProgress(x)  => 
             {
-                
-                //self.show_p_progress = true;
 
                 self.target_status = TargetStatus::InProgramming;
-                let dsc = self.target.as_mut().expect("target lost");
+                let dsc = Box::new(&mut self.target);
                 let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
   
                 let counter = self.counter;
@@ -812,9 +766,8 @@ impl Application for App {
             Message::WriteTarget  => 
             {
               
-              let dsc = self.target.as_mut().expect("target lost");
+              let dsc = Box::new(&mut self.target);
             
-
               let write = self.buffer.download_in_one();  
               let write_target = dsc.write_target(self.selected_power, write, self.programmer.as_mut().expect("Try to Connect to Opt:None Target!"));
 
@@ -843,7 +796,7 @@ impl Application for App {
                 println!("TestFeedback");
 
 
-                let mut dsc =  Box::new(&mut self.target2);
+                let mut dsc =  Box::new(&mut self.target);
 
                 let test_something = dsc.core_id;
                 dbg!(test_something);
@@ -938,9 +891,7 @@ impl Application for App {
         error_notify_model(self.show_error_modal, main_page.into(), err_view) 
     }
     
-
-   
-    
+     
    // main_page.into()
 
     }
