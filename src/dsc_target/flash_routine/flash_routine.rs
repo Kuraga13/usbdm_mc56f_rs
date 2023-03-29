@@ -58,6 +58,40 @@ impl FlashRoutine {
     
         Ok(target_bus_frequency)
     }
+    
+    pub fn calculate_flash_divider(bus_frequency: u32) -> Result<u32, Error>
+    {
+        const DSC_PRDIV8 : u32 = 0x40;
+
+        if bus_frequency < 1000 {
+            return Err(Error::InternalError(("Clock too low for flash programming".to_string())));
+        };
+ 
+        let osc_frequency = 2 * bus_frequency;
+        let mut in_frequency;
+        let mut cfmclkd : u32;
+ 
+        if (osc_frequency > 12800) {
+            cfmclkd = DSC_PRDIV8;
+            in_frequency = osc_frequency / 8;
+        } else {
+            cfmclkd = 0;
+            in_frequency = osc_frequency;
+        }
+ 
+        let min_period = 1.0 / 200.0 + 1.0 / (4.0 * bus_frequency as f64);
+ 
+
+        let mut calculation = in_frequency as f64 * min_period;
+        cfmclkd += calculation.round() as u32;
+    
+        let flash_clk = in_frequency / ((cfmclkd & 0x3F) + 1);
+ 
+        if (flash_clk < 150) {
+            return Err(Error::InternalError(("Not possible to find suitable flash clock divider".to_string())));
+        }
+        Ok(cfmclkd)
+    }
 
     pub fn dsc_write_prog_mem(&mut self, prog: &mut Programmer) -> Result<(), Error> {
 
@@ -117,5 +151,15 @@ impl FlashRoutine {
 
         Ok(())
 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn calculate_flash_divider_check() {
+        assert_eq!(FlashRoutine::calculate_flash_divider(4000).unwrap(), 0x29);
     }
 }

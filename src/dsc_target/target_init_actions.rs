@@ -1,4 +1,5 @@
 use crate::errors::Error;
+use super::flash_routine::FlashRoutine;
 use super::target_factory::{TargetInitActions, SecurityStatus};
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::programmer::{Programmer};
@@ -47,46 +48,7 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
 /// Calculate specific on Dsc Target Family cfmclkd
 fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_frequency : u32 ) -> Result<u32, Error> {
 
-    unimplemented!();
-
-    const DSC_PRDIV8 : u32 = 0x40;
-
-    if (bus_frequency < 1000) {
-       println! ("Clock too low for flash programming");
-       return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string())));
-     
-    };
- 
-    let osc_frequency = 2 * bus_frequency;
-    let mut in_frequency;
-    let mut cfmclkd : u32;
- 
-    if (osc_frequency > 12800) {
-       cfmclkd = DSC_PRDIV8;
-       in_frequency = osc_frequency / 8;
-    } else {
-       cfmclkd = 0;
-       in_frequency = osc_frequency;
-    }
- 
-    let min_period = 1.0 / 200.0 + 1.0 / (4.0 * bus_frequency as f64);
- 
-
-    let mut calculation = in_frequency as f64 * min_period;
-    calculation.floor();
-    cfmclkd += calculation.round() as u32;
-    
-
-    let flash_clk = in_frequency / ((cfmclkd & 0x3F) + 1);
-
-    println!("inFrequency {}, kHz cfmclkd = 0x {}, flashClk = {}, kHz, ", in_frequency, cfmclkd, flash_clk);
- 
-    if (flash_clk < 150) {
-        println! ("Not possible to find suitable flash clock divider");
-        return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string())));
-    }
- 
-     Ok(cfmclkd)
+    FlashRoutine::calculate_flash_divider(bus_frequency)
 
  }
 
