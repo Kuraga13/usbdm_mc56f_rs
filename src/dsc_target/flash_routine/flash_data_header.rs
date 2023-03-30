@@ -59,8 +59,19 @@ impl DataHeader {
     pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
         match bincode::serialize(&self) {
             Ok(x) => Ok(x),
-            Err(_e) => Err(Error::InternalError("Serialization of RoutineFlashTask failed".to_string())),
+            Err(_e) => Err(Error::InternalError("Serialization of RoutineDataHeader failed".to_string())),
         }
+    }
+
+    pub fn from_vec(vec: Vec<u8>) -> Result<Self, Error> {
+        match bincode::deserialize(&vec) {
+            Ok(x) => Ok(x),
+            Err(_e) => Err(Error::InternalError("Deserialization of RoutineDataHeader failed".to_string())),
+        }
+    }
+
+    pub fn len(&self) -> Result<u32, Error> {
+        Ok(self.to_vec()?.len() as u32)
     }
 } 
 
@@ -160,24 +171,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flash_data_header_check() {
+    fn routine_timing_header_check() {
         let timing_header: TimingHeader = TimingHeader{
-            flash_operation: 0x0011, // IS_COMPLETE as check - should be cleared
+            flash_operation: 0x0011,
             error_code: 0x2233,
-            controller: 0x44556677, // Dummy value - not used 
+            controller: 0x44556677,
             timing_count: 0x8899AABB, 
         };
+        let timing_header_vec: Vec<u8> = vec![0x11, 0x00, 0x33, 0x22, 0x77, 0x66, 0x55, 0x44, 0xBB, 0xAA, 0x99, 0x88];
 
-        // Test timing header serialization with to_vec()
-        let timing_header_vec: Vec<u8> = timing_header.to_vec().unwrap();
-        let expected_header_vec: Vec<u8> = vec![0x11, 0x00, 0x33, 0x22, 0x77, 0x66, 0x55, 0x44, 0xBB, 0xAA, 0x99, 0x88];
-        assert_eq!(timing_header_vec, expected_header_vec);
+        // Test timing header serialization with to_vec()  
+        assert_eq!(timing_header.to_vec().unwrap(), timing_header_vec);
         
         // Test timing header deserialization with from_vec()
-        let serialized_timing_header: TimingHeader = TimingHeader::from_vec(expected_header_vec).unwrap();
-        assert_eq!(timing_header, serialized_timing_header);
+        assert_eq!(TimingHeader::from_vec(timing_header_vec).unwrap(), timing_header);
 
         // Test timing header length with len()
         assert_eq!(timing_header.len().unwrap(), 12); 
     } 
+
+    #[test]
+    fn routine_data_header_check() {
+        let data_header: DataHeader = DataHeader { 
+            flash_operation: 0x0011,
+            error_code: 0x2233,
+            controller: 0x44556677,
+            frequency: 0x8899,
+            sector_size: 0xAABB,
+            address: 0xCCDDEEFF,
+            data_size: 0x0102,
+            pad: 0x0304,
+            data_address: 0x05060708,
+        };
+        let data_header_vec: Vec<u8> = vec![0x11, 0x00, 0x33, 0x22, 0x77, 0x66, 0x55, 0x44, 0x99, 0x88,
+            0xBB, 0xAA, 0xFF, 0xEE, 0xDD, 0xCC, 0x02, 0x01, 0x04, 0x03, 0x08, 0x07, 0x06, 0x05];
+
+        // Test data header serialization with to_vec()
+        assert_eq!(data_header.to_vec().unwrap(), data_header_vec);
+
+        // Test data header deserialization with from_vec()
+        assert_eq!(DataHeader::from_vec(data_header_vec).unwrap(), data_header);
+
+        // Test data header length with len()
+        assert_eq!(data_header.len().unwrap(), 24); 
+    }
 }
