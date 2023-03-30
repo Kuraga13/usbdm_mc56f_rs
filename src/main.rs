@@ -6,6 +6,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 mod gui;
 mod app;
 mod errors;
+mod utils;
 mod usbdm;
 mod dsc_target;
 mod file_buffer;

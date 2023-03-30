@@ -358,9 +358,9 @@ pub fn programmer_actions_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Re
         vec![
             connect_button_item("Connect", Message::Connect),
             programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
+            programmer_button_item("Write", Message::WriteTarget, &_app.status, &_app.target_status),
+            programmer_button_item("Erase", Message::EraseTarget, &_app.status, &_app.target_status),
             programmer_button_item("TestButton", Message::TestFeedback, &_app.status, &_app.target_status),
-            empty_item("Write"),
-            empty_item("Erase"),
         ],
     )
     .width(110);
@@ -475,6 +475,7 @@ pub fn target_selection_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Rend
         //menu_button("Target"),
         menu_button(target_label.as_str()),
         vec![
+        target_button_item("Tester_8035", Message::TargetSelect(TargetSelector::Tester56f8035)),
         target_button_item("MC56F8002", Message::TargetSelect(TargetSelector::Mc56f8002)),
         target_button_item("MC56F8006", Message::TargetSelect(TargetSelector::Mc56f8006)),
         target_button_item("MC56F8011", Message::TargetSelect(TargetSelector::Mc56f8011)),

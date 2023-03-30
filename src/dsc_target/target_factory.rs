@@ -1,4 +1,5 @@
 use crate::errors::Error;
+use crate::utils::*;
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::programmer::{Programmer};
@@ -6,7 +7,7 @@ use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
 use super::flash_routine::FlashRoutine;
-use super::target_init_actions::{MC56f801x,MC56f802x};
+use super::target_init_actions::{MC56f80xx};
 //use crate::target_dsc::mc56f802x::MC56f802x;
 //use crate::target_dsc::mc56f801x::MC56f801x;
 
@@ -22,6 +23,7 @@ type MemorySpace       = u8;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum TargetSelector {
 
+    Tester56f8035,
     Mc56f8002,
     Mc56f8006,
     Mc56f8011,
@@ -149,6 +151,8 @@ pub struct TargetBase {
     pub memory_map         : Vec<MemorySegment>,
 }
 
+const YAML_STR : &str = include_str!("../dsc_target/targets.yaml");
+
 /// This describes a target import from Yaml, ser-de_ser fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TargetYaml {
@@ -226,13 +230,12 @@ pub struct TargetDsc {
 
 }
 
-const YAML_STR : &str = include_str!("../dsc_target/targets.yaml");
 
 
 impl TargetDsc {
 
-
-  pub fn create_target_from_selector(selector : TargetSelector) -> Result<Self, Error> {
+  ///`create_database_and_target` for test & debug
+  fn create_database_and_target(selector : TargetSelector) -> Result<Self, Error> {
 
     let target_from_yaml: TargetYaml = serde_yaml::from_str(YAML_STR).expect("Failed deser from yaml");
 
@@ -252,26 +255,26 @@ impl TargetDsc {
       DscFamily::Mc56f800X  => 
       {
 
-        let init_type = Box::new(MC56f801x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       }
 
       DscFamily::Mc56f801X  => 
       {
 
-        let init_type = Box::new(MC56f801x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       }
 
       DscFamily::Mc56f802X => 
       {
-        let init_type = Box::new(MC56f802x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       } 
       
       DscFamily::Mc56f803X => 
       {
-        let init_type = Box::new(MC56f802x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       }   
       _ =>   { None }       
@@ -313,26 +316,26 @@ impl TargetDsc {
       DscFamily::Mc56f800X  => 
       {
 
-        let init_type = Box::new(MC56f801x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       }
 
       DscFamily::Mc56f801X  => 
       {
 
-        let init_type = Box::new(MC56f801x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       }
 
       DscFamily::Mc56f802X => 
       {
-        let init_type = Box::new(MC56f802x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       } 
       
       DscFamily::Mc56f803X => 
       {
-        let init_type = Box::new(MC56f802x);
+        let init_type = Box::new(MC56f80xx);
         Some(init_type)
       }   
       _ =>   { None }       
@@ -447,82 +450,6 @@ impl Drop for TargetDsc{
 }
 
 
-
-
-
-
-/////////////////////////////////////
-
-// old variant ->
-//
-use std::collections::HashMap;
-type AddressKey       = u32;
-type MemorySpaceType  = u8;
-type HexMap = HashMap<AddressKey, MemorySpaceType>; // map need to find memory type. On mc56f you have different access on memory space
-
-#[derive(Debug, Clone)]
-pub struct MemoryMap
-{
-
-  pub memory_size    : usize,  // MC56f80x memory map is linear and have one segment, so now we can do it simple way
-  pub start_address  : u32,
-  pub mem_space_type : HexMap, // use for conversion address->MemorySpaceType (MS_PWORD,MS_PLONG etc.). 
-
-}
-
-impl MemoryMap
-{
-
- pub fn init_memory_map(mem_size : usize, start_addr : u32, hex_map : HexMap) -> Self {
-  
-      Self{
-          memory_size     : mem_size,
-          start_address   : start_addr,
-          mem_space_type  : hex_map,
-    }
-}
-
-  pub fn get_memory_space_type(&self, addr: AddressKey) -> Result<&MemorySpaceType, Error>
-  {
-    match self.mem_space_type.get(&addr)
-    {
-        Some(m_type) => 
-        {
-        println!("space type on this addr is: {:#02X}", m_type);
-        Ok(m_type)
-        }
-        _ => 
-        {
-        println!("AddressKey not found!");
-        Err(Error::MemorySpaceTypeAddress_Out)
-        }
-     }
-  }
-
-pub fn memory_size(&self)           -> usize
-{
-
-    self.memory_size
-
-}
-pub fn memory_start_address(&self)  -> u32
-{
-   
-    self.start_address
-
-}
-
-}
-
-
- pub trait TargetFactory{
-
-  type Output: TargetProgramming;
-
-  fn create_target(mem_size : usize, start_addr : u32, name : String) -> Self::Output;
-  
-}
-
 pub trait TargetProgramming:  Send + std::fmt::Debug
 {
 
@@ -570,11 +497,8 @@ fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, ex
 /// Mass Erase specific on Dsc Target Family mass erase algorith
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
 
-/// Calculate specific on Dsc Target Family cfmclkd
-fn calculate_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_frequency : u32) -> Result<u32, Error>;
-
-/// Init specific on Dsc Target Family algorith
-fn target_init(&mut self, power : TargetVddSelect, prog : &mut Programmer);
+/// `init_for_write_erase` specific on Dsc Target Family algorith preapare & unlock flash for write & erase
+fn init_for_write_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_freq : u32) -> Result<(), Error>;
 
 }
 
@@ -606,12 +530,19 @@ where
     
     deser_vec.push(hex_to_byte(byte_1, byte_2)); }
 
-    print_vec(&deser_vec);
+    print_vec_one_line(&deser_vec);
 
     Ok(deser_vec)
 }
 
-fn hex_to_byte(a: u8, b: u8) -> u8 {
+
+///`hex_to_byte` - decode ASCII hex digit to byte 
+/// 
+/// `a`, `b` is digit coded in 2 ASCII symbol, need to be converted in 2 bytes
+/// 
+/// `return` decoded digit in one byte
+pub fn hex_to_byte(a: u8, b: u8) -> u8 {
+
   let mut byte = vec![a, b];
   for x in byte.iter_mut() {
       if      *x >= b'0' && *x <= b'9' { *x -= b'0'; }
@@ -620,14 +551,3 @@ fn hex_to_byte(a: u8, b: u8) -> u8 {
   }
   (byte[0] << 4) + byte[1]
 }
-
-
-///'print_vec' for debug memory read, sequnces etc., use for print small block in Vec<u8>
-fn print_vec(mem : &Vec<u8>) {
-   
-   for byte in mem.iter() {
-   let in_string = format!("{:02X}", byte);
-   print!("{}", in_string); }
-   print!("\n");
-     
- } 

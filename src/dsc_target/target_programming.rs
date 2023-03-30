@@ -1,5 +1,6 @@
-use super::target_factory::{TargetFactory, TargetProgramming, MemoryMap, SecurityStatus, TargetDsc, DscFamily};
+use super::target_factory::{ TargetProgramming, SecurityStatus, TargetDsc, DscFamily};
 use crate::errors::Error;
+use crate::utils::*;
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::programmer::{Programmer};
@@ -143,10 +144,11 @@ pub fn test_rw_programm_counter(&mut self, power: TargetVddSelect, prog : &mut P
     return Err(Error::TargetSecured)
   }
 
-  //let speed_result = self.flash_routine.get_target_speed(prog)?;
+  let dsc_bus_freq = self.flash_routine.get_target_speed(prog)?;
 
-  //dbg!(speed_result);
-  self.flash_routine.dsc_write_prog_mem(prog)?;
+  self.family.init_for_write_erase(power, prog, dsc_bus_freq)?;
+
+  //self.flash_routine.dsc_write_prog_mem(prog)?;
 
   //self.power(TargetVddSelect::VddOff, prog)?;
 
@@ -162,9 +164,11 @@ impl TargetProgramming for TargetDsc {
 
 fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>
 {
-  prog.set_bdm_options()?;
+  prog.set_settings()?;
+  prog.set_speed()?;
   prog.refresh_feedback()?;
   prog.set_target_mc56f()?;
+  println!("dsc init done!");
 
   Ok(())  
 
@@ -190,8 +194,8 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
 
   self.once_status = enableONCE(&prog)?;
   dbg!("Final status is: ", &self.once_status);
-  
 
+  
   Ok(())
     
 }
@@ -261,13 +265,14 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>, pro
 
   dbg!(&self.once_status);
   
-  //let check_ram = self.test_ram_rw(0x008000)?; // Algo implementation ... now here
-   
-  let test_addr =  0x0686;//self.memory_map.start_address;
-  //let test_mem_access_type =  *self.memory_map.get_memory_space_type(test_addr)?;
+  let dsc_bus_freq = self.flash_routine.get_target_speed(prog)?;
 
-  let test_write = vec![0xAA; 0xEC];
-  let mem_write = prog.dsc_write_memory(memory_space_t::MS_XWORD, test_write, test_addr)?;
+  self.family.init_for_write_erase(power, prog, dsc_bus_freq)?;
+
+  self.flash_routine.dsc_write_prog_mem(prog)?;
+ 
+ // let test_write = vec![0xAA; 0x40];
+  //let mem_write = prog.dsc_write_memory(memory_space_t::MS_PWORD, test_write, 0x0000)?;
 
   prog.target_power_reset()?;
   prog.refresh_feedback()?;
@@ -286,6 +291,21 @@ fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> R
   if(powered != PowerStatus::PowerOn && self.once_status != OnceStatus::DebugMode)
   {
       self.connect(power, prog)?;
+  }
+
+  let dsc_bus_freq = self.flash_routine.get_target_speed(prog)?;
+
+  self.family.init_for_write_erase(power, prog, dsc_bus_freq)?;
+
+  self.flash_routine.dsc_erase_routine(prog)?;
+
+  prog.target_power_reset()?;
+
+  self.connect(power, prog)?;
+
+  if (self.security == SecurityStatus::Secured)
+  {
+    return Err(Error::TargetSecured)
   }
 
   Ok(())

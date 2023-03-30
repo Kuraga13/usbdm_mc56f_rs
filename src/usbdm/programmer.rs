@@ -192,6 +192,7 @@ pub fn set_vpp(&mut self, power: TargetVddSelect ) -> Result<(), Error>{
 pub fn refresh_feedback(&mut self) -> Result<(), Error>
 {
     self.feedback = self.get_bdm_feedback()?;
+    //self.feedback.print_feedback();
     Ok(())
 }
 
@@ -230,7 +231,7 @@ pub fn set_target_mc56f(&mut self) -> Result<(), Error>{
     Ok(())
 }
 
-pub fn set_bdm_options(&mut self) -> Result<(), Error>{
+pub fn set_settings(&mut self) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 6];
 
@@ -264,7 +265,29 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     Ok(())
 }
 
+pub fn set_speed(&mut self) -> Result<(), Error>{
 
+    let mut usb_buf  = [0; 4];
+
+    //let freq = self.settings.interface_frequency as u16;
+    let freq = self.settings.interface_frequency;
+
+    dbg!(&freq);
+
+    usb_buf[0] = 4;            // lenght of command
+    usb_buf[1] = bdm_commands::CMD_USBDM_SET_SPEED;
+    //usb_buf[2] = (freq >> 8) as u8;
+    //usb_buf[3] = freq as u8;
+    usb_buf[2]  = ((freq >> 8) & 0xFF) as u8;
+    usb_buf[3]  = (freq & 0xFF) as u8;
+    let hex_str = format!("{:02X}{:02X}",  usb_buf[2], usb_buf[3]);
+    println!("{}", hex_str);
+
+    self.usb_device.write(&usb_buf)?;                                    // write command
+    let answer = self.usb_device.read(1)?;                  // read status from bdm
+    dbg!(&answer);
+    Ok(())
+}
 
    pub fn exec_jtag_seq(&self, mut jtag_seq : Vec<u8>,  answer_lenght : u8) -> Result<(Vec<u8>), Error>{
       
@@ -300,6 +323,8 @@ pub fn set_bdm_options(&mut self) -> Result<(), Error>{
     let answer = self.usb_device.read(1)?;      // read status from bdm
     Ok(())
 }
+
+
 
 pub fn target_hardware_reset(&mut self) -> Result<(), Error>{
     const PIN_RESET_LOW : u16 = 2<<2;   // Set Reset low

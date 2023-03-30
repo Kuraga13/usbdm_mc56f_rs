@@ -65,7 +65,7 @@ impl FlashRoutine {
         println!("before {:x?}", result_vec);
 
         let header: DataHeader = DataHeader {
-            flash_operation: DO_BLANK_CHECK_RANGE,
+            flash_operation: DO_PROGRAM_RANGE,
             error_code: 0xFFFF,
             controller: 0x00F400,
             frequency: 2000,
@@ -93,8 +93,8 @@ impl FlashRoutine {
         let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
         println!("header before {:x?}", header);
 
-        //prog.dsc_write_pc(self.routine.code_entry)?;
-        //prog.dsc_target_go()?;
+        prog.dsc_write_pc(self.routine.code_entry)?;
+        prog.dsc_target_go()?;
 
         let mut once_status: OnceStatus = OnceStatus::ExecuteMode;
         //while (once_status != OnceStatus:: DebugMode)  {
@@ -106,8 +106,66 @@ impl FlashRoutine {
         //}
        
 
-        //let once_status = enableONCE(&programmer)?;
-        //prog.dsc_target_halt()?;
+        let once_status = enableONCE(&prog)?;
+        prog.dsc_target_halt()?;
+
+        let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
+        println!("after {:x?}", result_vec);
+
+        let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
+        println!("header after  {:x?}", header);
+
+        Ok(())
+
+    }
+
+    pub fn dsc_erase_routine(&mut self, prog: &mut Programmer) -> Result<(), Error> {
+
+        let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
+        println!("before {:x?}", result_vec);
+
+        let header: DataHeader = DataHeader {
+            flash_operation: DO_INIT_FLASH | DO_ERASE_BLOCK,
+            error_code: 0xFFFF,
+            controller: 0x00F400,
+            frequency: 2000,
+            sector_size: 256,
+            address: 0x0010,
+            data_size: 0x0020,
+            pad: 0,
+            data_address: 0x026C,
+        };
+
+        let mut hvec = header.to_vec()?;
+        //hvec.append(&mut data.clone());
+
+        let address_to_dsc = header.address;
+        let range_dsc = header.data_size;
+
+        println!("address_to_dsc : {:04X}", address_to_dsc);
+        println!("range_dsc : {:04X}", range_dsc);
+
+        prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
+        prog.dsc_write_memory(self.routine.data_header_address_memspace, hvec, self.routine.data_header_address)?;
+
+        let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
+        println!("header before {:x?}", header);
+
+        prog.dsc_write_pc(self.routine.code_entry)?;
+        prog.dsc_target_go()?;
+
+        let mut once_status: OnceStatus = OnceStatus::ExecuteMode;
+        //while (once_status != OnceStatus:: DebugMode)  {
+           // thread::sleep(time::Duration::from_micros(10));
+            //prog.dsc_target_halt()?;
+            //once_status = enableONCE(prog)?;
+            //if once_status == OnceStatus::UnknownMode {break}
+            println!("wait {:?}", once_status);
+        //}
+       
+
+        let once_status = enableONCE(&prog)?;
+        prog.dsc_target_halt()?;
 
         let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
         println!("after {:x?}", result_vec);

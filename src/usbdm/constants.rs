@@ -10,9 +10,10 @@ pub mod bdm_commands {
     pub const  CMD_USBDM_SET_OPTIONS             : u8  = 6;
     pub const  CMD_USBDM_CONTROL_PINS            : u8  = 8;   // Directly control BDM interface levels
     pub const  CMD_USBDM_GET_VER                 : u8  = 12; 
+    pub const  CMD_USBDM_SET_SPEED               : u8  = 16; 
     pub const  CMD_USBDM_SET_VPP                 : u8  = 42;  // Target Vdd Off but previously set level unchanged
     pub const  CMD_USBDM_JTAG_EXECUTE_SEQUENCE   : u8  = 44;  // Execute sequence of JTAG commands
-
+    
 }
 
  

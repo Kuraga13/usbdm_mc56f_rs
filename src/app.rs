@@ -18,7 +18,7 @@ use crate::usbdm::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::programmer::{Programmer};
-use crate::dsc_target::target_factory::{TargetFactory, TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
+use crate::dsc_target::target_factory::{TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
@@ -78,6 +78,7 @@ pub enum Message {
     ProgrammingInProgress(f32),
     ReadTargetProgress(f32),
     WriteTarget,
+    EraseTarget,
     TestFeedback,
     
 }
@@ -242,6 +243,7 @@ impl App
         {
             self.title =  "usbdm_mc56f_rs ".to_string() + &"not connected ".to_string();
             self.status = UsbdmAppStatus::NotConnected;
+            self.target_status = TargetStatus::NotConnected;
 
         }
     }
@@ -278,6 +280,7 @@ impl App
         Err(_) =>
         {
             self.target_status = TargetStatus::NotConnected;
+            println!("check_connection_target error");
 
         }
     }
@@ -309,6 +312,7 @@ impl App
 
         Err(err) =>
         {
+            println!("check_power_state error");
             show_error(  self, err);
             return;
 
@@ -325,13 +329,14 @@ impl Application for App {
 
     fn new(_flags: Self::Flags) -> (Self, iced::Command<Self::Message>) {
 
-
         let theme = iced::Theme::custom(theme::Palette {
             primary: Color::from([0.23, 0.61, 0.81]),
             danger: Color::from([1.0, 0.00, 0.00]),
             success: Color::from([0.70, 0.75, 0.02]),
             ..iced::Theme::Light.palette()
         });
+
+        let database    = TargetYaml::init_target_db().expect("Err on Yaml Database!");
 
         (           
             Self {
@@ -346,8 +351,8 @@ impl Application for App {
                 show_p_progress    : false,
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
-                target             : TargetDsc::create_target_from_selector(TargetSelector::Mc56f8035).expect("Target Builder Fault!"),
-                target_database    : TargetYaml::init_target_db().expect("Err on Yaml Database!"),
+                target             : TargetDsc::target_from_selector(TargetSelector::Tester56f8035, database.clone()).expect("Target Builder Fault!"),
+                target_database    : database,
                 programmer         : None,
                 programmer2        : None,
                 status             : UsbdmAppStatus::NotConnected,
@@ -610,16 +615,31 @@ impl Application for App {
 
                         }
                        }
-                    
+                       self.target_status = TargetStatus::NotConnected;
 
-                       let mut dsc =  Box::new(&mut self.target);
                        let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
-                       dsc.init(prog);
+                       let init = self.target.init(prog);
 
-                       self.check_connection_target();
-                       
-                       self.check_power_state();
+                       match init
+                       {
+                           Ok(_) =>
+                           {
+                            self.check_connection_target();
+                            self.check_power_state();
+                           }
+
+                           Err(_e) =>
+
+                           {
+                           show_error(  self, _e);
+                           println!("Error on init programmer for Target!");
+                           return iced::Command::none();
+
+                           }
+                       }
+
+              
                     
                     }
                     Err(_e) =>
@@ -784,6 +804,31 @@ impl Application for App {
                 show_error(self, _e);
                 self.check_power_state();
                 println!("WriteTarget error");
+                return iced::Command::none();
+               }
+              }
+            }
+
+            Message::EraseTarget  => 
+            {
+              
+              let dsc = Box::new(&mut self.target);
+            
+              let erase_target = dsc.erase_target(self.selected_power, self.programmer.as_mut().expect("Try to Connect to Opt:None Target!"));
+
+              match erase_target
+              {
+                Ok(_) => 
+                {
+                self.check_power_state();
+                println!("target erase ok!");
+    
+                }
+                Err(_e) =>
+                {
+                show_error(self, _e);
+                self.check_power_state();
+                println!("erase_target error");
                 return iced::Command::none();
                }
               }
