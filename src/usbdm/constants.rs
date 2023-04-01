@@ -11,6 +11,8 @@ pub mod bdm_commands {
     pub const  CMD_USBDM_CONTROL_PINS            : u8  = 8;   // Directly control BDM interface levels
     pub const  CMD_USBDM_GET_VER                 : u8  = 12; 
     pub const  CMD_USBDM_SET_SPEED               : u8  = 16; 
+    pub const  CMD_USBDM_JTAG_WRITE              : u8  = 40;  // Write to JTAG chain
+    pub const  CMD_USBDM_JTAG_READ               : u8 =  41;  // Read from JTAG chain
     pub const  CMD_USBDM_SET_VPP                 : u8  = 42;  // Target Vdd Off but previously set level unchanged
     pub const  CMD_USBDM_JTAG_EXECUTE_SEQUENCE   : u8  = 44;  // Execute sequence of JTAG commands
     

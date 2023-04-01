@@ -3,7 +3,8 @@ use crate::utils::*;
 use super::target_factory::{TargetInitActions, SecurityStatus, TargetDsc};
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
-use crate::usbdm::constants::{memory_space_t};
+use crate::usbdm::constants::{memory_space_t, bdm_commands};
+
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 
@@ -142,6 +143,16 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
     let ustat_before = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
     dbg!(&ustat_before);
 
+    let mut full_command : Vec<u8> = Vec::new();
+    full_command.push(5); // length of command
+    full_command.push(bdm_commands::CMD_USBDM_JTAG_WRITE);
+    full_command.push(2); // jtag exit
+    full_command.push(8); // bitcount
+    full_command.push(8); // Lock Out Recovery (Flash_Erase)
+  
+    prog.usb_device.write(&full_command.as_slice())?;   // write command
+    prog.usb_device.read(1)?;         // read status from bdm 
+    
     let ustat_after = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
     dbg!(&ustat_after);
 
