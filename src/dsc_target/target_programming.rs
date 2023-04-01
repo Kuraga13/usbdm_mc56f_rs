@@ -176,13 +176,15 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   prog.target_power_reset()?;
   self.power(power, prog)?;
 
-  let dsc_jtag_id_code = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
+  self.security = self.family.is_unsecure(prog, self.jtag_id_code)?;
+
+  //let dsc_jtag_id_code = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
 
   enableCoreTAP(&prog); 
 
   let target_device_id = read_core_id_code(false, &prog)?; // on second not
 
-  self.security = self.family.is_unsecure(prog, self.jtag_id_code)?;
+
   dbg!(&self.security);
   self.once_status = OnceStatus::UnknownMode;
 
@@ -294,7 +296,17 @@ fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> R
 
   self.family.init_for_write_erase(power, prog, dsc_bus_freq)?;
 
-  self.flash_routine.dsc_erase_routine(prog)?;
+  self.family.mass_erase(power, prog)?;
+
+  //self.security = self.family.is_unsecure(prog, self.jtag_id_code)?;
+
+  if (self.security == SecurityStatus::Secured)
+  {
+    return Err(Error::TargetSecured)
+  }
+ 
+
+  //self.flash_routine.dsc_erase_routine(prog)?;
 
   prog.target_power_reset()?;
 

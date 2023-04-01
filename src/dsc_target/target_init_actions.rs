@@ -7,6 +7,9 @@ use crate::usbdm::constants::{memory_space_t, bdm_commands};
 
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
+use std::{thread, time};
+use std::time::Duration;
+
 
 /// `MC56800X_SIM_ID` combine two bytes of JTAG ID (SIM_MSHID+SIM_LSHID), in mc56801x is  $01F2 401D
 pub const MC56800X_SIM_ID : u32 =  0x01F2601D;
@@ -138,7 +141,6 @@ fn is_unsecure(&mut self, prog : &mut Programmer, expected_id : u32) -> Result<S
 
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
 
-    unimplemented!();
     
     let ustat_before = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
     dbg!(&ustat_before);
@@ -153,10 +155,14 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
     prog.usb_device.write(&full_command.as_slice())?;   // write command
     prog.usb_device.read(1)?;         // read status from bdm 
     
+    self.init_flash_divider(power, prog, 4000)?;
+
+    thread::sleep(time::Duration::from_millis(2000));
+
     let ustat_after = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
     dbg!(&ustat_after);
 
-   
+    Ok(())
 
  }
 
