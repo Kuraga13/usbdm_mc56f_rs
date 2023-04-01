@@ -265,7 +265,17 @@ pub fn set_settings(&mut self) -> Result<(), Error>{
     Ok(())
 }
 
-pub fn set_speed(&mut self) -> Result<(), Error>{
+
+/// `set_speed` sets the BDM communication speed.
+///
+/// # Safety
+/// Before using this function, make sure to call `set_target` !!!.
+///
+/// `frequency` specifies the BDM communication speed in kHz.
+///
+/// For MC56F80xx, `frequency` corresponds to the JTAG clock frequency. 
+///
+fn set_speed(&mut self) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 4];
 
@@ -429,6 +439,15 @@ pub fn get_string_version(&self) -> String {
 
     let str_ver = self.bdm_info.version_in_string().clone();
     str_ver
+} 
+
+pub fn init_usbdm_for_mc56f(&mut self) -> Result<(), Error> {
+
+    self.set_settings()?;
+    self.refresh_feedback()?;
+    self.set_target_mc56f()?;
+    self.set_speed()?;
+    Ok(())
 } 
 }
 

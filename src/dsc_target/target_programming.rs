@@ -164,12 +164,8 @@ impl TargetProgramming for TargetDsc {
 
 fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>
 {
-  prog.set_settings()?;
-  prog.set_speed()?;
-  prog.refresh_feedback()?;
-  prog.set_target_mc56f()?;
+  prog.init_usbdm_for_mc56f()?;
   println!("dsc init done!");
-
   Ok(())  
 
 }
