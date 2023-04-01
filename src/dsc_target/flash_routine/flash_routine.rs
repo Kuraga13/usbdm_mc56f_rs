@@ -5,18 +5,24 @@ pub struct FlashRoutine {
     dsc_family: DscFamily,
     routine: BaseRoutine,
     timing_header: TimingHeader,
+    data_header: DataHeader,
+    max_write_size: u32,
 }
 
 impl FlashRoutine {
-    pub fn init(dsc_family : DscFamily) -> Result<Self, Error> {
+    pub fn init(dsc_family : DscFamily, ram_size : u32) -> Result<Self, Error> {
         let routine: BaseRoutine = BaseRoutine::get(dsc_family.clone())?;
         let timing_header: TimingHeader = TimingHeader::get();
-        
+        let mut data_header: DataHeader = DataHeader::get(&dsc_family)?;
+        data_header.data_address = routine.data_header_address + data_header.len()? / 2;
+        let max_write_size: u32 = ((ram_size - data_header.data_address) * 2) & !0x0F;
         Ok (
             Self {
                 dsc_family,
                 routine,
                 timing_header,
+                data_header,
+                max_write_size
             }
         )
     }
@@ -59,121 +65,70 @@ impl FlashRoutine {
         Ok(target_bus_frequency)
     }
 
-    pub fn dsc_write_prog_mem(&mut self, prog: &mut Programmer) -> Result<(), Error> {
+    pub fn dsc_write_prog_mem(&mut self, prog: &mut Programmer, mut data: Vec<u8>, address: u32) -> Result<(), Error> {
+        let mut current_address: u32 = address;
 
-        let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
-        println!("before {:x?}", result_vec);
+        while (data.len() > 0) {
+            let mut block_size = data.len() as u32;
+            
+            if (block_size > self.max_write_size) {
+                block_size = self.max_write_size; };
 
-        let header: DataHeader = DataHeader {
-            flash_operation: DO_PROGRAM_RANGE,
-            error_code: 0xFFFF,
-            controller: 0x00F400,
-            frequency: 2000,
-            sector_size: 256,
-            address: 0x0010,
-            data_size: 0x0020,
-            pad: 0,
-            data_address: 0x026C,
-        };
-        let mut data = vec![0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07];
+            self.routine_write_block(prog, data.drain(..block_size as usize).collect(), current_address)?;
+                current_address += block_size as u32 / 2; // Address advanced by count of words written
+        }
+        
+        Ok(())      
+    }
 
-        let mut hvec = header.to_vec()?;
-        //hvec.append(&mut data.clone());
+    fn routine_write_block(&mut self, prog: &mut Programmer, data: Vec<u8>, address: u32) -> Result<(), Error> {
 
-        let address_to_dsc = header.address;
-        let range_dsc = header.data_size;
-
-        println!("address_to_dsc : {:04X}", address_to_dsc);
-        println!("range_dsc : {:04X}", range_dsc);
+        self.data_header.flash_operation = OP_PROGRAM;
+        self.data_header.address = address;
+        self.data_header.data_size = (data.len() / 2) as u16;
 
         prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
-        prog.dsc_write_memory(self.routine.data_header_address_memspace, hvec, self.routine.data_header_address)?;
-        prog.dsc_write_memory(self.routine.data_header_address_memspace, data, 0x26C)?;
-
-        let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
-        println!("header before {:x?}", header);
+        prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
+        prog.dsc_write_memory(self.routine.data_header_address_memspace, data, self.data_header.data_address)?;
 
         prog.dsc_write_pc(self.routine.code_entry)?;
         prog.dsc_target_go()?;
 
-        let mut once_status: OnceStatus = OnceStatus::ExecuteMode;
-        //while (once_status != OnceStatus:: DebugMode)  {
-           // thread::sleep(time::Duration::from_micros(10));
-            //prog.dsc_target_halt()?;
-            //once_status = enableONCE(prog)?;
-            //if once_status == OnceStatus::UnknownMode {break}
-            println!("wait {:?}", once_status);
-        //}
-       
-
+        thread::sleep(time::Duration::from_millis(100));
+ 
         let once_status = enableONCE(&prog)?;
         prog.dsc_target_halt()?;
 
-        let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
-        println!("after {:x?}", result_vec);
-
-        let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
-        println!("header after  {:x?}", header);
+        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
+        let header: DataHeader = DataHeader::from_vec(header_vec)?;
+        
+        if (header.flash_operation & 0x8000) == 0 {
+            return Err(Error::InternalError("No complition flag in write_block".to_string())) }
 
         Ok(())
-
     }
 
     pub fn dsc_erase_routine(&mut self, prog: &mut Programmer) -> Result<(), Error> {
 
-        let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
-        println!("before {:x?}", result_vec);
-
-        let header: DataHeader = DataHeader {
-            flash_operation: DO_INIT_FLASH | DO_ERASE_BLOCK,
-            error_code: 0xFFFF,
-            controller: 0x00F400,
-            frequency: 2000,
-            sector_size: 256,
-            address: 0x0010,
-            data_size: 0x0020,
-            pad: 0,
-            data_address: 0x026C,
-        };
-
-        let mut hvec = header.to_vec()?;
-        //hvec.append(&mut data.clone());
-
-        let address_to_dsc = header.address;
-        let range_dsc = header.data_size;
-
-        println!("address_to_dsc : {:04X}", address_to_dsc);
-        println!("range_dsc : {:04X}", range_dsc);
+        self.data_header.flash_operation = OP_ERASE_BLOCK;
 
         prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
-        prog.dsc_write_memory(self.routine.data_header_address_memspace, hvec, self.routine.data_header_address)?;
-
-        let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
-        println!("header before {:x?}", header);
+        prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
 
         prog.dsc_write_pc(self.routine.code_entry)?;
         prog.dsc_target_go()?;
 
-        let mut once_status: OnceStatus = OnceStatus::ExecuteMode;
-        //while (once_status != OnceStatus:: DebugMode)  {
-           // thread::sleep(time::Duration::from_micros(10));
-            //prog.dsc_target_halt()?;
-            //once_status = enableONCE(prog)?;
-            //if once_status == OnceStatus::UnknownMode {break}
-            println!("wait {:?}", once_status);
-        //}
-       
-
+        thread::sleep(time::Duration::from_millis(100));
+ 
         let once_status = enableONCE(&prog)?;
         prog.dsc_target_halt()?;
 
-        let result_vec: Vec<u8> = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x20, 0x10)?; 
-        println!("after {:x?}", result_vec);
-
-        let header: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, 24, self.routine.data_header_address)?; 
-        println!("header after  {:x?}", header);
+        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
+        let header: DataHeader = DataHeader::from_vec(header_vec)?;
+        
+        if (header.flash_operation & 0x8000) == 0 {
+            return Err(Error::InternalError("No complition flag in erase_block".to_string())) }
 
         Ok(())
-
     }
 }
