@@ -283,6 +283,18 @@ impl TargetDsc {
 
     let family_actions = family_actions.expect("Target family not found in match arm!");
 
+    let ram_seg = dsc.memory_map.iter()
+    .filter_map(|r| match r {
+      MemorySegment::Ram(r) => Some(r),
+      _ => None,
+    })
+   .next();
+   let range = match ram_seg {
+    Some(rs) => {  &rs.range  }
+    None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
+
+   let ram_size = (range.end - range.start  + 1) as u32;
+
 
     Ok(TargetDsc {
 
@@ -291,7 +303,7 @@ impl TargetDsc {
       core_id          : dsc.core_id_code, 
       jtag_id_code     : dsc.jtag_id_code,
       memory_map       : dsc.memory_map.clone(), 
-      flash_routine    : FlashRoutine::init(dsc.family.clone(), 0x1000)?, 
+      flash_routine    : FlashRoutine::init(dsc.family.clone(), ram_size)?, 
       security_bytes   : dsc.security_bytes.clone(),
       security         : SecurityStatus::Unknown,
       once_status      : OnceStatus::UnknownMode,
@@ -345,6 +357,19 @@ impl TargetDsc {
 
     let family_actions = family_actions.expect("Target family not found in match arm!");
 
+    let ram_seg = dsc.memory_map.iter()
+    .filter_map(|r| match r {
+      MemorySegment::Ram(r) => Some(r),
+      _ => None,
+    })
+    .next();
+    let range = match ram_seg {
+    Some(rs) => {  &rs.range  }
+    None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
+
+    let ram_size = (range.end - range.start  + 1) as u32;
+ 
+
     Ok(TargetDsc {
 
       name             : dsc.name.to_string(),
@@ -352,7 +377,7 @@ impl TargetDsc {
       core_id          : dsc.core_id_code, 
       jtag_id_code     : dsc.jtag_id_code,
       memory_map       : dsc.memory_map.clone(), 
-      flash_routine    : FlashRoutine::init(dsc.family.clone(), 0x1000)?, 
+      flash_routine    : FlashRoutine::init(dsc.family.clone(), ram_size)?, 
       security_bytes   : dsc.security_bytes.clone(),
       security         : SecurityStatus::Unknown,
       once_status      : OnceStatus::UnknownMode,
