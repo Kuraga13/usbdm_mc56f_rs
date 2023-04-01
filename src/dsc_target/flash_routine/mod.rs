@@ -1,6 +1,7 @@
 pub mod base_routine;
 mod flash_data_header;
 mod flash_routine;
+mod flash_constants;
 
 use crate::usbdm::Programmer;
 use crate::usbdm::jtag::{OnceStatus, enableONCE};

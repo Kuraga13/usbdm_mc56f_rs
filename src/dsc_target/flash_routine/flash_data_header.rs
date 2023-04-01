@@ -14,18 +14,13 @@ pub const DO_TIMING_LOOP       : u16 = 1<<8;  // Counting loop to determine cloc
 pub const IS_COMPLETE          : u16 = 1<<15; // Completion flag, routine must clear it
 
 /// Different flash operations
-#[repr(u16)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FlashOperation {
-    OpEraseBlock = DO_INIT_FLASH | DO_ERASE_BLOCK,
-    OpEraseRange = DO_INIT_FLASH | DO_ERASE_RANGE, 
-    OpBlankCheck = DO_INIT_FLASH | DO_BLANK_CHECK_RANGE, 
-    OpProgram    = DO_INIT_FLASH | DO_BLANK_CHECK_RANGE | DO_PROGRAM_RANGE | DO_VERIFY_RANGE, 
-    OpVerify     = DO_INIT_FLASH | DO_VERIFY_RANGE, 
-    OpTiming     = DO_TIMING_LOOP,
-    OpNone       = 0, 
-}
-
+pub const OP_ERASE_BLOCK : u16 = DO_INIT_FLASH | DO_ERASE_BLOCK;
+pub const OP_ERASE_RANGE : u16 = DO_INIT_FLASH | DO_ERASE_RANGE;
+pub const OP_BLANK_CHECK : u16 = DO_INIT_FLASH | DO_BLANK_CHECK_RANGE; 
+pub const OP_PROGRAM     : u16 = DO_INIT_FLASH | DO_BLANK_CHECK_RANGE | DO_PROGRAM_RANGE | DO_VERIFY_RANGE;
+pub const OP_VERIFY      : u16 = DO_INIT_FLASH | DO_VERIFY_RANGE; 
+pub const OP_TIMING      : u16 = DO_TIMING_LOOP;
+pub const OP_NONE        : u16 = 0;
 
 /// `DataHeader` 
 /// 
@@ -56,6 +51,24 @@ pub struct DataHeader {
  }
 
 impl DataHeader {
+    pub fn get(dsc_family : &DscFamily) -> Result<Self, Error> {
+        let controller: u32 = DataHeader::get_flash_controller(dsc_family)?;
+        let sector_size: u16 = DataHeader::get_sector_size(dsc_family)?;
+        Ok(
+            Self {
+                flash_operation: OP_NONE,
+                error_code: 0xFFFF,
+                controller,
+                frequency: 4000,
+                sector_size,
+                address: 0,
+                data_size: 0,
+                pad: 0,
+                data_address: 0,
+            }
+        )
+    }
+
     pub fn to_vec(&self) -> Result<Vec<u8>, Error> {
         match bincode::serialize(&self) {
             Ok(x) => Ok(x),

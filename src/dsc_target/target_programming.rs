@@ -265,7 +265,8 @@ fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>, pro
 
   self.family.init_for_write_erase(power, prog, dsc_bus_freq)?;
 
-  self.flash_routine.dsc_write_prog_mem(prog)?;
+  let mut data = vec![0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07];
+  self.flash_routine.dsc_write_prog_mem(prog, data, 0)?;
  
  // let test_write = vec![0xAA; 0x40];
   //let mem_write = prog.dsc_write_memory(memory_space_t::MS_PWORD, test_write, 0x0000)?;
