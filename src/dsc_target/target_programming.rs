@@ -182,7 +182,7 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
 
   let target_device_id = read_core_id_code(false, &prog)?; // on second not
 
-  self.security = self.family.is_unsecure(prog, dsc_jtag_id_code, self.jtag_id_code)?;
+  self.security = self.family.is_unsecure(prog, self.jtag_id_code)?;
   dbg!(&self.security);
   self.once_status = OnceStatus::UnknownMode;
 

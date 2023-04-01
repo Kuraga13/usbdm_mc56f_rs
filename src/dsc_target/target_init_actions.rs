@@ -1,9 +1,9 @@
 use crate::errors::Error;
 use crate::utils::*;
-use super::target_factory::{TargetInitActions, SecurityStatus};
+use super::target_factory::{TargetInitActions, SecurityStatus, TargetDsc};
+use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::constants::{memory_space_t};
-
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
 
@@ -85,7 +85,7 @@ fn calculate_flash_divider(&self, bus_frequency : u32) -> Result<u32, Error> {
     
      }
 
-/// Calculate specific on MC56f80xx Family cfmclkd
+/// `init_flash_divider`, CLKDIV = register in FlashModule, need for flash programming, on MC56f80xx Family cfmclkd
 fn init_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_freq : u32) -> Result<(), Error> {
     
     let divider = self.calculate_flash_divider(bus_freq)?;
@@ -113,12 +113,22 @@ fn init_flash_divider(&mut self, power : TargetVddSelect, prog : &mut Programmer
 
 impl TargetInitActions for MC56f80xx {
 
+/// SIM_LSHID + SIM_MSHID
+/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
+/// 
+/// For example:
+/// 
+/// Most Significant Half of JTAG ID (`SIM_MSHID`), in MC56f801x is `$01F2`.
+/// 
+/// Least Significant Half of JTAG ID (`SIM_LSHID`), in MC56f801x is  `$401D`.
+/// 
+/// PGO wrote in original usbdm pjt, if you have match id code dsc in
+/// we have to match `jtag_id_code` with `SIM_ID`
+fn is_unsecure(&mut self, prog : &mut Programmer, expected_id : u32) -> Result<SecurityStatus, Error> {
 
-fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error> {
+    let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?);
 
-    let jtag_id_code =  vec_as_u32_be(jtag_id_code_vec);
-   
-     match jtag_id_code {
+    match jtag_id_code {
            expected_id           => Ok(SecurityStatus::Unsecured),
            0x0                        => Ok(SecurityStatus::Secured),           
            _                          => Ok(SecurityStatus::Unknown),             

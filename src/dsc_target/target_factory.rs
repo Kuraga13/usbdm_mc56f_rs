@@ -505,19 +505,7 @@ pub trait TargetInitActions:  Send + std::fmt::Debug
 {
 
 /// `is_unsecure` - check Target unsecured, get Secure Status
-///
-/// 
-/// This read-only register, in two parts  displays the least significant half of the JTAG ID for the chip.
-/// 
-/// For example:
-/// 
-/// Most Significant Half of JTAG ID (`SIM_MSHID`), in MC56f801x is `$01F2`.
-/// 
-/// Least Significant Half of JTAG ID (`SIM_LSHID`), in MC56f801x is  `$401D`.
-/// 
-/// PGO wrote in original usbdm pjt, if you have match id code dsc in
-/// we have to match `jtag_id_code` with `SIM_ID`
-fn is_unsecure(&mut self, prog : &mut Programmer, jtag_id_code_vec : Vec<u8>, expected_id : u32) -> Result<SecurityStatus, Error>;
+fn is_unsecure(&mut self, prog : &mut Programmer, expected_id : u32) -> Result<SecurityStatus, Error>;
 
 /// Mass Erase specific on Dsc Target Family mass erase algorith
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
