@@ -360,7 +360,6 @@ pub fn programmer_actions_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Re
             programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
             programmer_button_item("Write", Message::WriteTarget, &_app.status, &_app.target_status),
             programmer_button_item("Erase", Message::EraseTarget, &_app.status, &_app.target_status),
-            programmer_button_item("TestButton", Message::TestFeedback, &_app.status, &_app.target_status),
         ],
     )
     .width(110);
@@ -376,7 +375,6 @@ pub fn file_system_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Renderer>
         vec![
             file_button_item("Open(s19/bin)", Message::OpenFile),
             file_button_item("Save(s19/bin)", Message::SaveFile),
-            //file_button_item("Save As", Message::TestFeedback),
     
         ],
     )

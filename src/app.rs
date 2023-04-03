@@ -19,12 +19,13 @@ use crate::usbdm::settings::{TargetVddSelect};
 use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::programmer::{Programmer};
 use crate::dsc_target::target_factory::{TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
+use crate::dsc_target::test_programming::*;
 use crate::gui::{self, main_window};
 use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
 use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file, FileFormat};
 use crate::errors::{Error};
-
+use crate::utils::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
     
@@ -34,12 +35,13 @@ pub enum UsbdmAppStatus {
 
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TargetStatus {
     
     NotConnected,
     Connected,
-    InProgramming,
+    InProgrammingRead,
+    InProgrammingWrite,
     EndProgramming,
 
 }
@@ -78,6 +80,7 @@ pub enum Message {
     ProgrammingInProgress(f32),
     ReadTargetProgress(f32),
     WriteTarget,
+    WriteTargetProgress(f32),
     EraseTarget,
     TestFeedback,
     
@@ -107,10 +110,10 @@ pub struct App {
     pub    progress_bar_value : f32,
     pub    title              : String,
     
-    pub    number_to_read     : u32,            // for debug
+    pub    number_cycles      : u32,            // for debug
     pub    counter            : u32,            // for debug
-           read_buff          : Vec<Vec<u8>>,   // for debug
-           read_adddress      : u32,            // for debug
+           progr_buff         : Vec<Vec<u8>>,   // for debug
+           progr_address     : u32,            // for debug
 
 
 }
@@ -360,10 +363,10 @@ impl Application for App {
                 power_status       : PowerStatus::PowerOff,
                 progress_bar_value : 0.0,
                 title              : "usbdm_mc56f_rs ".to_string() + &"not connected ".to_string(),
-                number_to_read     : 0,
+                number_cycles      : 0,
                 counter            : 0,
-                read_buff          : vec![vec![0;0]],
-                read_adddress      : 0,
+                progr_buff         : vec![vec![0;0]],
+                progr_address     : 0,
 
             },
             iced::Command::none(),
@@ -388,16 +391,10 @@ impl Application for App {
              let selected = TargetDsc::target_from_selector(target, self.target_database.clone());
              match selected {
 
-                Ok(target) => 
+                Ok(mut target) => 
                 { 
                     self.target = target;
-                    let test_rng_ram = self.target.ram_range().expect("test rng ram");
-                    let start_ram = test_rng_ram.start;
-                    let end_ram = test_rng_ram.end;
-                    dbg!(&start_ram);
-                    dbg!(&end_ram);
-
-
+                    self.target_status = TargetStatus::NotConnected;
                     return iced::Command::none();
                 }
                 Err(_e) => 
@@ -722,7 +719,7 @@ impl Application for App {
 
               self.show_p_progress = true;
 
-              self.target_status = TargetStatus::InProgramming;
+              self.target_status = TargetStatus::InProgrammingRead;
 
               self.progress_bar_value = 0.0;
 
@@ -730,22 +727,22 @@ impl Application for App {
 
               let programm_range = self.target.programm_range().expect("Get mem range err App"); 
     
-              self.read_adddress = programm_range.start as u32;
+              self.progr_address = programm_range.start as u32;
               
-              self.read_buff.clear();
+              self.progr_buff.clear();
 
-              self.number_to_read = (programm_range.end - programm_range.start) as u32 * 2 / 64;
-              self.number_to_read += 1;
-              dbg!(&self.number_to_read);
+              self.number_cycles = (programm_range.end - programm_range.start) as u32 * 2 / 64;
+              self.number_cycles += 1;
+              dbg!(&self.number_cycles);
               self.counter = 0;
-              return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ProgrammingInProgress);
+              return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ReadTargetProgress);
               
             }
 
             Message::ReadTargetProgress(x)  => 
             {
 
-                self.target_status = TargetStatus::InProgramming;
+                self.target_status = TargetStatus::InProgrammingRead;
                 let dsc = Box::new(&mut self.target);
                 let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
   
@@ -753,21 +750,22 @@ impl Application for App {
                 //dbg!(counter);
                 //dbg!(self.number_to_read );
 
-                for counter in counter..self.number_to_read 
+                for counter in counter..self.number_cycles 
                 {
-                  let read = dsc.read_target(self.selected_power, self.read_adddress, prog);
+                  let read = dsc.read_target(self.selected_power, self.progr_address, prog);
                     match read
                     {
                       Ok(read) => 
                       {
-                      self.read_buff.push(read);
-                      self.progress_bar_value = ((counter as f32 / self.number_to_read  as f32) * 100.00) as f32;
-                      self.read_adddress += 0x40 / 2; 
+                      self.progr_buff.push(read);
+                      self.progress_bar_value = ((counter as f32 / self.number_cycles  as f32) * 100.00) as f32;
+                      self.progr_address += 0x40 / 2; 
                       self.counter = counter + 1;
-                      return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ProgrammingInProgress);
+                      return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ReadTargetProgress);
                       }
                       Err(_e) =>
                       {
+                      self.show_p_progress = false;
                       show_error(self, _e);
                       println!("ReadTarget error");
                       self.check_power_state();
@@ -777,7 +775,7 @@ impl Application for App {
                 }
                     
               dbg!("Read Target End!");
-              self.buffer.upload_packed(self.read_buff.clone());
+              self.buffer.upload_packed(self.progr_buff.clone());
               self.show_p_progress = false;
               self.target_status = TargetStatus::Connected;
               return iced::Command::none();
@@ -785,28 +783,77 @@ impl Application for App {
 
             Message::WriteTarget  => 
             {
-              
-              let dsc = Box::new(&mut self.target);
-            
-              let write = self.buffer.download_in_one();  
-              let write_target = dsc.write_target(self.selected_power, write, self.programmer.as_mut().expect("Try to Connect to Opt:None Target!"));
 
-              match write_target
-              {
-                Ok(_) => 
-                {
-                self.check_power_state();
-                println!("target write ok!");
-    
+                self.show_p_progress = true;
+
+                self.target_status = TargetStatus::InProgrammingWrite;
+  
+                self.progress_bar_value = 0.0;
+  
+                let dsc = Box::new(&mut self.target);
+  
+                let programm_range = self.target.programm_range().expect("Get mem range err App"); 
+      
+                self.progr_address = programm_range.start as u32;
+
+                let block_size : u32 = 0x250;
+  
+                self.number_cycles = (programm_range.end - programm_range.start) as u32 * 2 / block_size;
+                self.number_cycles += 1;
+                dbg!(&self.number_cycles);
+                self.counter = 0;
+                return iced::Command::perform(handle_progress( self.progress_bar_value), Message::WriteTargetProgress);
+            }
+
+            Message::WriteTargetProgress(x)  => 
+            {
+
+              self.target_status = TargetStatus::InProgrammingWrite;
+              let dsc = Box::new(&mut self.target);
+              let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
+
+              let counter = self.counter;
+
+              let block_size : u32 = 0x240;
+              let offset = self.progr_address * 2;
+
+              let start_block = offset as usize;
+              let end_block = (offset + block_size) as usize; 
+
+              //dbg!(&start_block);
+             // dbg!(&end_block);
+             // dbg!(&self.progr_address);
+
+              for counter in counter..self.number_cycles {
+
+                  let to_write = self.buffer.download_in_one().drain(start_block..end_block).collect();
+                 // print_vec_memory(&to_write);  
+                  let write_target = dsc.write_target(self.selected_power,  self.progr_address, to_write, prog);
+                  match write_target
+                  {
+                    Ok(write_target) => 
+                    {
+                    self.progress_bar_value = ((counter as f32 / self.number_cycles  as f32) * 100.00) as f32;
+                    self.progr_address += block_size / 2; 
+                    self.counter = counter + 1;
+                    return iced::Command::perform(handle_progress( self.progress_bar_value), Message::WriteTargetProgress);
+                    }
+                    Err(_e) =>
+                    {
+                    self.show_p_progress = false;
+                    show_error(self, _e);
+                    println!("WriteTarget error");
+                    self.check_power_state();
+                    return iced::Command::none();
+                    }
+                  }
                 }
-                Err(_e) =>
-                {
-                show_error(self, _e);
-                self.check_power_state();
-                println!("WriteTarget error");
-                return iced::Command::none();
-               }
-              }
+                
+            dbg!("Write Target End!");
+            self.show_p_progress = false;
+            self.target_status = TargetStatus::Connected;
+            return iced::Command::none();
+                
             }
 
             Message::EraseTarget  => 
@@ -917,7 +964,7 @@ impl Application for App {
     //error_notify_model(self.show_error_modal, main_page.into(), err_view) 
     if self.show_p_progress 
     {
-        progress_bar_modal(self.show_p_progress, main_page.into(), self.progress_bar_value)
+        progress_bar_modal(self.show_p_progress, main_page.into(), self.progress_bar_value, self.target_status)
     }
     else if self.about_card_open 
     {

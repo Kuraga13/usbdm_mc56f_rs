@@ -8,7 +8,7 @@ pub fn vec_as_u32_be(vec:  Vec<u8>) -> u32 {
 }
 
 ///`print_vec_memory` for debug memory read, sequnces etc., use for print small block in Vec<u8>
-fn print_vec_memory(mem : Vec<u8>) {
+pub fn print_vec_memory(mem : &Vec<u8>) {
     
     let mut printed_vec = Vec::new();
     for byte in mem.iter() {

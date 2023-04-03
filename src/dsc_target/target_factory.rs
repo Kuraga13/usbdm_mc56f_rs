@@ -51,6 +51,14 @@ pub enum DscFamily {
 
 }
 
+impl fmt::Display for DscFamily {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      ///write!(f, "{:?}", self)
+      // or test ::
+       fmt::Debug::fmt(self, f)
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AccessType {
 
@@ -183,6 +191,13 @@ pub enum SecurityStatus {
     
 }
 
+#[derive(Debug, Clone,PartialEq)]
+pub enum FlashModuleStatus {
+        
+       NotInited,
+       Inited,
+    
+}
 
 
 #[derive(Debug)]
@@ -202,6 +217,8 @@ pub struct TargetDsc {
     pub security           : SecurityStatus,
     /// `once_status` is status of once module 
     pub once_status        : OnceStatus,
+    /// `flash_module` is status of flash module registers, needed for flash programming
+    pub flash_module       : FlashModuleStatus,
     /// `image_path`, path to connection image
     pub image_path         : String,
 
@@ -258,6 +275,7 @@ impl TargetDsc {
       security_bytes   : dsc.security_bytes.clone(),
       security         : SecurityStatus::Unknown,
       once_status      : OnceStatus::UnknownMode,
+      flash_module     : FlashModuleStatus::NotInited,
       image_path       : dsc.connection_image_path.clone() })
   }
 
@@ -371,7 +389,7 @@ fn disconnect(&mut self);
 fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>;
 
 /// Write target
-fn write_target(&mut self, power : TargetVddSelect, data_to_write : Vec<u8>,  prog : &mut Programmer) -> Result<(), Error>;
+fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write : Vec<u8>,  prog : &mut Programmer) -> Result<(), Error>;
 
 /// Write target
 fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
@@ -391,7 +409,7 @@ fn target_family_confirmation(&mut self, prog : &mut Programmer)  -> Result<(), 
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;
 
 /// `init_for_write_erase` specific on Dsc Target Family algorith preapare & unlock flash for write & erase
-fn init_for_write_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_freq : u32) -> Result<(), Error>;
+fn init_for_write_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_freq : u32) -> Result<FlashModuleStatus, Error>;
 
 }
 

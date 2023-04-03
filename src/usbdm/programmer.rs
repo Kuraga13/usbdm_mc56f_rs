@@ -342,7 +342,7 @@ fn set_speed(&mut self) -> Result<(), Error>{
 
     usb_buf[0] = 3;            // lenght of command
     usb_buf[1] = bdm_commands::CMD_USBDM_JTAG_GOTOSHIFT;
-    usb_buf[1] = shift;
+    usb_buf[2] = shift;
 
     self.usb_device.write(&usb_buf)?;                                    // write command
     let answer = self.usb_device.read(1)?;                  // read status from bdm
@@ -363,6 +363,8 @@ fn set_speed(&mut self) -> Result<(), Error>{
     full_command.push(shift_exit); // jtag exit
     full_command.push(cmd_lenght); // bitcount
     full_command.append(&mut command); 
+
+    dbg!(&full_command);
   
     self.usb_device.write(&full_command.as_slice())?;   // write command
     self.usb_device.read(1)?;         // read status from bdm 

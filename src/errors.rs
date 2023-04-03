@@ -22,7 +22,8 @@ pub enum Error {
    TargetNotConnected,
    TargetSecured,
    TargetNotInDebugMode,
-   TargetWrongFamilySelected,
+   TargetWrongFamilySelected(String, String),
+   TargetWriteError,
    MemorySpaceTypeAddress_Out,
    Unknown,
    PackerErr(packed_struct::PackingError),
@@ -129,12 +130,19 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
 
          }
-         Error::TargetWrongFamilySelected =>
+         Error::TargetWrongFamilySelected(selected_family, finded_family) =>
          {
 
-          title   = "Dsc device is connected, but id mismatch".to_string();
-          message =  "Is the correct device selected?.\n".to_string();
+          title   = "Dsc Target is connected, but id mismatch".to_string();
+          message =  "Is the correct device selected?. ".to_string() + & "\nFinded DSC: ".to_string() + &finded_family + &"\nExpected DSC: ".to_string() + &selected_family + &"\n".to_string(); 
 
+
+         }
+         Error::TargetWriteError =>
+         {
+
+          title   = "Write Error".to_string();
+          message =  "Check that Target is erased before write flash".to_string();
 
          }
          _ =>

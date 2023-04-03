@@ -49,12 +49,12 @@ impl FlashRoutine {
         let result_header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.timing_header.len()?, self.routine.data_header_address)?; 
         let result_header: TimingHeader = TimingHeader::from_vec(result_header_vec)?;
 
-        if (result_header.flash_operation != DO_TIMING_LOOP) {
-            return Err(Error::InternalError("Flash operation is not DO_TIMING_LOOP".to_string())) }
-    
         if (result_header.error_code != 0) {
             return Err(Error::InternalError(parse_flash_err(result_header.error_code))) }   
 
+        if (result_header.flash_operation != DO_TIMING_LOOP) {
+            return Err(Error::InternalError("Flash operation is not DO_TIMING_LOOP".to_string())) }
+    
         if (result_header.timing_count == 0) {
             return Err(Error::InternalError("Unexpected timing_count zero value".to_string())) }
 

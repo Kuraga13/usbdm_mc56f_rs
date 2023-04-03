@@ -178,5 +178,5 @@ dsc:
       name: null
       range:
        start: 0x0
-       end: 0x7F
+       end: 0x7FF
       access_type: MemoryP

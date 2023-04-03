@@ -13,7 +13,7 @@ use iced_aw::{style::CardStyles, Card};
 
 use iced_native::widget::tooltip::Position;
 use super::styling::{ProgressBarMy, ProgressBarStyle};
-use crate::app::{Message, App};
+use crate::app::{Message, App, TargetStatus};
 use crate::dsc_target::target_factory::TargetSelector;
 use crate::errors::{Error, get_title_message_error_modal};
 use crate::VERSION;
@@ -174,19 +174,50 @@ pub fn connection_image_modal<'a>(width: u16, show_conn_image : bool, content: E
 
 }
 
-pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Message, iced::Renderer>, prg_value : f32  )  -> Element<'a, Message>
+pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Message, iced::Renderer>, prg_value : f32, status : TargetStatus )  -> Element<'a, Message>
 {
 
+    let mut title   =  String::new();
+    let mut message =  String::new();
+
+    match status
+    {
+        TargetStatus::InProgrammingRead =>       
+        {
+         
+         title   = "Read Target".to_string();
+         message = (format!("reading target... {prg_value:.2}%"));
+
+
+         }
+
+        TargetStatus::InProgrammingWrite => 
+        {
+         
+            title   = "Write Target".to_string();
+            message = (format!("writing target... {prg_value:.2}%"));
+   
+   
+        }
+        _ =>
+        {
+         
+            title   = "Programming end".to_string();
+            message = ":\n".to_string();
+   
+   
+        }
+    }
 
     Modal::new(target_programming, content,  move|| { 
         let progress_bar = progress_bar(0.0..=100.0, prg_value).height(Length::Fixed(20.0));
         Card::new(
-        Text::new("Read Target").size(15).horizontal_alignment(Horizontal::Center),
+        Text::new(title.clone()).size(15).horizontal_alignment(Horizontal::Center),
         Row::new()
         .spacing(10)
         .padding(10)
         .align_items(Alignment::Center)
-        .push(text(format!("reading target... {prg_value:.2}%")))
+        .push(text(message.clone()))
         .push(progress_bar)
     )   
       .foot(

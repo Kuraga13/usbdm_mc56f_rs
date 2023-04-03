@@ -1,6 +1,6 @@
 use crate::errors::Error;
 use crate::utils::*;
-use super::target_factory::{TargetInitActions, SecurityStatus, TargetDsc, DscFamily};
+use super::target_factory::{TargetInitActions, SecurityStatus, FlashModuleStatus, TargetDsc, DscFamily};
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
 use crate::usbdm::constants::{memory_space_t, bdm_commands, jtag_shift};
@@ -144,6 +144,8 @@ fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Erro
     let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?);
     let expected_id  = self.jtag_id_code;
 
+    println!("Expected: {:02X}, jtag id: {:02X}, ", &self.jtag_id_code, &jtag_id_code);
+
     match jtag_id_code {
            expected_id           => Ok(SecurityStatus::Unsecured),
            0x0                        => Ok(SecurityStatus::Secured),           
@@ -158,6 +160,9 @@ fn target_family_confirmation(&mut self, prog : &mut Programmer)-> Result<(), Er
     enableCoreTAP(&prog);
     let target_device_id = vec_as_u32_be(read_core_id_code(false, &prog)?); // on second not
 
+    println!("Core id: {:02X}, jtag id: {:02X}, ", &target_device_id, &jtag_id_code);
+    println!("Expected: {:02X}, Expected: {:02X}, ", &self.core_id, &self.jtag_id_code);
+
     let expected_id  = self.jtag_id_code;
     if (jtag_id_code == expected_id) { return Ok(())};
 
@@ -169,7 +174,9 @@ fn target_family_confirmation(&mut self, prog : &mut Programmer)-> Result<(), Er
           MC56803X_SIM_ID      => DscFamily::Mc56f803X, 
           _                    => return Err(Error::InternalError("family_from_id parse Failed".to_string()))};
 
-    if (self.family != family_from_id && self.core_id != target_device_id) { return Err(Error::TargetWrongFamilySelected); }
+    dbg!(&family_from_id);
+
+    if (self.family != family_from_id || self.core_id != target_device_id) { return Err(Error::TargetWrongFamilySelected(self.family.to_string(), family_from_id.to_string())); }
   
     Ok(())
 } 
@@ -177,35 +184,35 @@ fn target_family_confirmation(&mut self, prog : &mut Programmer)-> Result<(), Er
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
 
     
-    let ustat_before = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
-    dbg!(&ustat_before);
-
     let flash_erase_cmd : Vec<u8> = vec![0x08];     // 8 = Lock Out Recovery (Flash_Erase)
     let clk_div = self.calculate_flash_divider(4000)?;
     let b3 : u8 = ((clk_div >> 8) & 0xff) as u8;
     let b4 : u8 = (clk_div & 0xff) as u8;
     let clk_div_vec : Vec<u8> = vec![b4, b3];
 
+    dbg!(&clk_div_vec);
+   
+    println!("jtag_reset");
     prog.jtag_reset()?;
+    println!("jtag_select_shift JTAG_SHIFT_IR");
     prog.jtag_select_shift(jtag_shift::JTAG_SHIFT_IR)?;
 
+    println!("jtag_write flash_erase_cmd");
     prog.jtag_write(jtag_shift::JTAG_EXIT_SHIFT_DR, 0x8, flash_erase_cmd)?;
     //jtag-shift D(JTAG_EXIT_SHIFT_DR) $::JTAG_IR_LENGTH(8) $::JTAG_UNLOCK_CMD(0x08)
+    println!("jtag_write clk_div_vec");
     prog.jtag_write(jtag_shift::JTAG_EXIT_IDLE, 0x16, clk_div_vec)?;
     //jtag-shift R(JTAG_EXIT_IDLE) $::JTAG_DR_LENGTH(16) 0 $cfmclkd
 
     thread::sleep(time::Duration::from_millis(2000));
-
+    println!("jtag_reset");
     prog.jtag_reset()?;
-
-    let ustat_after = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
-    dbg!(&ustat_after);
 
     Ok(())
 
  }
 
- fn init_for_write_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_freq : u32) -> Result<(), Error> {
+ fn init_for_write_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer, bus_freq : u32) -> Result<FlashModuleStatus, Error> {
 
     self.init_flash_divider(power, prog, bus_freq)?;
 
@@ -219,7 +226,7 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
     let prot_after = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_PROT)?;
     dbg!(&prot_after);
 
-    Ok(())
+    Ok(FlashModuleStatus::Inited)
 
  }
 
