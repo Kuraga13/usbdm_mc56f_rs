@@ -11,6 +11,8 @@ pub mod bdm_commands {
     pub const  CMD_USBDM_CONTROL_PINS            : u8  = 8;   // Directly control BDM interface levels
     pub const  CMD_USBDM_GET_VER                 : u8  = 12; 
     pub const  CMD_USBDM_SET_SPEED               : u8  = 16; 
+    pub const  CMD_USBDM_JTAG_GOTORESET          : u8  = 38;  // Reset JTAG Tap controller
+    pub const  CMD_USBDM_JTAG_GOTOSHIFT          : u8  = 39;  // Move JTAG TAP controller to SHIFT-IR/DR
     pub const  CMD_USBDM_JTAG_WRITE              : u8  = 40;  // Write to JTAG chain
     pub const  CMD_USBDM_JTAG_READ               : u8 =  41;  // Read from JTAG chain
     pub const  CMD_USBDM_SET_VPP                 : u8  = 42;  // Target Vdd Off but previously set level unchanged
@@ -48,4 +50,14 @@ pub mod memory_space_t {
     pub const MS_XBYTE   : u8  = MS_LONG + MS_DATA;
     pub const MS_XWORD   : u8  = MS_WORD + MS_DATA;
     pub const MS_XLONG   : u8  = MS_LONG + MS_DATA;
+}
+
+pub mod jtag_shift {
+
+    pub const JTAG_SHIFT_DR                      : u8  = 0;     // Enter SHIFT-DR (from TEST-LOGIC-RESET or RUN-TEST/IDLE)
+    pub const JTAG_SHIFT_IR                      : u8  = 1;     // Enter SHIFT-IR (from TEST-LOGIC-RESET or RUN-TEST/IDLE)
+    pub const JTAG_EXIT_IDLE                     : u8  = 1;     // Exit SHIFT-XX to RUN-TEST/IDLE
+    pub const JTAG_EXIT_SHIFT_DR                 : u8  = 2;     // Exit SHIFT-XX & enter SHIFT-DR w/o crossing RUN-TEST/IDLE
+
+
 }

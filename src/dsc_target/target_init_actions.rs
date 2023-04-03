@@ -1,9 +1,9 @@
 use crate::errors::Error;
 use crate::utils::*;
-use super::target_factory::{TargetInitActions, SecurityStatus, TargetDsc};
+use super::target_factory::{TargetInitActions, SecurityStatus, TargetDsc, DscFamily};
 use crate::usbdm::jtag::*;
 use crate::usbdm::jtag::{OnceStatus};
-use crate::usbdm::constants::{memory_space_t, bdm_commands};
+use crate::usbdm::constants::{memory_space_t, bdm_commands, jtag_shift};
 
 use crate::usbdm::programmer::{Programmer};
 use crate::usbdm::settings::{TargetVddSelect};
@@ -17,6 +17,7 @@ pub const MC56800X_SIM_ID : u32 =  0x01F2601D;
 pub const MC56801X_SIM_ID : u32 =  0x01F2401D;
 /// `MC56802X_SIM_ID` combine two bytes of JTAG ID (SIM_MSHID+SIM_LSHID), in mc568023-35 is  $01F2801D
 pub const MC56802X_SIM_ID : u32 =  0x01F2801D;
+pub const MC56803X_SIM_ID : u32 =  0x01F2801D;
 
 ///`MC56f80XX_FLASH_MODULE_CLKDIV` Clock Divider (CLKDIV) Register
 pub const MC56F80XX_FLASH_MODULE_CLKDIV : u32 =  0xF400;
@@ -42,9 +43,24 @@ pub const MC56F80XX_FLASH_MODULE_USTAT: u32 =  0xF413;
 /// 
 ///`MC56F8027/37`
 #[derive(Debug, Clone)]
-pub struct MC56f80xx;
+pub struct MC56f80xx {
+
+   jtag_id_code : u32,
+   core_id      : u32,
+   family       : DscFamily,
+
+}
 
 impl MC56f80xx {
+
+pub fn new(jtag_id_code : u32, core_id : u32, family : DscFamily) -> Self {
+
+   Self {
+      jtag_id_code,
+      core_id,
+      family, }  
+}
+
 
 /// Calculate specific on MC56f80xx Family cfmclkd
 fn calculate_flash_divider(&self, bus_frequency : u32) -> Result<u32, Error> {
@@ -53,9 +69,7 @@ fn calculate_flash_divider(&self, bus_frequency : u32) -> Result<u32, Error> {
     
         if (bus_frequency < 1000) {
            println! ("Clock too low for flash programming");
-           return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string())));
-         
-        };
+           return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string()))); };
      
         let osc_frequency = 2 * bus_frequency;
         let mut in_frequency;
@@ -70,20 +84,17 @@ fn calculate_flash_divider(&self, bus_frequency : u32) -> Result<u32, Error> {
         }
      
         let min_period = 1.0 / 200.0 + 1.0 / (4.0 * bus_frequency as f64);
-     
-    
+   
         let mut calculation = in_frequency as f64 * min_period;
         cfmclkd += calculation.round() as u32;
         
-    
         let flash_clk = in_frequency / ((cfmclkd & 0x3F) + 1);
     
         println!("inFrequency {}, kHz cfmclkd = 0x {}, flashClk = {}, kHz, ", in_frequency, cfmclkd, flash_clk);
      
         if (flash_clk < 150) {
             println! ("Not possible to find suitable flash clock divider");
-            return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string())));
-        }
+            return Err(Error::InternalError(("PROGRAMMING_RC_ERROR_NO_VALID_FCDIV_VALUE".to_string()))); }
      
          Ok(cfmclkd)
     
@@ -128,16 +139,40 @@ impl TargetInitActions for MC56f80xx {
 /// 
 /// PGO wrote in original usbdm pjt, if you have match id code dsc in
 /// we have to match `jtag_id_code` with `SIM_ID`
-fn is_unsecure(&mut self, prog : &mut Programmer, expected_id : u32) -> Result<SecurityStatus, Error> {
+fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Error> {
 
     let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?);
+    let expected_id  = self.jtag_id_code;
 
     match jtag_id_code {
            expected_id           => Ok(SecurityStatus::Unsecured),
            0x0                        => Ok(SecurityStatus::Secured),           
            _                          => Ok(SecurityStatus::Unknown),             
        }    
- } 
+}
+/// SIM_LSHID + SIM_MSHID const (jtag id code from datasheet)  should be match with jtag_id from device
+fn target_family_confirmation(&mut self, prog : &mut Programmer)-> Result<(), Error> {
+
+
+    let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?); 
+    enableCoreTAP(&prog);
+    let target_device_id = vec_as_u32_be(read_core_id_code(false, &prog)?); // on second not
+
+    let expected_id  = self.jtag_id_code;
+    if (jtag_id_code == expected_id) { return Ok(())};
+
+    let family_from_id =
+    match jtag_id_code {
+          MC56800X_SIM_ID      => DscFamily::Mc56f800X,
+          MC56801X_SIM_ID      => DscFamily::Mc56f801X,
+          MC56802X_SIM_ID      => DscFamily::Mc56f802X,
+          MC56803X_SIM_ID      => DscFamily::Mc56f803X, 
+          _                    => return Err(Error::InternalError("family_from_id parse Failed".to_string()))};
+
+    if (self.family != family_from_id && self.core_id != target_device_id) { return Err(Error::TargetWrongFamilySelected); }
+  
+    Ok(())
+} 
 
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
 
@@ -145,19 +180,23 @@ fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Res
     let ustat_before = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
     dbg!(&ustat_before);
 
-    let mut full_command : Vec<u8> = Vec::new();
-    full_command.push(5); // length of command
-    full_command.push(bdm_commands::CMD_USBDM_JTAG_WRITE);
-    full_command.push(2); // jtag exit
-    full_command.push(8); // bitcount
-    full_command.push(8); // Lock Out Recovery (Flash_Erase)
-  
-    prog.usb_device.write(&full_command.as_slice())?;   // write command
-    prog.usb_device.read(1)?;         // read status from bdm 
-    
-    self.init_flash_divider(power, prog, 4000)?;
+    let flash_erase_cmd : Vec<u8> = vec![0x08];     // 8 = Lock Out Recovery (Flash_Erase)
+    let clk_div = self.calculate_flash_divider(4000)?;
+    let b3 : u8 = ((clk_div >> 8) & 0xff) as u8;
+    let b4 : u8 = (clk_div & 0xff) as u8;
+    let clk_div_vec : Vec<u8> = vec![b4, b3];
+
+    prog.jtag_reset()?;
+    prog.jtag_select_shift(jtag_shift::JTAG_SHIFT_IR)?;
+
+    prog.jtag_write(jtag_shift::JTAG_EXIT_SHIFT_DR, 0x8, flash_erase_cmd)?;
+    //jtag-shift D(JTAG_EXIT_SHIFT_DR) $::JTAG_IR_LENGTH(8) $::JTAG_UNLOCK_CMD(0x08)
+    prog.jtag_write(jtag_shift::JTAG_EXIT_IDLE, 0x16, clk_div_vec)?;
+    //jtag-shift R(JTAG_EXIT_IDLE) $::JTAG_DR_LENGTH(16) 0 $cfmclkd
 
     thread::sleep(time::Duration::from_millis(2000));
+
+    prog.jtag_reset()?;
 
     let ustat_after = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, MC56F80XX_FLASH_MODULE_USTAT)?;
     dbg!(&ustat_after);

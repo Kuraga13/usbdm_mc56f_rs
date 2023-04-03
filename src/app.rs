@@ -842,9 +842,6 @@ impl Application for App {
 
 
                 let mut dsc =  Box::new(&mut self.target);
-
-                let test_something = dsc.core_id;
-                dbg!(test_something);
                 
                 let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 

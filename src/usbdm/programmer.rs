@@ -320,6 +320,56 @@ fn set_speed(&mut self) -> Result<(), Error>{
     Ok((answer))
   } 
 
+ /// `jtag_reset`, single JTAG command, not sequense. Moves the TAP to \b TEST-LOGIC-RESET state
+ pub fn jtag_reset(&mut self) -> Result<(), Error> {
+
+    let mut usb_buf  = [0; 2];
+
+    usb_buf[0] = 2;            // lenght of command
+    usb_buf[1] = bdm_commands::CMD_USBDM_JTAG_GOTORESET;
+
+    self.usb_device.write(&usb_buf)?;                                    // write command
+    let answer = self.usb_device.read(1)?;                  // read status from bdm
+    Ok(())
+}
+
+ /// `jtag_select_shift`, single JTAG command, not sequense. JTAG - move the TAP to \b SHIFT-DR or \b SHIFT-IR state
+ /// 
+ /// `shift` look constants::jtag_shift
+ pub fn jtag_select_shift(&mut self, shift : u8) -> Result<(), Error> {
+
+    let mut usb_buf  = [0; 3];
+
+    usb_buf[0] = 3;            // lenght of command
+    usb_buf[1] = bdm_commands::CMD_USBDM_JTAG_GOTOSHIFT;
+    usb_buf[1] = shift;
+
+    self.usb_device.write(&usb_buf)?;                                    // write command
+    let answer = self.usb_device.read(1)?;                  // read status from bdm
+    Ok(())
+}
+
+
+ /// `jtag_write`, single JTAG command, not sequense.  JTAG - write data to JTAG shift register
+ /// 
+ /// `shift_exit` look constants::jtag_shift
+ pub fn jtag_write(&mut self, shift_exit : u8, cmd_lenght : u8, mut command : Vec<u8>) -> Result<(), Error> {
+
+    let mut full_command : Vec<u8> = Vec::new();
+    let usb_lenght : u8 = 0x4 + command.len() as u8;
+
+    full_command.push(usb_lenght); // length of command
+    full_command.push(bdm_commands::CMD_USBDM_JTAG_WRITE);
+    full_command.push(shift_exit); // jtag exit
+    full_command.push(cmd_lenght); // bitcount
+    full_command.append(&mut command); 
+  
+    self.usb_device.write(&full_command.as_slice())?;   // write command
+    self.usb_device.read(1)?;         // read status from bdm 
+    Ok(())
+}
+
+
   pub fn bdm_control_pins(&mut self, control: u16) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 4];

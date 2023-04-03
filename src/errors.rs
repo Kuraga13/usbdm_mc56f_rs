@@ -22,6 +22,7 @@ pub enum Error {
    TargetNotConnected,
    TargetSecured,
    TargetNotInDebugMode,
+   TargetWrongFamilySelected,
    MemorySpaceTypeAddress_Out,
    Unknown,
    PackerErr(packed_struct::PackingError),
@@ -125,6 +126,14 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
           title   = "USBDM not support DSC!".to_string();
           message =  "You need JMxx Usbdm (full, CF) to work with DSC.\n".to_string();
+
+
+         }
+         Error::TargetWrongFamilySelected =>
+         {
+
+          title   = "Dsc device is connected, but id mismatch".to_string();
+          message =  "Is the correct device selected?.\n".to_string();
 
 
          }

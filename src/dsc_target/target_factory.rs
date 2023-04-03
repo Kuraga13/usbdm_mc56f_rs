@@ -41,7 +41,7 @@ impl fmt::Display for TargetSelector {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DscFamily {
 
     Mc56f800X,
@@ -186,35 +186,12 @@ pub enum SecurityStatus {
 
 
 #[derive(Debug)]
-pub struct FamilyDsc {
-
-  inner: Box<dyn TargetInitActions>,
-
-}
-
-
-impl FamilyDsc {
-
-
- /// Create a new FamilyDsc from preapered FamilyDsc
- pub fn new(dsc_family: impl TargetInitActions + 'static) -> Self {
-      Self {
-      inner: Box::new(dsc_family),
-      }  
-  }
-}
-
-#[derive(Debug)]
 pub struct TargetDsc {
 
     /// The `name` of the target.
     pub name               : String,
     /// `family` implemented trait with specific for target init actions
     pub family             : Box<dyn TargetInitActions>,
-    /// `core_id` we should get it by command read_core_id_code.
-    pub core_id            : u32,
-    /// `jtag_id_code` we should get it by command jtag_id_code, use for security status check.
-    pub jtag_id_code       : u32,
     /// `memory_map` of the target contain ranged Segment with MemorySpaceType.
     pub memory_map         : Vec<MemorySegment>,
     /// `flash_routine` pre-compiled and configured code for concrete target, assume load & execute for some programming task
@@ -231,84 +208,8 @@ pub struct TargetDsc {
 }
 
 
-
 impl TargetDsc {
 
-  ///`create_database_and_target` for test & debug
-  fn create_database_and_target(selector : TargetSelector) -> Result<Self, Error> {
-
-    let target_from_yaml: TargetYaml = serde_yaml::from_str(YAML_STR).expect("Failed deser from yaml");
-
-    let dsc_list = target_from_yaml.dsc;
-
-    let dsc = dsc_list
-    .iter()
-    .find(|dsc| dsc.name == selector)
-    .expect("Target Not found im Yaml ");
-    //.ok_or_else(|| RegistryError::ChipNotFound(chip_name.as_ref().to_string()))?;
-
-    dbg!(&dsc);
-
-    let mut family_actions: Option<Box<dyn TargetInitActions>> = match dsc.family
-    {
-
-      DscFamily::Mc56f800X  => 
-      {
-
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      }
-
-      DscFamily::Mc56f801X  => 
-      {
-
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      }
-
-      DscFamily::Mc56f802X => 
-      {
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      } 
-      
-      DscFamily::Mc56f803X => 
-      {
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      }   
-      _ =>   { None }       
-
-    };
-
-    let family_actions = family_actions.expect("Target family not found in match arm!");
-
-    let ram_seg = dsc.memory_map.iter()
-    .filter_map(|r| match r {
-      MemorySegment::Ram(r) => Some(r),
-      _ => None,
-    })
-   .next();
-   let range = match ram_seg {
-    Some(rs) => {  &rs.range  }
-    None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
-
-   let ram_size = (range.end - range.start  + 1) as u32;
-
-
-    Ok(TargetDsc {
-
-      name             : dsc.name.to_string(),
-      family           : family_actions,
-      core_id          : dsc.core_id_code, 
-      jtag_id_code     : dsc.jtag_id_code,
-      memory_map       : dsc.memory_map.clone(), 
-      flash_routine    : FlashRoutine::init(dsc.family.clone(), ram_size)?, 
-      security_bytes   : dsc.security_bytes.clone(),
-      security         : SecurityStatus::Unknown,
-      once_status      : OnceStatus::UnknownMode,
-      image_path       : dsc.connection_image_path.clone() })
-  }
 
   pub fn target_from_selector(selector : TargetSelector, target_db : TargetYaml) -> Result<Self, Error> {
 
@@ -322,37 +223,15 @@ impl TargetDsc {
 
     dbg!(&dsc);
 
-    let mut family_actions: Option<Box<dyn TargetInitActions>> = match dsc.family
-    {
+    let mut family_actions: Option<Box<dyn TargetInitActions>> = match dsc.family {
 
-      DscFamily::Mc56f800X  => 
+      DscFamily::Mc56f800X |  DscFamily::Mc56f801X  | DscFamily::Mc56f802X | DscFamily::Mc56f803X   => 
       {
 
-        let init_type = Box::new(MC56f80xx);
+        let init_type = Box::new(MC56f80xx::new(dsc.jtag_id_code, dsc.core_id_code, dsc.family));       
         Some(init_type)
       }
-
-      DscFamily::Mc56f801X  => 
-      {
-
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      }
-
-      DscFamily::Mc56f802X => 
-      {
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      } 
-      
-      DscFamily::Mc56f803X => 
-      {
-        let init_type = Box::new(MC56f80xx);
-        Some(init_type)
-      }   
-      _ =>   { None }       
-
-    };
+      _ =>   { None }      };
 
 
     let family_actions = family_actions.expect("Target family not found in match arm!");
@@ -374,8 +253,6 @@ impl TargetDsc {
 
       name             : dsc.name.to_string(),
       family           : family_actions,
-      core_id          : dsc.core_id_code, 
-      jtag_id_code     : dsc.jtag_id_code,
       memory_map       : dsc.memory_map.clone(), 
       flash_routine    : FlashRoutine::init(dsc.family.clone(), ram_size)?, 
       security_bytes   : dsc.security_bytes.clone(),
@@ -505,7 +382,10 @@ pub trait TargetInitActions:  Send + std::fmt::Debug
 {
 
 /// `is_unsecure` - check Target unsecured, get Secure Status
-fn is_unsecure(&mut self, prog : &mut Programmer, expected_id : u32) -> Result<SecurityStatus, Error>;
+fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Error>;
+
+/// `target_family_confirmation` - check  is right Target selected
+fn target_family_confirmation(&mut self, prog : &mut Programmer)  -> Result<(), Error>;
 
 /// Mass Erase specific on Dsc Target Family mass erase algorith
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;

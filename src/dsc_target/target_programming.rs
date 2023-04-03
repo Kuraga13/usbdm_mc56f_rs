@@ -176,14 +176,12 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   prog.target_power_reset()?;
   self.power(power, prog)?;
 
-  self.security = self.family.is_unsecure(prog, self.jtag_id_code)?;
+  self.family.target_family_confirmation(prog)?;
+  self.security = self.family.is_unsecure(prog)?;
 
-  //let dsc_jtag_id_code = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
-
+  read_master_id_code_DSC_JTAG_ID(true, &prog)?;
   enableCoreTAP(&prog); 
-
-  let target_device_id = read_core_id_code(false, &prog)?; // on second not
-
+  read_core_id_code(false, &prog)?; // on second not
 
   dbg!(&self.security);
   self.once_status = OnceStatus::UnknownMode;
@@ -193,7 +191,6 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   self.once_status = enableONCE(&prog)?;
   dbg!("Final status is: ", &self.once_status);
 
-  
   Ok(())
     
 }
