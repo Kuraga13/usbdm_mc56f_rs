@@ -102,7 +102,7 @@ dsc:
    - !FlashProgramm
       name: null
       range:
-       start: 0x800
+       start: 0x00
        end: 0x1FFF
       access_type: MemoryP     
  - name:    Mc56f8025
