@@ -710,6 +710,8 @@ impl Application for App {
             Message::ReadTarget  => 
             {
 
+                self.progr_buff.clear();
+
              self.show_p_progress = true;
 
              self.target_status = TargetStatus::InProgrammingRead;
@@ -733,29 +735,26 @@ impl Application for App {
               let dsc = Box::new(&mut self.target);
               let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
-              let block_size : u32 = 0x40;
-              let offset = self.progr_address * 2;
-
-              let start_block = offset as usize;
-              let mut end_block = (offset + block_size) as usize; 
+              let max_block_size : u32 = 0x100;
               
               let program_range = dsc.programm_range().expect("Get mem range err App"); 
-              let last_address: usize = ((program_range.end * 2) + 1) as usize;
-              if end_block > last_address { 
-                  end_block = last_address;
+              let last_address: usize = program_range.end as usize;
+
+              let mut block_size: u32 = ((last_address as u32 + 1) - self.progr_address) * 2;
+            
+              if block_size > max_block_size { 
+                block_size = max_block_size;
               };
 
-                if end_block > start_block {
+                if (last_address + 1) > self.progr_address as usize {
 
-                  let block_size_read = (end_block - start_block) as u32;
-
-                  let read = dsc.read_target(self.selected_power, self.progr_address, prog, block_size_read);
+                  let read = dsc.read_target(self.selected_power, self.progr_address, prog, block_size);
                   match read
                   {
                     Ok(read) => 
                     {
                      self.progr_buff.push(read);
-                     self.progress_bar_value = ((start_block as f32 / last_address  as f32) * 100.00) as f32;
+                     self.progress_bar_value = ((self.progr_address as f32 / last_address  as f32) * 100.00) as f32;
                      self.progr_address += block_size / 2; 
                      return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ReadTargetProgress);
                     }    
@@ -811,7 +810,7 @@ impl Application for App {
               let mut end_block = (offset + block_size) as usize; 
               let mut buff: Vec<u8> = self.buffer.download_in_one();
               
-              let last_address: usize = buff.len() - 1;
+              let last_address: usize = buff.len();
               if end_block > last_address { 
                   end_block = last_address;
               };
@@ -879,7 +878,7 @@ impl Application for App {
               let mut end_block = (offset + block_size) as usize; 
               let mut buff: Vec<u8> = self.buffer.download_in_one();
               
-              let last_address: usize = buff.len() - 1;
+              let last_address: usize = buff.len();
               if end_block > last_address { 
                   end_block = last_address;
               };
@@ -890,6 +889,7 @@ impl Application for App {
                   let block_size_read = (end_block - start_block) as u32;
 
                   let verify = dsc.read_target(self.selected_power, self.progr_address, prog, block_size_read);
+
                   match verify
                   {
                     Ok(verify) => 
