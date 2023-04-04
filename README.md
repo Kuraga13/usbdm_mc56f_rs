@@ -12,16 +12,12 @@ Initially, the goal is to work comfortably with the mc56f in Rust. Working via U
  
 Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firmware Ver)
  
-
-###  In work
-* Concrete mc56f (target) commands - write, erase 
-
-###  On test
-* Make target_factory from yaml file with parameters
-
 ### In plan
 * Made HexBuffer interactive, copying data, addressing etc.
-* Big refactor TargetProgramming, usb and programmer - made it async (async trait?) and bind with iced subscribtion
+* Made TargetProgramming actions (read, write, erase) async and bind with iced subscribtion
+
+###  On test
+* Concrete mc56f (target) commands - write, erase 
 
 ###  Done now
 * low level USB interface
@@ -34,6 +30,7 @@ Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firm
 * Concrete mc56f (target) command: - Connect, tested
 * GUI - hex-buffer, download-upload binary
 * S19 loader, parser, converter from bin (open) and to bin (open & save as binary) we do specifically for format s19 from usbdm, s325
+* Make target_factory from yaml file with parameters
 
  ###  Acknowledgements
 
