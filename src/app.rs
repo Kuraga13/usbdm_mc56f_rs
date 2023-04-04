@@ -796,12 +796,6 @@ impl Application for App {
       
                 self.progr_address = programm_range.start as u32;
 
-                let block_size : u32 = 0x250;
-  
-                self.number_cycles = (programm_range.end - programm_range.start) as u32 * 2 / block_size;
-                self.number_cycles += 1;
-                dbg!(&self.number_cycles);
-                self.counter = 0;
                 return iced::Command::perform(handle_progress( self.progress_bar_value), Message::WriteTargetProgress);
             }
 
@@ -812,30 +806,29 @@ impl Application for App {
               let dsc = Box::new(&mut self.target);
               let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
-              let counter = self.counter;
-
-              let block_size : u32 = 0x240;
+              let block_size : u32 = 0x500;
               let offset = self.progr_address * 2;
 
               let start_block = offset as usize;
-              let end_block = (offset + block_size) as usize; 
+              let mut end_block = (offset + block_size) as usize; 
+              let mut buff: Vec<u8> = self.buffer.download_in_one();
+              
+              let last_address: usize = buff.len() - 1;
+              if end_block > last_address { 
+                  end_block = last_address;
+              };
 
-              //dbg!(&start_block);
-             // dbg!(&end_block);
-             // dbg!(&self.progr_address);
+                if end_block > start_block {
 
-              for counter in counter..self.number_cycles {
+                  let to_write: Vec<u8> = buff.drain(start_block..end_block).collect(); 
 
-                  let to_write = self.buffer.download_in_one().drain(start_block..end_block).collect();
-                 // print_vec_memory(&to_write);  
                   let write_target = dsc.write_target(self.selected_power,  self.progr_address, to_write, prog);
                   match write_target
                   {
                     Ok(write_target) => 
                     {
-                    self.progress_bar_value = ((counter as f32 / self.number_cycles  as f32) * 100.00) as f32;
+                    self.progress_bar_value = ((start_block as f32 / last_address  as f32) * 100.00) as f32;
                     self.progr_address += block_size / 2; 
-                    self.counter = counter + 1;
                     return iced::Command::perform(handle_progress( self.progress_bar_value), Message::WriteTargetProgress);
                     }
                     Err(_e) =>
