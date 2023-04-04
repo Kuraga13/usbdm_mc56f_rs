@@ -21,7 +21,7 @@ use crate::usbdm::programmer::{Programmer};
 use crate::dsc_target::target_factory::{TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
 use crate::dsc_target::test_programming::*;
 use crate::gui::{self, main_window};
-use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal};
+use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal, erase_write_confirm_modal};
 use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
 use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file, FileFormat};
 use crate::errors::{Error};
@@ -43,6 +43,7 @@ pub enum TargetStatus {
     InProgrammingRead,
     InProgrammingWrite,
     InProgrammingVerify,
+    InProgrammingErase,
     EndProgramming,
 
 }
@@ -70,6 +71,8 @@ pub enum Message {
     OkButtonPressed,
     OpenAboutCard,
     CloseAboutCard,
+
+    WriteEraseConfirmation(bool),
     
     TargetSelect(TargetSelector),
     ConnectionImageOpen(bool),
@@ -84,6 +87,7 @@ pub enum Message {
     VerifyTarget,
     VerifyTargetProgress(f32),
     EraseTarget,
+    EraseTargetProgress(f32),
     TestFeedback,
     
 }
@@ -103,6 +107,7 @@ pub struct App {
     pub    power_status       : PowerStatus,
     pub    target_status      : TargetStatus,
     pub    show_error_modal   : bool,
+    pub    show_confirmation  : bool,
     pub    about_card_open    : bool,
     pub    show_conn_image    : bool,
     pub    show_p_progress    : bool,
@@ -351,6 +356,7 @@ impl Application for App {
                 buffer             : HexBuffer::default(),
                 buffer_path        : "".to_string(),
                 show_error_modal   : false,
+                show_confirmation  : false,
                 show_conn_image    : false,
                 about_card_open    : false,
                 show_p_progress    : false,
@@ -549,6 +555,36 @@ impl Application for App {
 
               self.show_error_modal = false;
 
+            } 
+
+            
+            Message::WriteEraseConfirmation(confirmation) =>
+            {
+
+              if(confirmation == true)
+              {
+                self.show_confirmation = false;
+                match self.target_status
+                {
+                    TargetStatus::InProgrammingWrite => 
+                    {
+                    return iced::Command::perform(handle_progress( 0.0), Message::WriteTargetProgress);
+                    }
+                    TargetStatus::InProgrammingErase => 
+                    {
+                    return iced::Command::perform(handle_progress( 0.0), Message::EraseTargetProgress);
+                    }
+                    _ =>
+                    {
+                    return iced::Command::none();
+                    }
+                }
+              }
+              else
+              {
+                self.target_status = TargetStatus::Connected;
+                self.show_confirmation = false;
+              }
             } 
 
             
@@ -782,9 +818,9 @@ impl Application for App {
             Message::WriteTarget  => 
             {
 
-              self.show_p_progress = true;
-
               self.target_status = TargetStatus::InProgrammingWrite;
+              
+              self.show_confirmation = true;
   
               self.progress_bar_value = 0.0;
   
@@ -794,12 +830,13 @@ impl Application for App {
       
               self.progr_address = programm_range.start as u32;
 
-              return iced::Command::perform(handle_progress( self.progress_bar_value), Message::WriteTargetProgress);
+              return iced::Command::none();
             }
 
             Message::WriteTargetProgress(x)  => 
             {
-
+              
+              self.show_p_progress = true;
               self.target_status = TargetStatus::InProgrammingWrite;
               let dsc = Box::new(&mut self.target);
               let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
@@ -926,6 +963,21 @@ impl Application for App {
 
             Message::EraseTarget  => 
             {
+            
+            self.target_status = TargetStatus::InProgrammingErase;
+            self.show_confirmation = true;
+            return iced::Command::none();
+
+      
+            }
+
+            
+            Message::EraseTargetProgress(x)  => 
+            {
+              
+              self.show_p_progress = true;
+              self.target_status = TargetStatus::InProgrammingErase;
+              self.progress_bar_value = 0.0;
               
               let dsc = Box::new(&mut self.target);
             
@@ -947,6 +999,11 @@ impl Application for App {
                 return iced::Command::none();
                }
               }
+
+              dbg!("Erase Target End!");
+              self.show_p_progress = false;
+              self.target_status = TargetStatus::Connected;
+              return iced::Command::none();
             }
 
 
@@ -1030,7 +1087,11 @@ impl Application for App {
     // this function captutre content in c and return
     // if not errors. if error - modal window on view
     //error_notify_model(self.show_error_modal, main_page.into(), err_view) 
-    if self.show_p_progress 
+    if self.show_confirmation 
+    {
+        erase_write_confirm_modal(self.show_confirmation, main_page.into(), self.target_status)
+    }
+    else if self.show_p_progress 
     {
         progress_bar_modal(self.show_p_progress, main_page.into(), self.progress_bar_value, self.target_status)
     }

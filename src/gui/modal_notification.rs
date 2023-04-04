@@ -56,6 +56,71 @@ pub fn error_notify_model<'a>(show_error_modal : bool, content: Element<'a, Mess
 }
 
 
+pub fn erase_write_confirm_modal<'a>(show_confirmation : bool, content: Element<'a, Message, iced::Renderer>, status : TargetStatus) -> Element<'a, Message> {
+
+
+    let mut title   =  String::new();
+    let mut message =  String::new();
+
+    match status
+    {
+
+        TargetStatus::InProgrammingWrite => 
+        {
+         
+            title   = "Confirm Write Target".to_string();
+            message = (format!("This action will erase and write all flash memory"));
+   
+   
+        }
+        TargetStatus::InProgrammingErase=> 
+        {
+         
+            title   = "Confirm Erase Target".to_string();
+            message = (format!("This action will erase all flash memory"));
+   
+        }
+        _ =>
+        {
+         
+            title   = "Empry Confirmation! Please Report".to_string();
+            message = ":\n".to_string();
+   
+   
+        }
+    }
+    
+
+    Modal::new(show_confirmation, content,  move|| {
+        Card::new(
+            Text::new(title.clone()),
+            Text::new(message.clone()),
+        )
+        .foot(
+            Row::new()
+                .spacing(10)
+                .padding(5)
+                .width(Length::Fill)
+                .push(
+                    Button::new(Text::new("Ok").horizontal_alignment(Horizontal::Center))
+                        .width(Length::Fill)
+                        .on_press(Message::WriteEraseConfirmation(true)),
+                )
+                .push(
+                    Button::new(Text::new("Cancel").horizontal_alignment(Horizontal::Center))
+                        .width(Length::Fill)
+                        .on_press(Message::WriteEraseConfirmation(false)),
+                ),
+        )
+        .max_width(300.00)
+        //.width(Length::Shrink)
+        .on_close(Message::WriteEraseConfirmation(false))
+        .into()
+    })
+    .into()
+}
+
+
 pub fn about_card<'a>(show_about_card : bool, content: Element<'a, Message, iced::Renderer>, )  -> Element<'a, Message>
 {
 
@@ -204,6 +269,14 @@ pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Me
          
             title   = "Verify Target".to_string();
             message = (format!("verify memory with buffer... {prg_value:.2}%"));
+   
+   
+        }
+        TargetStatus::InProgrammingErase=> 
+        {
+         
+            title   = "Erase Target".to_string();
+            message = (format!("erase... {prg_value:.2}%"));
    
    
         }

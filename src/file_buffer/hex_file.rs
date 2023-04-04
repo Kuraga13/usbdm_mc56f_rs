@@ -16,7 +16,7 @@ pub enum FileFormat {
     UnknownFormat
 
 }
-// parse extestion now NOT IMPLEMENTED... in plan
+// parse extestion 
 impl From <&OsStr>  for FileFormat  {
     fn from(ext : &OsStr) -> FileFormat {
          match ext.to_str() {
