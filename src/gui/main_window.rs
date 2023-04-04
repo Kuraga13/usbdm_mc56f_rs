@@ -359,6 +359,7 @@ pub fn programmer_actions_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Re
             connect_button_item("Connect", Message::Connect),
             programmer_button_item("Read", Message::ReadTarget, &_app.status, &_app.target_status),
             programmer_button_item("Write", Message::WriteTarget, &_app.status, &_app.target_status),
+            programmer_button_item("Verify", Message::VerifyTarget, &_app.status, &_app.target_status),
             programmer_button_item("Erase", Message::EraseTarget, &_app.status, &_app.target_status),
         ],
     )

@@ -66,7 +66,7 @@ fn disconnect(&mut self)
   
 }
 
-fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>
+fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer, block_size : u32) -> Result<Vec<u8>, Error>
 {
 
   let powered = prog.get_power_state()?;
@@ -82,7 +82,7 @@ fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Pr
     return Err(Error::TargetSecured)
   }
  
-  let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, 0x40,  address)?; 
+  let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_size,  address)?; 
 
   Ok(memory_read)
 
@@ -112,9 +112,14 @@ fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write
     } else {  return Err(Error::TargetWriteError); }  
   }
 
-  self.flash_routine.dsc_write_prog_mem(prog, data_to_write, address)?;
+  if let Ok(()) = self.flash_routine.dsc_write_prog_mem(prog, data_to_write, address) 
+  {
+    Ok(())
+  } 
+   else {  return Err(Error::TargetWriteError); }  
  
-  Ok(())
+ 
+
     
 }
 

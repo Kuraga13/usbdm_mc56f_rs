@@ -199,6 +199,14 @@ pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Me
    
    
         }
+        TargetStatus::InProgrammingVerify=> 
+        {
+         
+            title   = "Verify Target".to_string();
+            message = (format!("verify memory with buffer... {prg_value:.2}%"));
+   
+   
+        }
         _ =>
         {
          

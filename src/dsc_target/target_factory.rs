@@ -386,7 +386,7 @@ fn power(&mut self, power : TargetVddSelect, prog : &mut Programmer ) -> Result<
 fn disconnect(&mut self);
 
 /// Read target
-fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>;
+fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer, block_size : u32) -> Result<Vec<u8>, Error>;
 
 /// Write target
 fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write : Vec<u8>,  prog : &mut Programmer) -> Result<(), Error>;
