@@ -117,8 +117,6 @@ pub struct App {
     pub    progress_bar_value : f32,
     pub    title              : String,
     
-    pub    number_cycles      : u32,            // for debug
-    pub    counter            : u32,            // for debug
            progr_buff         : Vec<Vec<u8>>,   // for debug
            progr_address     : u32,            // for debug
 
@@ -371,8 +369,6 @@ impl Application for App {
                 power_status       : PowerStatus::PowerOff,
                 progress_bar_value : 0.0,
                 title              : "usbdm_mc56f_rs ".to_string() + &"not connected ".to_string(),
-                number_cycles      : 0,
-                counter            : 0,
                 progr_buff         : vec![vec![0;0]],
                 progr_address     : 0,
 
@@ -775,6 +771,7 @@ impl Application for App {
               
               let program_range = dsc.programm_range().expect("Get mem range err App"); 
               let last_address: usize = program_range.end as usize;
+              dbg!(&last_address);
 
               let mut block_size: u32 = ((last_address as u32 + 1) - self.progr_address) * 2;
             

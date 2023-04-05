@@ -1,3 +1,4 @@
+pub mod memory_buffer;
 pub mod target_factory;
 pub mod target_init_actions;
 pub mod target_programming;
