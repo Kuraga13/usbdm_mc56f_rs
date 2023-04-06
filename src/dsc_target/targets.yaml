@@ -10,7 +10,7 @@ dsc:
    jtag_id_code : 0x01F2601D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null
@@ -35,7 +35,7 @@ dsc:
    jtag_id_code : 0x01F2601D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null
@@ -60,7 +60,7 @@ dsc:
    jtag_id_code : 0x01F2401D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null
@@ -85,7 +85,7 @@ dsc:
    jtag_id_code : 0x01F2401D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null
@@ -110,7 +110,7 @@ dsc:
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null
@@ -135,7 +135,7 @@ dsc:
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null
@@ -160,7 +160,7 @@ dsc:
    jtag_id_code : 0x01F2801D
    core_id_code : 0x02211004
    security_bytes : FFFFFFFFFFFF0000FFFFFFFFFFFFFFFFFFFF
-   connection_image_path : "../gui/resources/mcu_connection.jpeg"
+   connection_image_path : "connection_image/8035.jpeg"
    memory_map:
    - !Ram
        name: null

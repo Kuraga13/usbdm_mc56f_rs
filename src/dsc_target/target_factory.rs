@@ -17,6 +17,8 @@ use std::fmt;
 use std::path::Path;
 use core::ops::Range;
 use serde::{Serialize, Deserialize, Deserializer};
+use std::path::PathBuf;
+use std::env;
 
 type MemorySpace       = u8;
 
@@ -220,7 +222,7 @@ pub struct TargetDsc {
     /// `flash_module` is status of flash module registers, needed for flash programming
     pub flash_module       : FlashModuleStatus,
     /// `image_path`, path to connection image
-    pub image_path         : String,
+    pub image_path         : PathBuf,
 
 }
 
@@ -264,7 +266,12 @@ impl TargetDsc {
     None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
 
     let ram_size = (range.end - range.start  + 1) as u32;
- 
+    
+    let mut img_path = env::current_dir().expect("Current directory env err.");
+    let path_add = PathBuf::from(dsc.connection_image_path.clone());
+    img_path.push(path_add);
+
+    println!("The img_path is : {}", img_path.display());
 
     Ok(TargetDsc {
 
@@ -276,7 +283,7 @@ impl TargetDsc {
       security         : SecurityStatus::Unknown,
       once_status      : OnceStatus::UnknownMode,
       flash_module     : FlashModuleStatus::NotInited,
-      image_path       : dsc.connection_image_path.clone() })
+      image_path       : img_path })
   }
 
 

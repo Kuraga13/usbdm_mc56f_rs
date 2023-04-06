@@ -1099,7 +1099,7 @@ impl Application for App {
     else if self.show_conn_image
     {
 
-        connection_image_modal(1300, self.show_conn_image, main_page.into())
+        connection_image_modal(1300, self.show_conn_image, main_page.into(), self.target.image_path.clone(), self.target.name.clone())
     }
     else
     {
