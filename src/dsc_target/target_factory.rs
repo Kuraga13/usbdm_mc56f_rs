@@ -8,8 +8,8 @@ use crate::usbdm::feedback::{PowerStatus};
 use crate::usbdm::constants::{memory_space_t};
 use super::flash_routine::FlashRoutine;
 use super::target_init_actions::{MC56f80xx};
-//use crate::target_dsc::mc56f802x::MC56f802x;
-//use crate::target_dsc::mc56f801x::MC56f801x;
+use super::memory_buffer::{MemoryBuffer};
+
 
 use std::borrow::BorrowMut;
 use std::io::Read;
@@ -90,6 +90,7 @@ pub struct RamSegement {
     /// Address `range` of the region
     pub range: Range<u64>,
 
+    /// byte, word X/P  `AccessType` of the region
     pub access_type: AccessType,
 
 
@@ -211,6 +212,8 @@ pub struct TargetDsc {
     pub family             : Box<dyn TargetInitActions>,
     /// `memory_map` of the target contain ranged Segment with MemorySpaceType.
     pub memory_map         : Vec<MemorySegment>,
+    /// `memory_buffer` represent a FlashProgramm memory of Target
+    pub memory_buffer      : MemoryBuffer,
     /// `flash_routine` pre-compiled and configured code for concrete target, assume load & execute for some programming task
     pub flash_routine      : FlashRoutine,
     /// `security_bytes`, security bytes sequense, for unsecuring-securing device ref datasheet
@@ -266,18 +269,34 @@ impl TargetDsc {
     None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
 
     let ram_size = (range.end - range.start  + 1) as u32;
+
+    let prog_seg = dsc.memory_map.iter()
+    .filter_map(|r| match r {
+      MemorySegment::FlashProgramm(r) => Some(r),
+      _ => None,
+    })
+    .next();
+    let program_range = match prog_seg {
+    Some(progs) => {  &progs.range  }
+    None => {return Err(Error::InternalError("ram_range not found for DscTarget!".to_string())) } };
+
     
     let mut img_path = env::current_dir().expect("Current directory env err.");
-    let path_add = PathBuf::from(dsc.connection_image_path.clone());
-    img_path.push(path_add);
+    let image_folder_path = PathBuf::from(dsc.connection_image_path.clone());
+    img_path.push(image_folder_path);
+    img_path.push(dsc.name.to_string().to_uppercase());
+    img_path.set_extension("jpeg");
 
     println!("The img_path is : {}", img_path.display());
+
+    let flash_range : Range<usize> = Range{start: program_range.start as usize, end: program_range.end as usize};
 
     Ok(TargetDsc {
 
       name             : dsc.name.to_string(),
       family           : family_actions,
       memory_map       : dsc.memory_map.clone(), 
+      memory_buffer    : MemoryBuffer::init_empty(0xFF, flash_range, 0x02),
       flash_routine    : FlashRoutine::init(dsc.family.clone(), ram_size)?, 
       security_bytes   : dsc.security_bytes.clone(),
       security         : SecurityStatus::Unknown,
@@ -393,10 +412,13 @@ fn power(&mut self, power : TargetVddSelect, prog : &mut Programmer ) -> Result<
 fn disconnect(&mut self);
 
 /// Read target
-fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer, block_size : u32) -> Result<Vec<u8>, Error>;
+fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>;
 
 /// Write target
 fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write : Vec<u8>,  prog : &mut Programmer) -> Result<(), Error>;
+
+/// Verify target
+fn verify_target(&mut self, power : TargetVddSelect, address : u32,  prog : &mut Programmer) -> Result<usize, Error>;
 
 /// Write target
 fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;

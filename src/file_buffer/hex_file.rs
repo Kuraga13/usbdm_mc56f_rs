@@ -57,9 +57,8 @@ pub fn load_buffer_from_file(path : String, start_addr : u32, size : usize, app 
         FileFormat::Bin => 
         {
 
-            file_hex.seek(SeekFrom::Start(u64::from(start_addr)))?;
             file_hex.read_to_end(&mut buffer_vec);
-            app.buffer.upload(buffer_vec);
+            app.target.memory_buffer.upload_from_bin(buffer_vec);
             return Ok(())
 
         }
@@ -67,7 +66,7 @@ pub fn load_buffer_from_file(path : String, start_addr : u32, size : usize, app 
         {
             file_hex.read_to_end(&mut buffer_vec);
             let parsed_data = ParsedData::parse_s19(buffer_vec)?;
-            app.buffer.upload(parsed_data.to_bin()?);
+            app.target.memory_buffer.upload_from_bin(parsed_data.to_bin()?);
             return Ok(())
       
         }
@@ -104,7 +103,7 @@ pub fn save_buffer_to_file(path : String,  start_addr : u32, size : usize, app: 
     };
 
     // get buffer   
-    let mut data_to_file = app.buffer.download_in_one();
+    let mut data_to_file = app.target.memory_buffer.download_export_fs(0xFF)?;
 
     match format {
 

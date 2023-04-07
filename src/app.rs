@@ -13,6 +13,7 @@ use std::path::Path;
 use native_dialog::{FileDialog, MessageDialog, MessageType};
 
 use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
 
 use crate::usbdm::usb_interface::{UsbInterface, find_usbdm_as, find_usbdm,};
 use crate::usbdm::settings::{TargetVddSelect};
@@ -21,11 +22,12 @@ use crate::usbdm::programmer::{Programmer};
 use crate::dsc_target::target_factory::{TargetProgramming, TargetDsc, TargetSelector, MemorySegment, TargetYaml};
 use crate::dsc_target::test_programming::*;
 use crate::gui::{self, main_window};
-use crate::gui::modal_notification::{error_notify_model, about_card, connection_image_modal, progress_bar_modal, erase_write_confirm_modal};
-use crate::gui::hexbuffer_widget::{TableContents, HexBuffer};
+use crate::gui::modal_notification::{nofiy_user_model, error_notify_model, about_card, connection_image_modal, progress_bar_modal, erase_write_confirm_modal};
+use crate::gui::hexbuffer_widget::{TableContents};
 use crate::file_buffer::hex_file::{load_buffer_from_file, save_buffer_to_file, FileFormat};
 use crate::errors::{Error};
 use crate::utils::*;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum UsbdmAppStatus {
     
@@ -69,6 +71,7 @@ pub enum Message {
 
 
     OkButtonPressed,
+    OkButtonPressedNotify,
     OpenAboutCard,
     CloseAboutCard,
 
@@ -100,12 +103,15 @@ pub struct App {
            programmer         : Option<Programmer>,
            programmer2        : Option<Arc<RwLock<Programmer>>>,
 
-    pub    buffer             : HexBuffer,
+   // pub    buffer             : HexBuffer,
            buffer_path        : String,
+           notify_title       : String,
+           notify_msg         : String,
     pub    selected_power     : TargetVddSelect,
     pub    status             : UsbdmAppStatus,
     pub    power_status       : PowerStatus,
     pub    target_status      : TargetStatus,
+    pub    show_notify        : bool,
     pub    show_error_modal   : bool,
     pub    show_confirmation  : bool,
     pub    about_card_open    : bool,
@@ -128,6 +134,16 @@ pub fn show_error( app : &mut App, _e : Error)
 
     app.show_error_modal = true;
     app.error_status     = Some(_e);
+
+  
+}
+
+pub fn notify_user( app : &mut App, msg : String, title : String) 
+{
+
+    app.show_notify = true;
+    app.notify_msg = msg.clone();
+    app.notify_title = title.clone();
 
   
 }
@@ -351,8 +367,11 @@ impl Application for App {
          
                 theme,
                 dark_mode          : false,  
-                buffer             : HexBuffer::default(),
+              //  buffer             : HexBuffer::default(),
                 buffer_path        : "".to_string(),
+                notify_title       : "".to_string(),
+                notify_msg         : "".to_string(),
+                show_notify        : false,
                 show_error_modal   : false,
                 show_confirmation  : false,
                 show_conn_image    : false,
@@ -360,7 +379,7 @@ impl Application for App {
                 show_p_progress    : false,
                 error_status       : None,     
                 selected_power     : TargetVddSelect::Vdd3V3,
-                target             : TargetDsc::target_from_selector(TargetSelector::Tester56f8035, database.clone()).expect("Target Builder Fault!"),
+                target             : TargetDsc::target_from_selector(TargetSelector::Mc56f8035, database.clone()).expect("Target Builder Fault!"),
                 target_database    : database,
                 programmer         : None,
                 programmer2        : None,
@@ -550,6 +569,14 @@ impl Application for App {
             {
 
               self.show_error_modal = false;
+
+
+            } 
+
+            Message::OkButtonPressedNotify =>
+            {
+
+              self.show_notify = false;
 
             } 
 
@@ -742,7 +769,7 @@ impl Application for App {
             Message::ReadTarget  => 
             {
 
-                self.progr_buff.clear();
+             self.progr_buff.clear();
 
              self.show_p_progress = true;
 
@@ -767,28 +794,22 @@ impl Application for App {
               let dsc = Box::new(&mut self.target);
               let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
-              let max_block_size : u32 = 0x100;
-              
-              let program_range = dsc.programm_range().expect("Get mem range err App"); 
-              let last_address: usize = program_range.end as usize;
-              dbg!(&last_address);
+              let programm_range = dsc.programm_range().expect("Get mem range err App");
+              let start_address = programm_range.start;
+              let end_address =  (programm_range.end + 1) as usize;
+  
+                
+                if end_address > self.progr_address as usize {
 
-              let mut block_size: u32 = ((last_address as u32 + 1) - self.progr_address) * 2;
-            
-              if block_size > max_block_size { 
-                block_size = max_block_size;
-              };
-
-                if (last_address + 1) > self.progr_address as usize {
-
-                  let read = dsc.read_target(self.selected_power, self.progr_address, prog, block_size);
+                  let read = dsc.read_target(self.selected_power, self.progr_address, prog);
                   match read
                   {
                     Ok(read) => 
                     {
+                     let read_len = (read.len() / 2) as u32;
                      self.progr_buff.push(read);
-                     self.progress_bar_value = ((self.progr_address as f32 / last_address  as f32) * 100.00) as f32;
-                     self.progr_address += block_size / 2; 
+                     self.progress_bar_value = (((self.progr_address as f32 - start_address as f32) / (end_address as f32 - start_address as f32)) * 100.00) as f32;
+                     self.progr_address += read_len; 
                      return iced::Command::perform(handle_progress( self.progress_bar_value), Message::ReadTargetProgress);
                     }    
 
@@ -804,7 +825,7 @@ impl Application for App {
                 }
                 
             dbg!("Read Target End!");
-            self.buffer.upload_packed(self.progr_buff.clone());
+            dsc.memory_buffer.upload_from_target(self.progr_buff.clone());
             self.show_p_progress = false;
             self.target_status = TargetStatus::Connected;
             return iced::Command::none();
@@ -825,6 +846,7 @@ impl Application for App {
               let programm_range = self.target.programm_range().expect("Get mem range err App"); 
       
               self.progr_address = programm_range.start as u32;
+              dbg!(&self.progr_address);
 
               return iced::Command::none();
             }
@@ -835,31 +857,31 @@ impl Application for App {
               self.show_p_progress = true;
               self.target_status = TargetStatus::InProgrammingWrite;
               let dsc = Box::new(&mut self.target);
+              let programm_range = dsc.programm_range().expect("Get mem range err App");
+              let start_address = programm_range.start;
               let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
-              let block_size : u32 = 0x500;
-              let offset = self.progr_address * 2;
+              let block_size : usize = 0x500;
+              let current_adress = self.progr_address as usize;
+              let last_address: usize = (programm_range.end + 1) as usize;
 
-              let start_block = offset as usize;
-              let mut end_block = (offset + block_size) as usize; 
-              let mut buff: Vec<u8> = self.buffer.download_in_one();
-              
-              let last_address: usize = buff.len();
-              if end_block > last_address { 
-                  end_block = last_address;
-              };
+                
+                if last_address > current_adress {
 
-                if end_block > start_block {
-
-                  let to_write: Vec<u8> = buff.drain(start_block..end_block).collect(); 
-
+                  let to_write: Vec<u8> = dsc.memory_buffer.download_target_block(self.progr_address as usize, block_size).unwrap(); 
+                  let real_size = ((to_write.len() / 2) as u32);
+                  let write_time_start = Instant::now();
                   let write_target = dsc.write_target(self.selected_power,  self.progr_address, to_write, prog);
                   match write_target
                   {
                     Ok(write_target) => 
                     {
-                    self.progress_bar_value = ((start_block as f32 / last_address  as f32) * 100.00) as f32;
-                    self.progr_address += block_size / 2; 
+                    self.progress_bar_value = (((self.progr_address as f32 - start_address as f32) / (last_address as f32 - start_address as f32)) * 100.00) as f32;
+                    self.progr_address += real_size; 
+    
+                    let write_duration = write_time_start.elapsed();
+                    let write_throughput = ((real_size * 2) as f32) / write_duration.as_secs_f32();
+                    println!("write speed : {:>8.2} bytes/s,", write_throughput);
                     return iced::Command::perform(handle_progress( self.progress_bar_value), Message::WriteTargetProgress);
                     }
                     Err(_e) =>
@@ -875,6 +897,8 @@ impl Application for App {
                 
             dbg!("Write Target End!");
             self.show_p_progress = false;
+            dsc.power(TargetVddSelect::VddOff, prog);
+            self.check_power_state();
             self.target_status = TargetStatus::Connected;
             return iced::Command::none();
                 
@@ -905,55 +929,37 @@ impl Application for App {
               let dsc = Box::new(&mut self.target);
               let prog = self.programmer.as_mut().expect("Try to Connect to Opt:None Programmer!");
 
-              let block_size : u32 = 0x40;
-              let offset = self.progr_address * 2;
+              let programm_range = dsc.programm_range().expect("Get mem range err App");
+              let start_address = programm_range.start;
+              let end_address =  (programm_range.end + 1) as usize;
+                
+                if end_address > self.progr_address as usize {
 
-              let start_block = offset as usize;
-              let mut end_block = (offset + block_size) as usize; 
-              let mut buff: Vec<u8> = self.buffer.download_in_one();
-              
-              let last_address: usize = buff.len();
-              if end_block > last_address { 
-                  end_block = last_address;
-              };
-
-                if end_block > start_block {
-
-                  let to_verify: Vec<u8> = buff.drain(start_block..end_block).collect(); 
-                  let block_size_read = (end_block - start_block) as u32;
-
-                  let verify = dsc.read_target(self.selected_power, self.progr_address, prog, block_size_read);
-
+                  let verify = dsc.verify_target(self.selected_power, self.progr_address, prog);
                   match verify
                   {
                     Ok(verify) => 
                     {
-                     if(to_verify == verify)
-                     {
-                     self.progress_bar_value = ((start_block as f32 / last_address  as f32) * 100.00) as f32;
-                     self.progr_address += block_size / 2; 
+                     let block_len  = (verify / 2) as u32;
+                     self.progress_bar_value = (((self.progr_address as f32 - start_address as f32) / (end_address as f32 - start_address as f32)) * 100.00) as f32;
+                     self.progr_address += block_len; 
                      return iced::Command::perform(handle_progress( self.progress_bar_value), Message::VerifyTargetProgress);
-                     } else {   
-                        self.show_p_progress = false;
-                        show_error(self, Error::TargetVerifyError);
-                        println!("error on VerifyTarget ");
-                        self.check_power_state();
-                        return iced::Command::none(); }
-                    }
+                    }    
+
                     Err(_e) =>
                     {
                     self.show_p_progress = false;
                     show_error(self, _e);
-                    println!("error on VerifyTarget ");
+                    println!("Verify_Target Error!");
                     self.check_power_state();
                     return iced::Command::none();
                     }
                   }
                 }
                 
-            dbg!("Verify Target End!");
             self.show_p_progress = false;
             self.target_status = TargetStatus::Connected;
+            notify_user(self, "Verification successfully completed".to_string(), "Verify Target End".to_string());
             return iced::Command::none();
 
             }
@@ -997,8 +1003,8 @@ impl Application for App {
                }
               }
 
-              dbg!("Erase Target End!");
               self.show_p_progress = false;
+              notify_user(self, "Erase successfully completed".to_string(), "Erase Target End".to_string());
               self.target_status = TargetStatus::Connected;
               return iced::Command::none();
             }
@@ -1087,6 +1093,10 @@ impl Application for App {
     if self.show_confirmation 
     {
         erase_write_confirm_modal(self.show_confirmation, main_page.into(), self.target_status)
+    }
+    else if self.show_notify 
+    {
+        nofiy_user_model(self.show_notify, main_page.into(), self.notify_title.clone(), self.notify_msg.clone())
     }
     else if self.show_p_progress 
     {

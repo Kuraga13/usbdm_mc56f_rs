@@ -24,7 +24,7 @@ pub enum Error {
    TargetNotInDebugMode,
    TargetWrongFamilySelected(String, String),
    TargetWriteError,
-   TargetVerifyError,
+   TargetVerifyError(u32, u32),
    MemorySpaceTypeAddress_Out,
    Unknown,
    PackerErr(packed_struct::PackingError),
@@ -146,11 +146,11 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
           message =  "Check that Target is erased before write flash".to_string();
 
          }
-         Error::TargetVerifyError =>
+         Error::TargetVerifyError(start_r, end_r) =>
          {
 
           title   = "Verify Failed!".to_string();
-          message = "Buffer mismatch with target memory".to_string();
+          message = "Verify failed on address range : ".to_string()  +  &format!("{:#06X}", start_r) + &"...".to_string() + &format!("{:#06X}", end_r)+ &"\n".to_string();
 
          }
          _ =>

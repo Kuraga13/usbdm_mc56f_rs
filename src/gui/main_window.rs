@@ -73,7 +73,7 @@ pub fn main_page<'a>(_app: &App) -> Column<'a, Message, iced::Renderer>
     let test_addr_line   = vec![vec!["01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F".to_string(), "test_test2".to_string(),]; 4500];
     
 
-    let table_test = table_contents(20.00, _app.buffer.download_all_u8(), || test_buffer_double_click() );
+    let table_test = table_contents(20.00, _app.target.memory_buffer.download_all_u8(), || test_buffer_double_click() );
     
     let test_test = scrollable(Container::new(table_test).align_y(alignment::Vertical::Center));
     
@@ -474,7 +474,7 @@ pub fn target_selection_menu<'a>(_app: &App) -> MenuTree<'a, Message, iced::Rend
         //menu_button("Target"),
         menu_button(target_label.as_str()),
         vec![
-        target_button_item("Tester_8035", Message::TargetSelect(TargetSelector::Tester56f8035)),
+        //target_button_item("Tester_8035", Message::TargetSelect(TargetSelector::Tester56f8035)),
         target_button_item("MC56F8002", Message::TargetSelect(TargetSelector::Mc56f8002)),
         target_button_item("MC56F8006", Message::TargetSelect(TargetSelector::Mc56f8006)),
         target_button_item("MC56F8011", Message::TargetSelect(TargetSelector::Mc56f8011)),

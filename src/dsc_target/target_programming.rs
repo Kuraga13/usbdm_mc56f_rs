@@ -66,7 +66,7 @@ fn disconnect(&mut self)
   
 }
 
-fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer, block_size : u32) -> Result<Vec<u8>, Error>
+fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<Vec<u8>, Error>
 {
 
   let powered = prog.get_power_state()?;
@@ -81,6 +81,19 @@ fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Pr
   {
     return Err(Error::TargetSecured)
   }
+
+  let programm_range = self.programm_range().expect("Get mem range err App");
+  let start_address = programm_range.start;
+  let end_addr: usize = programm_range.end as usize;
+ 
+  let mut block_size: u32 = ((end_addr as u32 + 1) - address) * 2;
+
+  let max_block_size : u32 = 0x100;
+
+  if block_size > max_block_size { 
+    block_size = max_block_size;
+  };
+
  
   let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_size,  address)?; 
 
@@ -118,10 +131,53 @@ fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write
   } 
    else {  return Err(Error::TargetWriteError); }  
  
- 
-
-    
 }
+
+fn verify_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Programmer) -> Result<usize, Error> {
+
+
+  let powered = prog.get_power_state()?;
+  self.once_status = enableONCE(&prog)?;
+  
+  if(powered != PowerStatus::PowerOn || self.once_status != OnceStatus::DebugMode || self.flash_module == FlashModuleStatus::Inited)
+  {
+      self.connect(power, prog)?;
+  }
+
+  if (self.security == SecurityStatus::Secured)
+  {
+    return Err(Error::TargetSecured)
+  }
+  
+  let programm_range = self.programm_range().expect("Get mem range err App");
+  let start_address = programm_range.start;
+  let end_addr: usize = programm_range.end as usize;
+ 
+  let mut block_size: u32 = ((end_addr as u32 + 1) - address) * 2;
+
+  let max_block_size : u32 = 0x100;
+
+  if block_size > max_block_size { 
+    block_size = max_block_size;
+  };
+
+  let verify_block_size = (block_size / 2) as usize;
+
+  let to_verify: Vec<u8> = self.memory_buffer.download_target_block(address as usize, verify_block_size as usize)?; 
+  let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_size,  address)?; 
+
+  if(to_verify != memory_read) {
+
+    return Err(Error::TargetVerifyError(address, address + block_size));
+    
+  } 
+
+
+    Ok(memory_read.len())
+
+
+}
+
 
 fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
 {

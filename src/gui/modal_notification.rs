@@ -57,6 +57,38 @@ pub fn error_notify_model<'a>(show_error_modal : bool, content: Element<'a, Mess
 }
 
 
+pub fn nofiy_user_model<'a>(show_notify : bool, content: Element<'a, Message, iced::Renderer>, title : String, msg : String) -> Element<'a, Message> {
+
+
+    Modal::new(show_notify, content,  move|| {
+        Card::new(
+            Text::new(title.clone()),
+            Text::new(msg.clone()),
+        )
+        .foot(
+            Row::new()
+                .spacing(10)
+                .padding(5)
+                .width(Length::Fill)
+                .push(
+                    Button::new(Text::new("Ok").horizontal_alignment(Horizontal::Center))
+                        .width(Length::Fill)
+                        .on_press(Message::OkButtonPressedNotify),
+                ),
+        )
+        .max_width(300.00)
+        //.width(Length::Shrink)
+        .on_close(Message::OkButtonPressedNotify)
+        .into()
+    })
+    .backdrop(Message::OkButtonPressedNotify)
+    .on_esc(Message::OkButtonPressedNotify)
+    .into()
+}
+
+
+
+
 pub fn erase_write_confirm_modal<'a>(show_confirmation : bool, content: Element<'a, Message, iced::Renderer>, status : TargetStatus) -> Element<'a, Message> {
 
 
@@ -271,7 +303,7 @@ pub fn progress_bar_modal<'a>(target_programming : bool, content: Element<'a, Me
         {
          
             title   = "Verify Target".to_string();
-            message = (format!("verify memory with buffer... {prg_value:.2}%"));
+            message = (format!("verify target with buffer... {prg_value:.2}%"));
    
    
         }
