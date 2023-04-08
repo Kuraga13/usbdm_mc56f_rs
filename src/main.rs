@@ -45,7 +45,7 @@ pub fn main() -> iced::Result {
             ..Default::default()
             //position: Default::default(),
         },
-        //antialiasing: true,
+        antialiasing: true,  // !!! disable this option if building under OpenGL means  --features iced/glow
         ..Default::default()
     };
 

@@ -18,7 +18,7 @@ impl TargetProgramming for TargetDsc {
 fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>
 {
   prog.init_usbdm_for_mc56f()?;
-  println!("dsc init done!");
+  println!("init prog for dsc done!");
   Ok(())  
 
 }
@@ -30,7 +30,11 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   self.power(power, prog)?;
 
   self.flash_module = FlashModuleStatus::NotInited;
-  self.security = self.family.is_unsecure(prog)?;
+  dbg!("is_unsecure");
+  //self.security = self.family.is_unsecure(prog)?;
+  let test = self.family.is_unsecure(prog)?;
+  dbg!(test);
+  dbg!("target_family_confirmation");
   self.family.target_family_confirmation(prog)?;
 
  // read_master_id_code_DSC_JTAG_ID(true, &prog)?;
