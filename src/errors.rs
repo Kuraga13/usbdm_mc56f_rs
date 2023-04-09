@@ -135,7 +135,7 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
          {
 
           title   = "Dsc Target is connected, but id mismatch".to_string();
-          message =  "Is the correct device selected?. ".to_string() + & "\nFinded DSC: ".to_string() + &finded_family + &"\nExpected DSC: ".to_string() + &selected_family + &"\n".to_string(); 
+          message =  "Is the correct target selected?. ".to_string() + & "\nFinded DSC: ".to_string() + &finded_family + &"\nExpected DSC: ".to_string() + &selected_family + &"\n".to_string(); 
 
 
          }

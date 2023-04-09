@@ -24,30 +24,38 @@ fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>
 }
 
 fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
-{
-
+{ 
+  // TODO - we need reset for re-connect
+  // that mean:
+  // - check &reset power for certain time and check is voltage
+  // - check & reset target jtag (to execution mode)
   prog.target_power_reset()?;
   self.power(power, prog)?;
-
+ 
   self.flash_module = FlashModuleStatus::NotInited;
-  dbg!("is_unsecure");
-  //self.security = self.family.is_unsecure(prog)?;
-  let test = self.family.is_unsecure(prog)?;
-  dbg!(test);
-  dbg!("target_family_confirmation");
-  self.family.target_family_confirmation(prog)?;
 
- // read_master_id_code_DSC_JTAG_ID(true, &prog)?;
- // enableCoreTAP(&prog); 
-  //read_core_id_code(false, &prog)?; // on second not
+  let jtag_id = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
+  enableCoreTAP(&prog); 
+  let core_id =  read_core_id_code(false, &prog)?; // on second not !
+  
+  self.family.target_family_confirmation(jtag_id, core_id)?;
 
-  dbg!(&self.security);
+ 
   self.once_status = OnceStatus::UnknownMode;
 
   prog.dsc_target_halt()?;
 
   self.once_status = enableONCE(&prog)?;
+
   dbg!("Final status is: ", &self.once_status);
+
+  //TODO - re-write is_unsecure without jtag_id_code command, use dsc read memory!
+  // and check on real secured target. Because we can use jtag to get id code anyway, on secured or not target,
+  // but if we read mem jtag_code in SIM_ID by once and get 0x0 target is secured, tnis method is give certain security status
+
+  //self.security = self.family.is_unsecure(prog)?;
+
+  //dbg!(&self.security);
 
   Ok(())
     
@@ -97,7 +105,6 @@ fn read_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut Pr
   if block_size > max_block_size { 
     block_size = max_block_size;
   };
-
  
   let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_size,  address)?; 
 
@@ -157,25 +164,28 @@ fn verify_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut 
   let start_address = programm_range.start;
   let end_addr: usize = programm_range.end as usize;
  
-  let mut block_size: u32 = ((end_addr as u32 + 1) - address) * 2;
+  let mut block_size: u32 = ((end_addr as u32 + 1) - address);
 
-  let max_block_size : u32 = 0x100;
+  let max_block_size : u32 = 0x80;
 
   if block_size > max_block_size { 
     block_size = max_block_size;
   };
 
-  let verify_block_size = (block_size / 2) as usize;
+  let to_verify: Vec<u8> = self.memory_buffer.download_target_block(address as usize, block_size as usize)?; 
 
-  let to_verify: Vec<u8> = self.memory_buffer.download_target_block(address as usize, verify_block_size as usize)?; 
-  let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_size,  address)?; 
+  let block_len = to_verify.len() as u32;
+
+  let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_len,  address)?; 
+
+  println!("to_verify.len() {}, memory_read.len() = {}", to_verify.len(), memory_read.len());
+
 
   if(to_verify != memory_read) {
 
     return Err(Error::TargetVerifyError(address, address + block_size));
-    
+     
   } 
-
 
     Ok(memory_read.len())
 
@@ -196,16 +206,12 @@ fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> R
 
   self.family.mass_erase(power, prog)?;
 
-  prog.target_power_reset()?;
-
   self.connect(power, prog)?;
 
   if (self.security == SecurityStatus::Secured)
   {
     return Err(Error::TargetSecured)
   }
-
-  self.power(TargetVddSelect::VddOff, prog)?;
 
   Ok(())
 

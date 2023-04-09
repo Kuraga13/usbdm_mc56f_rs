@@ -141,14 +141,15 @@ impl TargetInitActions for MC56f80xx {
 /// we have to match `jtag_id_code` with `SIM_ID`
 fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Error> {
 
-    let jtag_id_code_target =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?);
+    let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?);
     let expected_id  = self.jtag_id_code;
 
-    println!("Expected id: {:02X}, id from target : {:02X}, ", &expected_id, &jtag_id_code_target);
+    if (jtag_id_code == expected_id) {  return Ok(SecurityStatus::Unsecured)};
+
+    println!("Expected id: {:02X}, id from target : {:02X}, ", &expected_id, &jtag_id_code);
 
     let security_status =
-    match jtag_id_code_target {
-           expected_id           => SecurityStatus::Unsecured,
+    match jtag_id_code {
            0x0                        => SecurityStatus::Secured,
            0xFFFFFFFF                 => return Err(Error::TargetNotConnected),           
            _                          => SecurityStatus::Unknown,             
@@ -157,12 +158,11 @@ fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Erro
    Ok(security_status)    
 }
 /// SIM_LSHID + SIM_MSHID const (jtag id code from datasheet)  should be match with jtag_id from device
-fn target_family_confirmation(&mut self, prog : &mut Programmer)-> Result<(), Error> {
+fn target_family_confirmation(&mut self, jtag_id : Vec<u8>, core_id : Vec<u8>)-> Result<(), Error> {
 
 
-    let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?); 
-    enableCoreTAP(&prog);
-    let target_device_id = vec_as_u32_be(read_core_id_code(false, &prog)?); // on second not
+    let jtag_id_code =  vec_as_u32_be(jtag_id); 
+    let target_device_id = vec_as_u32_be(core_id);
 
     println!("Core id: {:02X}, jtag id: {:02X}, ", &target_device_id, &jtag_id_code);
     println!("Expected: {:02X}, Expected: {:02X}, ", &self.core_id, &self.jtag_id_code);
@@ -177,7 +177,6 @@ fn target_family_confirmation(&mut self, prog : &mut Programmer)-> Result<(), Er
           MC56802X_SIM_ID      => DscFamily::Mc56f802X,
           MC56803X_SIM_ID      => DscFamily::Mc56f803X, 
           0xFFFFFFFF           => return Err(Error::TargetNotConnected),
-          0x0                  => return Err(Error::TargetSecured),
           _                    => return Err(Error::InternalError("family_from_id parse Failed".to_string()))};
 
     dbg!(&family_from_id);

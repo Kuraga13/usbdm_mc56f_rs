@@ -432,7 +432,7 @@ pub trait TargetInitActions:  Send + std::fmt::Debug
 fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Error>;
 
 /// `target_family_confirmation` - check  is right Target selected
-fn target_family_confirmation(&mut self, prog : &mut Programmer)  -> Result<(), Error>;
+fn target_family_confirmation(&mut self, jtag_id : Vec<u8>, core_id : Vec<u8>)  -> Result<(), Error>;
 
 /// Mass Erase specific on Dsc Target Family mass erase algorith
 fn mass_erase(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>;

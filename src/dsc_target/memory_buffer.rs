@@ -360,7 +360,7 @@ mod tests {
         let mut buffer_new = buffer.resize(fill_byte, resize_range.clone(), 0x02);
         let mut buff: Vec<u8> = buffer_new.download_in_one();
         buff[(buffer_new.range.start / 16)]
-    }
+  }
 
     fn resize_old_start(fill_byte : u8, mut buffer : MemoryBuffer, resize_range : Range<usize>) -> u8 {
 
@@ -390,26 +390,28 @@ mod tests {
       Range{ start: start_r, end: end_r }
   }
 
-   fn all_flash(mut buffer : MemoryBuffer) -> usize {
+    fn all_flash(mut buffer : MemoryBuffer) -> usize {
 
     let flash = buffer.download_all_target();
     flash.len()
 
   }
 
-  fn export_buffer(mut buffer : MemoryBuffer) -> usize {
+    fn export_buffer(mut buffer : MemoryBuffer) -> usize {
 
     let export = buffer.download_export_fs(0xFF).unwrap();
     export.len()
 
   }
 
-  fn build_empty_dsc(range : Range<usize>) -> MemoryBuffer {
+    fn build_empty_dsc(range : Range<usize>) -> MemoryBuffer {
 
     let empty_dsc_buffer = MemoryBuffer::init_empty(0xFF, range, 0x02);
     empty_dsc_buffer
 
   }
+
+
   
     #[test]
     fn empty_buffer() {
@@ -441,6 +443,42 @@ mod tests {
 
      block_size(build_empty_dsc(Range { start: 0x0800, end: 0x1FFF }), 0x000, 0x50);
      block_size(build_empty_dsc(Range { start: 0x0800, end: 0x1FFF }), 0x2000, 0x50);
+
+    }
+
+    #[test]
+    fn download_and_verify() {
+
+      let mut buff = build_empty_dsc(Range { start: 0x4000, end: 0x7FFF });
+
+      let mut bin_start= vec![0xFF; 0x4000 * 2];
+      let mut bin_4500 = vec![0xAA; 0x500 * 2];
+      let mut bin_end  = vec![0xBB; 0x3B00 * 2];
+      
+      let mut bin = vec![];
+      bin.append(&mut bin_start);
+      bin.append(&mut bin_4500);
+      bin.append(&mut bin_end);
+
+      buff.upload_from_bin(bin).unwrap();
+
+      let mut read_block_size = 0x100;
+      let dump_from_target = vec![0xAA; read_block_size];
+      let block = buff.download_target_block(0x4000, (read_block_size / 2)).unwrap();
+      assert_eq!(block, dump_from_target);
+   
+      read_block_size = 0x21;
+      let block = buff.download_target_block(0x4500, (read_block_size)).unwrap();
+      let dump_from_target = vec![0xBB; read_block_size * 2];
+      assert_eq!(block.len(), dump_from_target.len());
+      assert_eq!(block, dump_from_target);
+            
+      read_block_size = 0x63;
+      let block = buff.download_target_block(0x4500, (read_block_size)).unwrap();
+      let dump_from_target = vec![0xBB; block.len()];
+      assert_eq!(block.len(), dump_from_target.len());
+      assert_eq!(block, dump_from_target);
+
 
     }
 

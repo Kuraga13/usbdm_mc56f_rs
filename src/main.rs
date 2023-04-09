@@ -46,6 +46,7 @@ pub fn main() -> iced::Result {
             //position: Default::default(),
         },
         antialiasing: true,  // !!! disable this option if building under OpenGL means  --features iced/glow
+                            // !!! enable this option by default (build under iced wgpu) otherwise some Nvidia card will be bugged view
         ..Default::default()
     };
 

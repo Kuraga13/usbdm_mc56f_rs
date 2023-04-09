@@ -591,10 +591,14 @@ impl Application for App {
                 {
                     TargetStatus::InProgrammingWrite => 
                     {
+                    self.progress_bar_value = 0.0;
+                    self.show_p_progress = true;
                     return iced::Command::perform(handle_progress( 0.0), Message::WriteTargetProgress);
                     }
                     TargetStatus::InProgrammingErase => 
                     {
+                    self.progress_bar_value = 0.0;
+                    self.show_p_progress = true;
                     return iced::Command::perform(handle_progress( 0.0), Message::EraseTargetProgress);
                     }
                     _ =>
