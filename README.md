@@ -3,7 +3,7 @@
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time me and my friend  practicing writing in Rust
  [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 
-![screen](https://user-images.githubusercontent.com/81683023/221999257-ebcfb0e4-84c3-4446-b51d-bdb6df5c6dc3.png)
+![screen](https://github.com/Kuraga13/usbdm_mc56f_rs/blob/7373ab1182056f523682dbd606adda16e7835270/2023-04-11_00-01-48.png)
 
 Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firmware Ver)
 
