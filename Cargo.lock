@@ -2812,7 +2812,7 @@ checksum = "ad2024452afd3874bf539695e04af6732ba06517424dbf958fdb16a01f3bef6c"
 
 [[package]]
 name = "usbdm_rs"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "async-trait",
  "bincode",
