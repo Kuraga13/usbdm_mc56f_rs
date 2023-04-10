@@ -120,7 +120,7 @@ impl FlashRoutine {
 
         self.data_header.flash_operation = OP_BLANK_CHECK;
         self.data_header.address = start_address;
-        self.data_header.data_size = (end_address - start_address) as u16;
+        self.data_header.data_size = (end_address - start_address + 1) as u16;
 
         prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
         prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
