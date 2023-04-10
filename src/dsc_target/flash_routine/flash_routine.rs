@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::usbdm::registers::*;
+
 #[derive(Debug)]
 pub struct FlashRoutine {
     dsc_family: DscFamily,
@@ -94,9 +96,15 @@ impl FlashRoutine {
         prog.dsc_write_pc(self.routine.code_entry)?;
         prog.dsc_target_go()?;
 
-        thread::sleep(time::Duration::from_millis(100));
- 
-        let once_status = enableONCE(&prog)?;
+        let mut timeout = 30;
+        loop {
+            thread::sleep(time::Duration::from_millis(20));
+            let once_status = enableONCE(&prog)?;
+            if once_status == OnceStatus::DebugMode {break}
+            timeout -= 1;
+            if timeout <= 0 { println!("Routine halt failed!!! Timeout used"); break}
+        }
+
         prog.dsc_target_halt()?;
 
         let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
