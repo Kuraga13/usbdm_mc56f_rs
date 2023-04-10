@@ -415,10 +415,16 @@ impl Programmer
     //
     // @note Assumes Core TAP is active & in RUN-TEST/IDLE
     // @note Leaves Core TAP in RUN-TEST/IDLE
-    //
+    /// `dsc_target_go` - set DSC to run, (execute mode) 
+    /// 
+    /// about `dsc_write_once_reg` : from DSP56800 Family Manual : `Enter the debug processing state if the PWD bit is clear in the EOnCE port’s OCR register, and wait
+    ///for EOnCE commands. If this bit is not clear, then the processor simply executes two NOPs and continues
+    ///program execution`. `Attention`! Each flash routine, in end of task use self dgb_halt assembly instruction, 
+    /// if PWD bit not inited DSC not halt after execution (just executes two NOPs), and it will be undef. bev.! 
     pub fn dsc_target_go(&self) -> Result<(), Error> {
 
         let once_ctrl_reg = self.dsc_read_once_reg(DscRegisters::DscRegOcr)?;
+
         self.dsc_write_once_reg(DscRegisters::DscRegOcr, ((once_ctrl_reg | (1<<5)) & !0x05)); //set OCR_PWU and clear OCR_ISC_SINGLE_STEP
 
         let mut sequence: Vec<u8> = Vec::new();
