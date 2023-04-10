@@ -17,6 +17,7 @@ Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firm
 | MC56F8025 |✔️|✔️|✔️|
 | MC56F8035 |✔️|✔️|✔️|
 
+If you have tested any of the targets that we did not test, please let us know in the discussion or in the issues if there are any problems.
 
 ###  Motivation
 The original project does not support reading the controller. This is the underlying reason. Little things associated with the inconvenience of management.
