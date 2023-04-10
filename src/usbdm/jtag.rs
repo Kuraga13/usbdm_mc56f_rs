@@ -352,6 +352,7 @@ impl From <u8>  for OnceStatus  {
      /// let once_status = enableONCE(&programmer)?;
      /// 
      /// ```
+     /// `EOnCE` = `Enhanced On-chip emulation (unit)`
      pub fn enableONCE(prg:  &Programmer) -> Result<(OnceStatus), Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
