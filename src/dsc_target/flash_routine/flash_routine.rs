@@ -116,6 +116,40 @@ impl FlashRoutine {
         Ok(())
     }
 
+    fn routine_verify_range(&mut self, prog: &mut Programmer, start_address: u32, end_address: u32) -> Result<bool, Error> {
+
+        self.data_header.flash_operation = OP_BLANK_CHECK;
+        self.data_header.address = start_address;
+        self.data_header.data_size = (end_address - start_address) as u16;
+
+        prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
+        prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
+
+        prog.dsc_write_pc(self.routine.code_entry)?;
+        prog.dsc_target_go()?;
+
+        let mut timeout = 30;
+        loop {
+            thread::sleep(time::Duration::from_millis(20));
+            let once_status = enableONCE(&prog)?;
+            if once_status == OnceStatus::DebugMode {break}
+            timeout -= 1;
+            if timeout <= 0 { println!("Routine halt failed!!! Timeout used"); break}
+        }
+
+        prog.dsc_target_halt()?;
+
+        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
+        let header: DataHeader = DataHeader::from_vec(header_vec)?;
+        
+        if (header.flash_operation & 0x8000) == 0 {
+            return Err(Error::InternalError("No complition flag in blank_check".to_string())) }
+
+        if header.error_code == 0 {return Ok(true)}
+        if header.error_code == 6 {return Ok(false)}
+        Err(Error::InternalError("Blank Check Error".to_string()))
+    }
+
     pub fn dsc_erase_routine(&mut self, prog: &mut Programmer) -> Result<(), Error> {
 
         self.data_header.flash_operation = OP_ERASE_BLOCK;
