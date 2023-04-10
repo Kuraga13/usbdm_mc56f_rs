@@ -501,6 +501,82 @@ impl Programmer
         self.dsc_write_core_reg(DscRegisters::DscRegPc, value)
     }
 
+
+    // Read ONCE register
+    //
+    // @param regNo    - Register number
+    // @param regValue - Value from register
+    //
+    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
+    // @note Leaves Core TAP in RUN-TEST/IDLE
+    //
+    pub fn dsc_read_once_reg(&self, reg: DscRegisters) -> Result<u32, Error> {
+        if (reg as u8) < DSC_FIRST_ONCE_REGISTER || (reg as u8) > DSC_LAST_ONCE_REGISTER {
+            return Err(Error::InternalError("Unexpected input value in dsc_read_once_reg".to_string())) 
+        }
+        
+        let reg_index: u8 = reg as u8 - DSC_FIRST_ONCE_REGISTER;
+        let command: u8 = EONCE_REGISTER_DETAILS[reg_index as usize].address | ONCE_CMD_READ;
+        let length: u8 = EONCE_REGISTER_DETAILS[reg_index as usize].length;
+        let answer_length: u8 = BITS_TO_BYTES(length);
+
+        let mut sequence: Vec<u8> = vec![];
+        sequence.push(JTAG_MOVE_DR_SCAN);  // Access ONCE (DR-CHAIN)
+        sequence.push(JTAG_SET_EXIT_SHIFT_DR);
+        sequence.push(JTAG_SHIFT_OUT_Q(ONCE_CMD_LENGTH)); sequence.push(command);  // ONCE Command to Read register + RegNo
+        sequence.push(JTAG_SET_EXIT_IDLE);
+        sequence.push(JTAG_SHIFT_IN_Q(length));  // Shift-in data value
+        sequence.push(JTAG_END);
+
+        let answer_vec = self.exec_jtag_seq(sequence, answer_length)?;
+
+        if answer_vec.len() > 4 {return Err(Error::InternalError("Answer too long in read_eonce_reg".to_string()))}
+        if answer_vec.len() == 0 {return Err(Error::InternalError("No answer in read_eonce_reg".to_string()))}
+    
+        let mut answer: u32 = 0;
+        for i in 0..answer_vec.len(){ 
+            answer = (answer << 8) | answer_vec[i] as u32; 
+        }
+    
+        Ok(answer)
+    }
+
+    // Write ONCE register
+    //
+    // @param regNo     - Register number
+    // @param modifiers - Modifier for command byte to ONCE register
+    // @param regValue  - Value for register
+    //
+    // @note Assumes Core TAP is active & in RUN-TEST/IDLE
+    // @note Leaves Core TAP in RUN-TEST/IDLE
+    //
+    pub fn dsc_write_once_reg(&self, reg: DscRegisters, value: u32) -> Result<(), Error> {
+        if (reg as u8) < DSC_FIRST_ONCE_REGISTER || (reg as u8) > DSC_LAST_ONCE_REGISTER {
+            return Err(Error::InternalError("Unexpected input value in dsc_write_once_reg".to_string())) 
+        }
+
+        let reg_index: u8 = reg as u8 - DSC_FIRST_ONCE_REGISTER;
+        let command: u8 = EONCE_REGISTER_DETAILS[reg_index as usize].address | ONCE_CMD_WRITE;
+        let length: u8 = EONCE_REGISTER_DETAILS[reg_index as usize].length;
+
+        let mut sequence: Vec<u8> = vec![];
+        sequence.push(JTAG_MOVE_DR_SCAN);            // Write to ONCE (DR-CHAIN)
+        sequence.push(JTAG_SET_EXIT_SHIFT_DR);
+        sequence.push(JTAG_SHIFT_OUT_Q(ONCE_CMD_LENGTH)); sequence.push(command); // ONCE command - Write register+RegNo+modifier
+        sequence.push(JTAG_SET_EXIT_IDLE);
+        sequence.push(JTAG_SHIFT_OUT_Q(length));     // Shift-out data value
+        sequence.push (value as u8);  // Immediate value
+        sequence.push((value >>  8) as u8);
+        sequence.push((value >> 16) as u8);
+        sequence.push((value >> 24) as u8);
+        sequence.push(JTAG_END);
+
+        self.exec_jtag_seq(sequence, 0)?;
+
+        Ok(())
+ }
+
+
 }
 
 #[cfg(test)]

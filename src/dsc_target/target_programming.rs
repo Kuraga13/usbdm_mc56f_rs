@@ -178,10 +178,11 @@ fn verify_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut 
 
   let memory_read = prog.dsc_read_memory(memory_space_t::MS_PWORD, block_len,  address)?; 
 
-  println!("to_verify.len() {}, memory_read.len() = {}", to_verify.len(), memory_read.len());
-
-
   if(to_verify != memory_read) {
+
+    println!("to_verify length: {} data: {:?}", to_verify.len(), to_verify);
+    println!("");
+    println!("memory_read length: {} data: {:?}", memory_read.len(), memory_read);
 
     return Err(Error::TargetVerifyError(address, address + block_size));
      
