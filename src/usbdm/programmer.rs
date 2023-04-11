@@ -401,6 +401,7 @@ pub fn target_hardware_reset(&mut self) -> Result<(), Error>{
 pub fn target_power_reset(&mut self, user_selected : TargetVddSelect) -> Result<(), Error>{
 
     self.set_vdd(TargetVddSelect::VddOff)?;
+    println!("target_power_reset");
     thread::sleep(time::Duration::from_millis(self.settings.reset_duration));
     self.check_expected_power(TargetVddSelect::VddOff)?;
     self.set_vdd(user_selected)?;

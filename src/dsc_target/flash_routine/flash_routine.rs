@@ -116,7 +116,7 @@ impl FlashRoutine {
         Ok(())
     }
 
-    fn routine_blank_check_range(&mut self, prog: &mut Programmer, start_address: u32, end_address: u32) -> Result<bool, Error> {
+    pub fn routine_blank_check_range(&mut self, prog: &mut Programmer, start_address: u32, end_address: u32) -> Result<bool, Error> {
 
         self.data_header.flash_operation = OP_BLANK_CHECK;
         self.data_header.address = start_address;

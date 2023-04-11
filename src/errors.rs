@@ -24,6 +24,7 @@ pub enum Error {
    TargetNotInDebugMode,
    TargetWrongFamilySelected(String, String),
    TargetWriteError,
+   TargetNotBlanked(u32, u32),
    TargetVerifyError(u32, u32),
    MemorySpaceTypeAddress_Out,
    Unknown,
@@ -151,6 +152,13 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
           title   = "Target Secured".to_string();
           message =  "You can skeep security only by mass erasing target. ".to_string();
+
+         }
+         Error::TargetNotBlanked(start_r, end_r) =>
+         {
+
+          title   = "Target not blanked!".to_string();
+          message = "Erase target before write. Failed blank check on address range : ".to_string()  +  &format!("{:#06X}", start_r) + &"...".to_string() + &format!("{:#06X}", end_r)+ &"\n".to_string();
 
          }
          Error::TargetVerifyError(start_r, end_r) =>

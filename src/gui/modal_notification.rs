@@ -102,7 +102,7 @@ pub fn erase_write_confirm_modal<'a>(show_confirmation : bool, content: Element<
         {
          
             title   = "Confirm Write Target".to_string();
-            message = (format!("This action will erase and write all flash memory"));
+            message = (format!("Are you sure you want write target?"));
    
    
         }
