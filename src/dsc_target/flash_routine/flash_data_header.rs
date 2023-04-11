@@ -165,7 +165,7 @@ pub fn parse_flash_err(error: u16) -> String {
         FLASH_ERR_PROG_FAILED       => String::from("STM - Programming operation failed - general"),
         FLASH_ERR_PROG_WPROT        => String::from("STM - Programming operation failed - write protected"),
         FLASH_ERR_VERIFY_FAILED     => String::from("Verify failed"),
-        FLASH_ERR_ERASE_FAILED      => String::from("Erase or Blank Check failed"),
+        FLASH_ERR_ERASE_FAILED      => String::from("Blank Check failed"),
         FLASH_ERR_TRAP              => String::from("Program trapped (illegal instruction/location etc.)"),
         FLASH_ERR_PROG_ACCERR       => String::from("Kinetis/CFVx - Programming operation failed - ACCERR"),
         FLASH_ERR_PROG_FPVIOL       => String::from("Kinetis/CFVx - Programming operation failed - FPVIOL"),

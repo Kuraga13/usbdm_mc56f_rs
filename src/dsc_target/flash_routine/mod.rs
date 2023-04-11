@@ -6,6 +6,7 @@ mod flash_constants;
 use crate::usbdm::Programmer;
 use crate::usbdm::jtag::{OnceStatus, enableONCE};
 use crate::usbdm::constants::{memory_space_t};
+use crate::usbdm::registers::*;
 use crate::errors::Error;
 use crate::dsc_target::target_factory::DscFamily;
 use serde::{Deserialize, Serialize};
