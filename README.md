@@ -11,7 +11,7 @@ Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firm
 | DSC  |  Tested | Read | Write/Erase |
 | --- | :---: | :---: | :---: |
 | MC56F8002 |  |  |  |
-| MC56F8006 |  |  |  |
+| MC56F8006 |✔️|✔️|✔️|
 | MC56F8011 |  |  |  |
 | MC56F8013 |  |  |  |
 | MC56F8025 |✔️|✔️|✔️|
