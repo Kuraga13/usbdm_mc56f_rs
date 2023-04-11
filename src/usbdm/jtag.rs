@@ -402,7 +402,7 @@ impl Programmer
                 }
             if(once_status == OnceStatus::UnknownMode) 
                 {
-                    return Err((Error::TargetNotConnected))
+                    return Err((Error::TargetNotConnected("DSC enter debug mode failed!".to_string())))
                 }
         }
         if (once_status != OnceStatus::DebugMode) {

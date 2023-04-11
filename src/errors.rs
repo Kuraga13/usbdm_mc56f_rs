@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+
 use std::fmt;
 use std::io;
 use crate::file_buffer::data_parser;
@@ -19,7 +20,7 @@ pub enum Error {
    PowerStateError,
    PowerErrorInFeedback, //Target Vdd error Possible overload !
    LostConnection,
-   TargetNotConnected,
+   TargetNotConnected(String),
    TargetSecured,
    TargetNotInDebugMode,
    TargetWrongFamilySelected(String, String),
@@ -84,7 +85,7 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
 
 
          }
-         Error::TargetNotConnected =>
+         Error::TargetNotConnected(source) =>
          {
 
           title   = "Target not connected".to_string();

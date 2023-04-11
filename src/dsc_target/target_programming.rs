@@ -152,12 +152,9 @@ fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write
     else { }  
   }
 
-  
-  if let Ok(()) = self.flash_routine.dsc_write_prog_mem(prog, data_to_write, address) 
-  {
-    Ok(())
-  } 
-   else {  return Err(Error::TargetWriteError); }  
+  self.flash_routine.dsc_write_prog_mem(prog, data_to_write, address)?;
+
+  Ok(())
  
 }
 
