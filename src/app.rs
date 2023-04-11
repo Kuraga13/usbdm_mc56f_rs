@@ -831,6 +831,7 @@ impl Application for App {
             dbg!("Read Target End!");
             dsc.memory_buffer.upload_from_target(self.progr_buff.clone());
             self.show_p_progress = false;
+            self.check_power_state();
             self.target_status = TargetStatus::Connected;
             return iced::Command::none();
 
@@ -962,6 +963,7 @@ impl Application for App {
                 }
                 
             self.show_p_progress = false;
+            self.check_power_state();
             self.target_status = TargetStatus::Connected;
             notify_user(self, "Verification successfully completed".to_string(), "Verify Target End".to_string());
             return iced::Command::none();
@@ -1000,6 +1002,7 @@ impl Application for App {
                 }
                 Err(_e) =>
                 {
+                self.show_p_progress = false;
                 show_error(self, _e);
                 self.check_power_state();
                 println!("erase_target error");
@@ -1009,6 +1012,7 @@ impl Application for App {
 
               self.show_p_progress = false;
               notify_user(self, "Erase successfully completed".to_string(), "Erase Target End".to_string());
+              self.check_power_state();
               self.target_status = TargetStatus::Connected;
               return iced::Command::none();
             }

@@ -250,7 +250,7 @@ impl TargetDsc {
       DscFamily::Mc56f800X |  DscFamily::Mc56f801X  | DscFamily::Mc56f802X | DscFamily::Mc56f803X   => 
       {
 
-        let init_type = Box::new(MC56f80xx::new(dsc.jtag_id_code, dsc.core_id_code, dsc.family));       
+        let init_type = Box::new(MC56f80xx::new(dsc.jtag_id_code, dsc.core_id_code, dsc.family)?);       
         Some(init_type)
       }
       _ =>   { None }      };

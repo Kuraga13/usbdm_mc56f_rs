@@ -7,6 +7,14 @@ pub fn vec_as_u32_be(vec:  Vec<u8>) -> u32 {
     ((vec[3] as u32) <<  0)
 }
 
+///`msh_lsh_vec_as_u32_be` decode Vec<u8> to u32
+pub fn msh_lsh_vec_as_u32_be(lsh_vec:  Vec<u8>, msh_vec:  Vec<u8>) -> u32 {
+  ((msh_vec[1] as u32) << 24) +
+  ((msh_vec[0] as u32) << 16) +
+  ((lsh_vec[1] as u32) <<  8) +
+  ((lsh_vec[0] as u32) <<  0)
+}
+
 ///`print_vec_memory` for debug memory read, sequnces etc., use for print small block in Vec<u8>
 pub fn print_vec_memory(mem : &Vec<u8>) {
     

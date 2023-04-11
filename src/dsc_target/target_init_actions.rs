@@ -13,11 +13,19 @@ use std::time::Duration;
 
 /// `MC56800X_SIM_ID` combine two bytes of JTAG ID (SIM_MSHID+SIM_LSHID), in mc56801x is  $01F2 401D
 pub const MC56800X_SIM_ID : u32 =  0x01F2601D;
+pub const MC56800X_SIM_MSH_ID_ADD : u32 =  0xF242;
+pub const MC56800X_SIM_LSH_ID_ADD : u32 =  0xF243;
+
 /// `MC56801X_SIM_ID` combine two bytes of JTAG ID (SIM_MSHID+SIM_LSHID), in mc56801x is  $01F2 401D
 pub const MC56801X_SIM_ID : u32 =  0x01F2401D;
+pub const MC56801X_SIM_MSH_ID_ADD : u32 =  0xF146;
+pub const MC56801X_SIM_LSH_ID_ADD : u32 =  0xF147;
+
 /// `MC56802X_SIM_ID` combine two bytes of JTAG ID (SIM_MSHID+SIM_LSHID), in mc568023-35 is  $01F2801D
 pub const MC56802X_SIM_ID : u32 =  0x01F2801D;
 pub const MC56803X_SIM_ID : u32 =  0x01F2801D;
+pub const MC568023X_SIM_MSH_ID_ADD : u32 =  0xF106;
+pub const MC568023X_SIM_LSH_ID_ADD : u32 =  0xF107;
 
 ///`MC56f80XX_FLASH_MODULE_CLKDIV` Clock Divider (CLKDIV) Register
 pub const MC56F80XX_FLASH_MODULE_CLKDIV : u32 =  0xF400;
@@ -46,6 +54,8 @@ pub const MC56F80XX_FLASH_MODULE_USTAT: u32 =  0xF413;
 pub struct MC56f80xx {
 
    jtag_id_code : u32,
+   msh_id_addr  : u32,
+   lsh_id_addr  : u32,
    core_id      : u32,
    family       : DscFamily,
 
@@ -53,12 +63,22 @@ pub struct MC56f80xx {
 
 impl MC56f80xx {
 
-pub fn new(jtag_id_code : u32, core_id : u32, family : DscFamily) -> Self {
+pub fn new(jtag_id_code : u32, core_id : u32, family : DscFamily) -> Result<Self, Error> {
 
-   Self {
+   let (msh_id, lsh_id) =
+    match family {
+      DscFamily::Mc56f800X      => (MC56800X_SIM_MSH_ID_ADD, MC56800X_SIM_LSH_ID_ADD),
+      DscFamily::Mc56f801X      => (MC56801X_SIM_MSH_ID_ADD, MC56801X_SIM_LSH_ID_ADD),
+      DscFamily::Mc56f802X      => (MC568023X_SIM_MSH_ID_ADD, MC568023X_SIM_LSH_ID_ADD),
+      DscFamily::Mc56f803X      => (MC568023X_SIM_MSH_ID_ADD, MC568023X_SIM_LSH_ID_ADD),
+      _                         => return Err(Error::InternalError("msh_lsh id from family parse Failed".to_string()))};
+ 
+   Ok( Self {
       jtag_id_code,
+      msh_id_addr : msh_id,
+      lsh_id_addr : lsh_id,
       core_id,
-      family, }  
+      family, })  
 }
 
 
@@ -141,7 +161,16 @@ impl TargetInitActions for MC56f80xx {
 /// we have to match `jtag_id_code` with `SIM_ID`
 fn is_unsecure(&mut self, prog : &mut Programmer) -> Result<SecurityStatus, Error> {
 
-    let jtag_id_code =  vec_as_u32_be(read_master_id_code_DSC_JTAG_ID(true, &prog)?);
+    let jtag_id_msh = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, self.msh_id_addr)?;
+    let jtag_id_lsh = prog.dsc_read_memory(memory_space_t::MS_XWORD, 0x02, self.lsh_id_addr)?;
+
+    print_vec_one_line(&jtag_id_lsh);
+    print_vec_one_line(&jtag_id_msh);
+
+    let jtag_id_code =  msh_lsh_vec_as_u32_be(jtag_id_lsh, jtag_id_msh);
+    println!("jtag id calculated: {:02X}", &jtag_id_code);
+
+    
     let expected_id  = self.jtag_id_code;
 
     if (jtag_id_code == expected_id) {  return Ok(SecurityStatus::Unsecured)};

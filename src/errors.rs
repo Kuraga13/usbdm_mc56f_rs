@@ -146,6 +146,13 @@ pub fn get_title_message_error_modal(err : Error) -> (String, String)
           message =  "Check that Target is erased before write flash".to_string();
 
          }
+         Error::TargetSecured =>
+         {
+
+          title   = "Target Secured".to_string();
+          message =  "You can skeep security only by mass erasing target. ".to_string();
+
+         }
          Error::TargetVerifyError(start_r, end_r) =>
          {
 

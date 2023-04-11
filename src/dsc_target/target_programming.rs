@@ -29,7 +29,7 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   // that mean:
   // - check &reset power for certain time and check is voltage
   // - check & reset target jtag (to execution mode)
-  prog.target_power_reset()?;
+  prog.target_power_reset(power)?;
   self.power(power, prog)?;
  
   self.flash_module = FlashModuleStatus::NotInited;
@@ -49,13 +49,9 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
 
   dbg!("Final status is: ", &self.once_status);
 
-  //TODO - re-write is_unsecure without jtag_id_code command, use dsc read memory!
-  // and check on real secured target. Because we can use jtag to get id code anyway, on secured or not target,
-  // but if we read mem jtag_code in SIM_ID by once and get 0x0 target is secured, tnis method is give certain security status
+  self.security = self.family.is_unsecure(prog)?;
 
-  //self.security = self.family.is_unsecure(prog)?;
-
-  //dbg!(&self.security);
+  dbg!(&self.security);
 
   Ok(())
     
