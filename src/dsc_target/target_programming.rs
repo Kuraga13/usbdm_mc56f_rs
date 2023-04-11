@@ -31,7 +31,11 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   // - check & reset target jtag (to execution mode)
   prog.target_power_reset(power)?;
   self.power(power, prog)?;
- 
+  
+  self.once_status = enableONCE(&prog)?;
+
+  dbg!("Start status is: ", &self.once_status);
+
   self.flash_module = FlashModuleStatus::NotInited;
 
   let jtag_id = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
