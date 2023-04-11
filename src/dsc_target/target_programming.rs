@@ -141,9 +141,18 @@ fn write_target(&mut self, power : TargetVddSelect, address : u32, data_to_write
   { 
     if let Ok(dsc_bus_freq) =  self.flash_routine.get_target_speed(prog) {
      self.flash_module = self.family.init_for_write_erase(power, prog, dsc_bus_freq)?; 
+
     } else {  return Err(Error::TargetWriteError); }  
+
+    let flash_range = self.programm_range().expect("Get mem range err App");
+
+    let blank = self.flash_routine.routine_blank_check_range(prog, flash_range.start as u32, flash_range.end as u32)?; 
+    if(blank != true)
+    { return Err(Error::TargetNotBlanked); }
+    else { }  
   }
 
+  
   if let Ok(()) = self.flash_routine.dsc_write_prog_mem(prog, data_to_write, address) 
   {
     Ok(())
