@@ -28,18 +28,18 @@ pub const ONCE_CMD_NOREG : u8 = 0x1F;  // used for no register
 
 // EONCE_OCR register details
 //--------------------------------------------------------------------
-const OCR_ERLO            : u8 = 1<<7;
-const OCR_PWU             : u8 = 1<<5;
-const OCR_DEVEN           : u8 = 1<<4;
-const OCR_LTE             : u8 = 1<<3;
-const OCR_ISC_0           : u8 = 0x00;
-const OCR_ISC_1           : u8 = 0x01;
-const OCR_ISC_2           : u8 = 0x02;
-const OCR_ISC_3           : u8 = 0x03;
-const OCR_ISC_4           : u8 = 0x04;
-const OCR_ISC_SINGLE_STEP : u8 = 0x05;
-const OCR_ISC_6           : u8 = 0x06;
-const OCR_ISC_7           : u8 = 0x07;
+pub const OCR_ERLO            : u8 = 1<<7;
+pub const OCR_PWU             : u8 = 1<<5;
+pub const OCR_DEVEN           : u8 = 1<<4;
+pub const OCR_LTE             : u8 = 1<<3;
+pub const OCR_ISC_0           : u8 = 0x00;
+pub const OCR_ISC_1           : u8 = 0x01;
+pub const OCR_ISC_2           : u8 = 0x02;
+pub const OCR_ISC_3           : u8 = 0x03;
+pub const OCR_ISC_4           : u8 = 0x04;
+pub const OCR_ISC_SINGLE_STEP : u8 = 0x05;
+pub const OCR_ISC_6           : u8 = 0x06;
+pub const OCR_ISC_7           : u8 = 0x07;
 
 //Aliases for Cached routines
 const JTAG_SUB_EXECUTE    : u8 = JTAG_SUBA;       // execute a series of target instructions (firmware implemented)

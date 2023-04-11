@@ -423,10 +423,6 @@ impl Programmer
     /// if PWD bit not inited DSC not halt after execution (just executes two NOPs), and it will be undef. bev.! 
     pub fn dsc_target_go(&self) -> Result<(), Error> {
 
-        let once_ctrl_reg = self.dsc_read_once_reg(DscRegisters::DscRegOcr)?;
-
-        self.dsc_write_once_reg(DscRegisters::DscRegOcr, ((once_ctrl_reg | (1<<5)) & !0x05)); //set OCR_PWU and clear OCR_ISC_SINGLE_STEP
-
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_DR_SCAN);  // Write to ONCE (DR-CHAIN)
         sequence.push(JTAG_SET_EXIT_IDLE);

@@ -93,25 +93,16 @@ impl FlashRoutine {
         prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
         prog.dsc_write_memory(self.routine.data_header_address_memspace, data, self.data_header.data_address)?;
 
-        prog.dsc_write_pc(self.routine.code_entry)?;
-        prog.dsc_target_go()?;
-
-        let mut timeout = 30;
-        loop {
-            thread::sleep(time::Duration::from_millis(20));
-            let once_status = enableONCE(&prog)?;
-            if once_status == OnceStatus::DebugMode {break}
-            timeout -= 1;
-            if timeout <= 0 { println!("Routine halt failed!!! Timeout used"); break}
-        }
-
-        prog.dsc_target_halt()?;
+        self.dsc_routine_go(prog)?;
 
         let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
         let header: DataHeader = DataHeader::from_vec(header_vec)?;
         
         if (header.flash_operation & 0x8000) == 0 {
             return Err(Error::InternalError("No complition flag in write_block".to_string())) }
+
+        if header.error_code != 0 {
+            return Err(Error::InternalError("Write Block Error: ".to_string() + &parse_flash_err(header.error_code))) }
 
         Ok(())
     }
@@ -125,7 +116,46 @@ impl FlashRoutine {
         prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
         prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
 
+        self.dsc_routine_go(prog)?;
+
+        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
+        let header: DataHeader = DataHeader::from_vec(header_vec)?;
+        
+        if (header.flash_operation & 0x8000) == 0 {
+            return Err(Error::InternalError("No complition flag in blank_check".to_string())) }
+
+        match header.error_code {
+            0x00 => Ok(true),
+            0x06 => Ok(false),
+            _    => Err(Error::InternalError("Blank Check Error: ".to_string() + &parse_flash_err(header.error_code))),
+        }
+    }
+
+    pub fn dsc_erase_routine(&mut self, prog: &mut Programmer) -> Result<(), Error> {
+
+        self.data_header.flash_operation = OP_ERASE_BLOCK;
+
+        prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
+        prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
+        
+        self.dsc_routine_go(prog)?;
+
+        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
+        let header: DataHeader = DataHeader::from_vec(header_vec)?;
+        
+        if (header.flash_operation & 0x8000) == 0 {
+            return Err(Error::InternalError("No complition flag in erase_block".to_string())) }
+
+        Ok(())
+    }
+
+    fn dsc_routine_go (&mut self, prog: &mut Programmer) -> Result<(), Error> {
         prog.dsc_write_pc(self.routine.code_entry)?;
+
+        //set OCR_PWU and clear OCR_ISC_SINGLE_STEP
+        let once_ctrl_reg = prog.dsc_read_once_reg(DscRegisters::DscRegOcr)?;
+        prog.dsc_write_once_reg(DscRegisters::DscRegOcr, ((once_ctrl_reg | OCR_PWU as u32) & OCR_ISC_SINGLE_STEP as u32));
+
         prog.dsc_target_go()?;
 
         let mut timeout = 30;
@@ -138,38 +168,6 @@ impl FlashRoutine {
         }
 
         prog.dsc_target_halt()?;
-
-        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
-        let header: DataHeader = DataHeader::from_vec(header_vec)?;
-        
-        if (header.flash_operation & 0x8000) == 0 {
-            return Err(Error::InternalError("No complition flag in blank_check".to_string())) }
-
-        if header.error_code == 0 {return Ok(true)}
-        if header.error_code == 6 {return Ok(false)}
-        Err(Error::InternalError("Blank Check Error".to_string()))
-    }
-
-    pub fn dsc_erase_routine(&mut self, prog: &mut Programmer) -> Result<(), Error> {
-
-        self.data_header.flash_operation = OP_ERASE_BLOCK;
-
-        prog.dsc_write_memory(self.routine.address_memspace, self.routine.routine.clone(), self.routine.address)?;
-        prog.dsc_write_memory(self.routine.data_header_address_memspace, self.data_header.to_vec()?, self.routine.data_header_address)?;
-
-        prog.dsc_write_pc(self.routine.code_entry)?;
-        prog.dsc_target_go()?;
-
-        thread::sleep(time::Duration::from_millis(100));
- 
-        let once_status = enableONCE(&prog)?;
-        prog.dsc_target_halt()?;
-
-        let header_vec: Vec<u8> = prog.dsc_read_memory(self.routine.data_header_address_memspace, self.data_header.len()?, self.routine.data_header_address)?; 
-        let header: DataHeader = DataHeader::from_vec(header_vec)?;
-        
-        if (header.flash_operation & 0x8000) == 0 {
-            return Err(Error::InternalError("No complition flag in erase_block".to_string())) }
 
         Ok(())
     }
