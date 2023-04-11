@@ -31,12 +31,18 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   // - check & reset target jtag (to execution mode)
   prog.target_power_reset(power)?;
   self.power(power, prog)?;
+  
+  self.once_status = enableONCE(&prog)?;
+  dbg!("Start status is: ", &self.once_status);  
+
+  if(self.once_status != OnceStatus::ExecuteMode)
+  {
   // need be tested! some dsc start status unknown, but looks like is in debug mode!
   prog.dsc_target_go()?;
+  }
 
   self.once_status = enableONCE(&prog)?;
-
-  dbg!("Start status is: ", &self.once_status);
+  dbg!("After force exec status is: ", &self.once_status);
 
   self.flash_module = FlashModuleStatus::NotInited;
 
