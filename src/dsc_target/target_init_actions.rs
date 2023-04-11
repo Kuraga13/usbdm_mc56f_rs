@@ -197,6 +197,7 @@ fn target_family_confirmation(&mut self, jtag_id : Vec<u8>, core_id : Vec<u8>)->
 
     let expected_id  = self.jtag_id_code;
     if (jtag_id_code == expected_id) { return Ok(())};
+    if (self.core_id == target_device_id) { return Ok(())};
 
     let family_from_id =
     match jtag_id_code {
@@ -204,7 +205,7 @@ fn target_family_confirmation(&mut self, jtag_id : Vec<u8>, core_id : Vec<u8>)->
           MC56801X_SIM_ID      => DscFamily::Mc56f801X,
           MC56802X_SIM_ID      => DscFamily::Mc56f802X,
           MC56803X_SIM_ID      => DscFamily::Mc56f803X, 
-         // 0xFFFFFFFF           => return Err(Error::TargetNotConnected("id 0xFFFFFFFF".to_string())),
+          0xFFFFFFFF           => return Err(Error::TargetNotConnected("id 0xFFFFFFFF".to_string())),
           _                    => return Err(Error::TargetNotConnected(format!("{:04X?}", jtag_id_code)))};
 
     dbg!(&family_from_id);
