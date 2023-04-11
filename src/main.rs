@@ -1,5 +1,5 @@
 #![allow(unused)]
-//#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -45,7 +45,7 @@ pub fn main() -> iced::Result {
             ..Default::default()
             //position: Default::default(),
         },
-        antialiasing: true,  // !!! disable this option if building under OpenGL means  --features iced/glow
+       // antialiasing: true,  // !!! disable this option if building under OpenGL means  --features iced/glow
                             // !!! enable this option by default (build under iced wgpu) otherwise some Nvidia card will be bugged view
         ..Default::default()
     };
