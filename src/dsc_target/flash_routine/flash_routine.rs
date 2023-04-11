@@ -154,7 +154,7 @@ impl FlashRoutine {
 
         //set OCR_PWU and clear OCR_ISC_SINGLE_STEP
         let once_ctrl_reg = prog.dsc_read_once_reg(DscRegisters::DscRegOcr)?;
-        prog.dsc_write_once_reg(DscRegisters::DscRegOcr, ((once_ctrl_reg | OCR_PWU as u32) & OCR_ISC_SINGLE_STEP as u32));
+        prog.dsc_write_once_reg(DscRegisters::DscRegOcr, ((once_ctrl_reg | OCR_PWU as u32) & !OCR_ISC_SINGLE_STEP as u32));
 
         prog.dsc_target_go()?;
 
