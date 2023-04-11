@@ -33,13 +33,21 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   self.power(power, prog)?;
   
   self.once_status = enableONCE(&prog)?;
+  dbg!("Start status is: ", &self.once_status);  
 
-  dbg!("Start status is: ", &self.once_status);
+  if(self.once_status != OnceStatus::ExecuteMode)
+  {
+  // need be tested! some dsc start status unknown, but looks like is in debug mode!
+  prog.dsc_target_go()?;
+  }
+
+  self.once_status = enableONCE(&prog)?;
+  dbg!("After force exec status is: ", &self.once_status);
 
   self.flash_module = FlashModuleStatus::NotInited;
 
   let jtag_id = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
-  enableCoreTAP(&prog); 
+  enableCoreTAP(&prog)?; 
   let core_id =  read_core_id_code(false, &prog)?; // on second not !
   
   self.family.target_family_confirmation(jtag_id, core_id)?;
