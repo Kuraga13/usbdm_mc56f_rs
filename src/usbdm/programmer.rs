@@ -308,7 +308,7 @@ fn set_speed(&mut self) -> Result<(), Error>{
 
     let mut full_command : Vec<u8> = Vec::new();
     full_command.push(command_leght);
-    full_command.push(bdm_commands::CMD_USBDM_JTAG_EXECUTE_SEQUENCE | 0x80);
+    full_command.push(bdm_commands::CMD_USBDM_JTAG_EXECUTE_SEQUENCE);
     full_command.push(answer_lenght);
     full_command.push(jtag_seq.len() as u8);
     full_command.append(&mut jtag_seq);

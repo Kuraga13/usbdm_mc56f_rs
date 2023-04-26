@@ -546,14 +546,14 @@ mod tests {
       assert_eq!(buff.buffer.len() * 16, 64 * 1024);     
 
       buff = build_empty_dsc(Range { start: 0x800, end: 0x1FFF });
-      number_of_read_pack = 0x20000 / test_block_size;
+      number_of_read_pack = 0x3000 / test_block_size;
       let mut dump2 = vec![vec![0xFF; test_block_size]; number_of_read_pack];
       buff.upload_from_target(dump2).unwrap();
       assert_eq!(buff.buffer.len(), 768);               
       assert_eq!(buff.buffer.len() * 16, 12 * 1024);
 
       buff = build_empty_dsc(Range { start: 0x00, end: 0x7FF });
-      number_of_read_pack = 0x800 / test_block_size;
+      number_of_read_pack = 0x1000 / test_block_size;
       let mut dump2 = vec![vec![0xFF; test_block_size]; number_of_read_pack];
       buff.upload_from_target(dump2).unwrap();
       assert_eq!(buff.buffer.len(), 256);               
