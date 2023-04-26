@@ -1,5 +1,7 @@
 # usbdm_mc56f_rs not finished, in work!
 
+[![Rust](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml/badge.svg)](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml)
+
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time me and my friend  practicing writing in Rust
 This code is modified and re-writed in Rust little part of usbdm pjt, original project is here : [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 
