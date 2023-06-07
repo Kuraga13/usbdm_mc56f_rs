@@ -2,6 +2,7 @@
 
 [![Rust](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml/badge.svg)](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml)
 
+[Download usbdm_rs_3.3.3-beta](https://github.com/Kuraga13/usbdm_mc56f_rs/releases/tag/usbdm_rs_3.3.3-beta)
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time me and my friend  practicing writing in Rust
 This code is modified and re-writed in Rust little part of usbdm pjt, original project is here : [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 
@@ -15,7 +16,7 @@ Target - USBDM/JMxx version, supporting DSC, FW version minimal 4.12.1 (BDM Firm
 | MC56F8002 |  |  |  |
 | MC56F8006 |✔️|✔️|✔️|
 | MC56F8011 |  |  |  |
-| MC56F8013 |  |  |  |
+| MC56F8013 |✔️|✔️|✔️|
 | MC56F8025 |✔️|✔️|✔️|
 | MC56F8035 |✔️|✔️|✔️|
 
