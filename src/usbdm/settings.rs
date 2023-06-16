@@ -125,7 +125,7 @@ impl Default for BdmSettings {
             use_pst_signals:             false,
             power_off_duration:          500,
             power_on_recovery_interval:  200,
-            reset_duration:              150,
+            reset_duration:              250,
             reset_release_interval:      100,
             reset_recovery_interval:     100,
         } 

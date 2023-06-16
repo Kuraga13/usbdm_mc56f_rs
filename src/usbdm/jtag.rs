@@ -395,18 +395,21 @@ impl Programmer
         let mut once_status: OnceStatus = OnceStatus::UnknownMode;
         for retry in 0..10 
         {
-            once_status = self.targetDebugRequest()?;
+            self.targetDebugRequest()?;
+            once_status = enableONCE(&self)?;
             if(once_status == OnceStatus::DebugMode)
                 { 
                     break; 
                 }
             if(once_status == OnceStatus::UnknownMode) 
-                {
-                    return Err((Error::TargetNotConnected("DSC enter debug mode failed!".to_string())))
+                {   
+                    self.dsc_target_go()?;
+                    let force_once_status = enableONCE(&self)?;
+                    dbg!("Force DSC executive! Once status after is: ", force_once_status);
                 }
         }
         if (once_status != OnceStatus::DebugMode) {
-            return Err(Error::InternalError("Target Halt Failed".to_string()))
+            return Err((Error::TargetNotConnected("DSC enter debug mode failed!".to_string())))
         }
         Ok(once_status)
     }

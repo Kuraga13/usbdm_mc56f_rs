@@ -47,7 +47,7 @@ pub mod memory_space_t {
     // For convenience (DSC)
     pub const MS_PWORD   : u8  = MS_WORD + MS_PROGRAM;
     pub const MS_PLONG   : u8  = MS_LONG + MS_PROGRAM;
-    pub const MS_XBYTE   : u8  = MS_LONG + MS_DATA;
+    pub const MS_XBYTE   : u8  = MS_BYTE + MS_DATA;
     pub const MS_XWORD   : u8  = MS_WORD + MS_DATA;
     pub const MS_XLONG   : u8  = MS_LONG + MS_DATA;
 }

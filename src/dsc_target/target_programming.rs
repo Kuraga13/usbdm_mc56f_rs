@@ -13,6 +13,7 @@ use std::{thread, time};
 use std::time::Duration;
 
 
+
 impl TargetProgramming for TargetDsc {
 
 fn init(&mut self, prog : &mut Programmer) -> Result<(), Error>
@@ -31,18 +32,6 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   // - check & reset target jtag (to execution mode)
   prog.target_power_reset(power)?;
   self.power(power, prog)?;
-  
-  self.once_status = enableONCE(&prog)?;
-  dbg!("Start status is: ", &self.once_status);  
-
-  if(self.once_status != OnceStatus::ExecuteMode)
-  {
-  // need be tested! some dsc start status unknown, but looks like is in debug mode!
-  prog.dsc_target_go()?;
-  }
-
-  self.once_status = enableONCE(&prog)?;
-  dbg!("After force exec status is: ", &self.once_status);
 
   self.flash_module = FlashModuleStatus::NotInited;
 
@@ -52,7 +41,6 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   
   self.family.target_family_confirmation(jtag_id, core_id)?;
 
- 
   self.once_status = OnceStatus::UnknownMode;
 
   prog.dsc_target_halt()?;
@@ -208,10 +196,9 @@ fn verify_target(&mut self, power : TargetVddSelect, address : u32, prog : &mut 
 }
 
 
-fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error>
-{
-  
-  let powered = prog.get_power_state()?; // base init : check power and status
+fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result<(), Error> {
+
+  let powered = prog.get_power_state()?;
   self.once_status = enableONCE(&prog)?;
   
   if(powered != PowerStatus::PowerOn || self.once_status != OnceStatus::DebugMode)
@@ -220,6 +207,10 @@ fn erase_target(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> R
   }
 
   self.family.mass_erase(power, prog)?;
+
+  self.power(TargetVddSelect::VddOff, prog)?;
+
+  thread::sleep(time::Duration::from_millis(1000));
 
   self.connect(power, prog)?;
 
