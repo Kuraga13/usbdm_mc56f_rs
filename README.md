@@ -1,6 +1,7 @@
 # usbdm_mc56f_rs not finished, in work!
 
 [![Rust](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml/badge.svg)](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml)
+[![Github All Releases](https://img.shields.io/github/downloads/Kuraga13/usbdm_mc56f_rs/total.svg)]()
 
 [Download usbdm_rs_3.3.3-beta](https://github.com/Kuraga13/usbdm_mc56f_rs/releases/tag/usbdm_rs_3.3.3-beta)
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time me and my friend  practicing writing in Rust
