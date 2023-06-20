@@ -1,8 +1,12 @@
 # usbdm_mc56f_rs not finished, in work!
 
 [![Rust](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml/badge.svg)](https://github.com/Kuraga13/usbdm_mc56f_rs/actions/workflows/rust.yml)
+[![Github All Releases](https://img.shields.io/github/downloads/Kuraga13/usbdm_mc56f_rs/total.svg)]()
 
 [Download usbdm_rs_3.3.3-beta](https://github.com/Kuraga13/usbdm_mc56f_rs/releases/tag/usbdm_rs_3.3.3-beta)
+
+
+
 ### Сonvenient programmer for work with mc56f80xx DSC, at the same time me and my friend  practicing writing in Rust
 This code is modified and re-writed in Rust little part of usbdm pjt, original project is here : [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 
@@ -25,13 +29,17 @@ If you have tested any of the targets that we did not test, please let us know i
 ###  Motivation
 The original project does not support reading the controller. This is the underlying reason. Little things associated with the inconvenience of management.
 Initially, the goal is to work comfortably with the mc56f in Rust. Working via USBDM on mc56f dsp controllers is rather inconvenient, and original the project itself is too large to simply fix something.
- 
 
+### Build
+
+OpenGL :
+cargo run --release --features iced/glow
+or WGPU 
+cargo run --release 
  
 ### In plan
 * Made HexBuffer interactive, copying data, addressing etc.
 * Made TargetProgramming actions (read, write, erase) async and bind with iced subscribtion
-
 
 ###  Done now
 * low level USB interface
@@ -52,3 +60,5 @@ Initially, the goal is to work comfortably with the mc56f in Rust. Working via U
 Thanks to the authors of the original Usbdm project, they did a great job. [Original USBDM project](https://github.com/podonoghue/usbdm-eclipse-makefiles-build/tree/85cc87da0808b8fe4ba4ec6ac7f2c450a89fc34e).
 Thanks to the authors of Iced, Iced_aw especially for the menu widget.
 And thanks to everyone who helps and help early.  
+
+
