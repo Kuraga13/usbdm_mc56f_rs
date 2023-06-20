@@ -376,21 +376,34 @@ fn set_speed(&mut self) -> Result<(), Error>{
 
     let mut usb_buf  = [0; 4];
 
-    usb_buf[0] = 4;            // lenght of command
+    usb_buf[0] = 4;    // lenght of command
     usb_buf[1] = bdm_commands::CMD_USBDM_CONTROL_PINS;
     usb_buf[2] = (control>>8) as u8;  
     usb_buf[3] = control as u8;
 
     self.usb_device.write(&usb_buf)?;                                    // write command
-    let answer = self.usb_device.read(1)?;      // read status from bdm
+    let answer = self.usb_device.read(3)?;      // read status from bdm
     Ok(())
 }
 
 
+pub fn target_reset_low(&mut self) -> Result<(), Error>{
+    const PIN_RESET_LOW   : u16 = 2<<2;   // Set Reset low
+    self.bdm_control_pins(PIN_RESET_LOW)?;
+    Ok(())
+}
+
+pub fn target_reset_release(&mut self) -> Result<(), Error>{
+    const PIN_RELEASE     : u16 = 0xFFFF; // Release all pins (go to default for current target)
+    self.bdm_control_pins(PIN_RELEASE)?;
+    Ok(())
+}
+
 
 pub fn target_hardware_reset(&mut self) -> Result<(), Error>{
-    const PIN_RESET_LOW : u16 = 2<<2;   // Set Reset low
-    const PIN_RELEASE   : u16 = 0xffff; // Release all pins (go to default for current target)
+    const PIN_RESET_LOW   : u16 = 2<<2;   // Set Reset low
+    const PIN_RELEASE     : u16 = 0xFFFF; // Release all pins (go to default for current target)
+    const PIN_RESET_HIGH  : u16 = 3<<2; // Release all pins (go to default for current target)
     self.bdm_control_pins(PIN_RESET_LOW)?;
     thread::sleep(time::Duration::from_millis(self.settings.reset_duration));
     self.bdm_control_pins(PIN_RELEASE)?;

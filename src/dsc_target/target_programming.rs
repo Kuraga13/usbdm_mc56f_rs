@@ -30,12 +30,16 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
   // that mean:
   // - check &reset power for certain time and check is voltage
   // - check & reset target jtag (to execution mode)
+
   prog.target_power_reset(power)?;
   self.power(power, prog)?;
+  self.once_status = enableONCE(&prog)?;
+
+  dbg!("Start status is: ", &self.once_status);
 
   self.flash_module = FlashModuleStatus::NotInited;
 
-  let jtag_id = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
+  let jtag_id: Vec<u8> = read_master_id_code_DSC_JTAG_ID(true, &prog)?;
   enableCoreTAP(&prog)?; 
   let core_id =  read_core_id_code(false, &prog)?; // on second not !
   
@@ -43,7 +47,21 @@ fn connect(&mut self, power : TargetVddSelect, prog : &mut Programmer) -> Result
 
   self.once_status = OnceStatus::UnknownMode;
 
-  prog.dsc_target_halt()?;
+  //try again if fault
+  if let Err(_) = prog.dsc_target_halt() {
+
+    println!("! prog.dsc_target_halt() err ! ");
+    println!(" try enter in debug under reset ");
+    prog.target_reset_low()?;
+    thread::sleep(time::Duration::from_millis(prog.settings.reset_duration));
+    enableCoreTAP(&prog)?;
+    self.once_status = prog.targetDebugRequest()?;
+    dbg!("try enter once status is: ", &self.once_status);
+    prog.target_reset_release()?;
+    thread::sleep(time::Duration::from_millis(prog.settings.reset_recovery_interval));
+    prog.dsc_target_halt()?;
+  
+  }
 
   self.once_status = enableONCE(&prog)?;
 

@@ -127,7 +127,7 @@ impl Default for BdmSettings {
             power_on_recovery_interval:  200,
             reset_duration:              250,
             reset_release_interval:      100,
-            reset_recovery_interval:     100,
+            reset_recovery_interval:     200,
         } 
     }
 }

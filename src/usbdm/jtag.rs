@@ -374,7 +374,7 @@ impl Programmer
     /// `note` Leaves Core TAP in RUN-TEST/IDLE
     ///
     /// Private helper function use `dsc_target_halt()` instead
-    fn targetDebugRequest(&self) -> Result<OnceStatus, Error> {
+    pub fn targetDebugRequest(&self) -> Result<OnceStatus, Error> {
         let mut sequence: Vec<u8> = Vec::new();
         sequence.push(JTAG_MOVE_IR_SCAN);                // Write enable EONCE command to IR
         sequence.push(JTAG_SET_EXIT_IDLE); 
